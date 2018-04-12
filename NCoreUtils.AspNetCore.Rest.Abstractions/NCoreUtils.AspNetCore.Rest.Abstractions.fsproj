@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>1.0.5</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="ImmutableArrayBinder.fs" />
+    <Compile Include="RestQuery.fs" />
+    <Compile Include="Output.fs" />
+    <Compile Include="Contract.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NCoreUtils.Data.Abstractions" Version="1.1.2" />
+    <PackageReference Include="NCoreUtils.FSharp" Version="1.0.2" />
+    <PackageReference Include="NCoreUtils.FSharp.DependencyInjection" Version="1.0.1" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
+  </ItemGroup>
+
+</Project>

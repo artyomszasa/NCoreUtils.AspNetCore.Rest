@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>1.0.5</Version>
+    <!-- NuGet -->
+    <PackageId>NCoreUtils.AspNetCore.Rest</PackageId>
+    <Title>$(PackageId)</Title>
+    <Authors>Artyom Antyipin</Authors>
+    <Description>Rest implementation for ASP.NET Core.</Description>
+    <Copyright>Artyom Antyipin</Copyright>
+    <RepositoryUrl>https://github.com/artyomszasa/NCoreUtils.AspNetCore.Rest.git</RepositoryUrl>
+    <PackageReleaseNotes>Fix response code when type name cannot be resolved.</PackageReleaseNotes>
+    <!-- Assembly Info -->
+    <Product>NCoreUtils</Product>
+    <AssemblyName>$(PackageId)</AssemblyName>
+    <AssemblyTitle>$(AssemblyName)</AssemblyTitle>
+    <!-- Compilation -->
+    <OutputType>Library</OutputType>
+    <DebugType>portable</DebugType>
+    <!-- <GenerateDocumentationFile>true</GenerateDocumentationFile> -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="RestConfiguration.fs" />
+    <Compile Include="PropertyInfoExt.fs" />
+    <Compile Include="Common.fs" />
+    <Compile Include="HttpResponseOutput.fs" />
+    <Compile Include="DefaultDefaultOrderProperty.fs" />
+    <Compile Include="DefaultQueryFilter.fs" />
+    <Compile Include="DefaultQueryOrderer.fs" />
+    <Compile Include="DefaultDeserializer.fs" />
+    <Compile Include="DefaultSerializer.fs" />
+    <Compile Include="DefaultRestItem.fs" />
+    <Compile Include="DefaultRestCreate.fs" />
+    <Compile Include="DefaultRestUpdate.fs" />
+    <Compile Include="DefaultRestDelete.fs" />
+    <Compile Include="DefaultRestListCollection.fs" />
+    <Compile Include="CurrentRestTypeName.fs" />
+    <Compile Include="List.fs" />
+    <Compile Include="Item.fs" />
+    <Compile Include="Create.fs" />
+    <Compile Include="Update.fs" />
+    <Compile Include="Delete.fs" />
+    <Compile Include="Middleware.fs" />
+    <Compile Include="RestServiceCollectionExtensions.fs" />
+    <Compile Include="RestApplicationBuilderExtensions.fs" />
+    <Compile Include="MappingSerializer.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NCoreUtils.AspNetCore.Rest.Abstractions\NCoreUtils.AspNetCore.Rest.Abstractions.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.0.2" />
+    <PackageReference Include="NCoreUtils.Data.Protocol.Abstractions" Version="1.0.0" />
+    <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="1.0.1" />
+    <PackageReference Include="NCoreUtils.FSharp.Data" Version="1.0.0" />
+    <PackageReference Include="NCoreUtils.FSharp.Linq" Version="1.0.0" />
+    <PackageReference Include="NCoreUtils.FSharp.Logging" Version="1.0.0" />
+  </ItemGroup>
+</Project>
