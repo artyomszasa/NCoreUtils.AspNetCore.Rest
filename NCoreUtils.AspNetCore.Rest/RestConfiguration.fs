@@ -17,6 +17,7 @@ type IQueryAccessValidator =
   inherit IAccessValidator
   abstract AsyncFilterQuery : queryable:IQueryable * serviceProvider:IServiceProvider * principal:ClaimsPrincipal -> Async<IQueryable>
 
+[<NoEquality; NoComparison>]
 type RestAccessConfiguration = {
   Global : IAccessValidator
   Create : IAccessValidator
@@ -60,6 +61,7 @@ type RestAccessConfigurationBuilder (access : RestAccessConfiguration) =
   member this.ConfigureList   validator = access <- { access with List   = validator }; this
   member __.Build () = access
 
+[<NoEquality; NoComparison>]
 type RestConfiguration = {
   PathPrefix          : CaseInsensitive list
   ManagedTypes        : Map<CaseInsensitive, Type>
