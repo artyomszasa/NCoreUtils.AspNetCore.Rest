@@ -2,6 +2,7 @@
 module internal NCoreUtils.AspNetCore.Rest.Common
 
 open System
+open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Primitives
 open NCoreUtils
 open NCoreUtils.AspNetCore
@@ -14,6 +15,9 @@ let inline idType ty =
   | _    -> invalidOpf "Type %s does not implement IHasId interface." ty.FullName
 
 let inline activate (ty : Type) = Activator.CreateInstance (ty, true)
+
+[<RequiresExplicitTypeArguments>]
+let inline diActivate<'a> serviceProvider = ActivatorUtilities.CreateInstance<'a> serviceProvider
 
 let inline setResponseHeader (name : string) (value : string) httpContext =
   (HttpContext.response httpContext).Headers.Add (name, (StringValues : string -> _) value)

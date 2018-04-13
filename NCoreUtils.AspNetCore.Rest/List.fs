@@ -17,36 +17,52 @@ type ListParameters = {
   [<ParameterName("")>]
   RestQuery  : RestQuery }
 
-type ListServices = IServiceProvider
-
 module internal ListInvoker =
 
+  [<CompiledName("RestList")>]
   [<RequiresExplicitTypeArguments>]
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  let private list<'a> httpContext (services : ListServices) (parameters : ListParameters) = async {
-    let instance =
-      tryGetService<IRestListCollection<'a>> services
-      |> Option.orElseWith  (fun () -> tryGetService<IRestListCollection> services >>| (fun selector -> selector.For<'a>()))
-      |> Option.defaultWith (fun () -> ActivatorUtilities.CreateInstance<DefaultRestListCollection<'a>> services :> _)
-    let! (struct (items, total)) = instance.AsyncInvoke parameters.RestQuery
-    setResponseHeader "X-Total-Count" (total.ToString ()) httpContext
-    let serializer =
-      tryGetService<ISerializer<'a[]>> services
-      |> Option.orElseWith  (fun () -> tryGetService<ISerializer> services >>| Adapt.For<'a[]>)
-      |> Option.defaultWith (fun () -> ActivatorUtilities.CreateInstance<DefaultSerializer<'a[]>> services :> _)
-    let output = HttpContext.response httpContext |> HttpResponseOutput
-    do! serializer.AsyncSerialize (output, items) }
-
+  let private list<'a>
+    (httpContext : HttpContext)
+    { ServiceProvider   = serviceProvider
+      RestConfiguration = { AccessConfiguration = access } }
+    (parameters : ListParameters) = async {
+      // --------------------------------
+      // validate if method is accessible
+      let! hasGlobalAccess = access.Global.AsyncValidate (serviceProvider, httpContext.User)
+      do if not hasGlobalAccess then UnauthorizedException () |> raise
+      let! hasMethodAccess = access.List.AsyncValidate (serviceProvider, httpContext.User)
+      do if not hasMethodAccess then UnauthorizedException () |> raise
+      // initialize configured RestCreate handler
+      let instance =
+        tryGetService<IRestListCollection<'a>> serviceProvider
+        |> Option.orElseWith  (fun () -> tryGetService<IRestListCollection> serviceProvider >>| Adapt.For<'a>)
+        |> Option.defaultWith (fun () -> diActivate<DefaultRestListCollection<'a>> serviceProvider :> _)
+      // invoke method
+      let! (struct (items, total)) = instance.AsyncInvoke parameters.RestQuery
+      // set total header
+      setResponseHeader "X-Total-Count" (total.ToString ()) httpContext
+      // initialize configured serializer
+      let serializer =
+        tryGetService<ISerializer<'a[]>> serviceProvider
+        |> Option.orElseWith  (fun () -> tryGetService<ISerializer> serviceProvider >>| Adapt.For<'a[]>)
+        |> Option.defaultWith (fun () -> diActivate<DefaultSerializer<'a[]>> serviceProvider :> _)
+      // serialize output
+      let output = HttpContext.response httpContext |> HttpResponseOutput
+      do! serializer.AsyncSerialize (output, items) }
 
   type private IInvoker =
-    abstract Invoke : httpContext:HttpContext * services:ListServices * parameters:ListParameters -> Async<unit>
+    abstract Invoke : httpContext:HttpContext * services:RestMethodServices * parameters:ListParameters -> Async<unit>
 
+  [<Sealed>]
   type private Invoker<'a> () =
     interface IInvoker with
       member __.Invoke (httpContext, services, parameters) = list<'a> httpContext services parameters
 
   let private cache = ConcurrentDictionary<Type, IInvoker> ()
 
+  [<CompiledName("Invoke")>]
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
   let invoke httpContext services (parameters : ListParameters) =
     let instance = cache.GetOrAdd (parameters.EntityType, fun ty -> typedefof<Invoker<_>>.MakeGenericType ty |> activate :?> IInvoker)
     instance.Invoke (httpContext, services, parameters)

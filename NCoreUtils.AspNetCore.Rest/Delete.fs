@@ -3,39 +3,52 @@ namespace NCoreUtils.AspNetCore.Rest
 open System
 open System.Collections.Concurrent
 open Microsoft.AspNetCore.Http
-open Microsoft.Extensions.DependencyInjection
 open NCoreUtils
 open NCoreUtils.AspNetCore
 open NCoreUtils.Data
 open System.Runtime.CompilerServices
 
 // **************************************************************************
-// Update
+// DELETE
 
 type DeleteParameters = {
   [<ParameterBinder(typeof<ManagedTypeBinder>)>]
   EntityType : Type }
 
-type DeleteServices = IServiceProvider
-
 module internal DeleteInvoker =
 
+  [<CompiledName("RestDelete")>]
   [<RequiresExplicitTypeArguments>]
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  let private delete<'a, 'id when 'a :> IHasId<'id> and 'id : equality> (id : 'id) httpContext (services : DeleteServices) (_ : DeleteParameters) = async {
-    let instance =
-      tryGetService<IRestDelete<'a, 'id>> services
-      |> Option.orElseWith  (fun () -> tryGetService<IRestDelete> services >>| Adapt.For<'a, 'id>)
-      |> Option.defaultWith (fun () -> ActivatorUtilities.CreateInstance<DefaultRestDelete<'a, 'id>> services :> _)
-    use! tx = instance.AsyncBeginTransaction ()
-    do! instance.AsyncInvoke id
-    tx.Commit ()
-    HttpContext.setResponseStatusCode 204 httpContext }
+  let private delete<'a, 'id when 'a :> IHasId<'id> and 'id : equality>
+    (id : 'id)
+    (httpContext : HttpContext)
+    { ServiceProvider   = serviceProvider
+      RestConfiguration = { AccessConfiguration = access } }
+    (_ : DeleteParameters) = async {
+      // --------------------------------
+      // validate if method is accessible
+      let! hasGlobalAccess = access.Global.AsyncValidate (serviceProvider, httpContext.User)
+      do if not hasGlobalAccess then UnauthorizedException () |> raise
+      let! hasMethodAccess = access.Delete.AsyncValidate (serviceProvider, httpContext.User)
+      do if not hasMethodAccess then UnauthorizedException () |> raise
+      // initialize configured RestDelete handler
+      let instance =
+        tryGetService<IRestDelete<'a, 'id>> serviceProvider
+        |> Option.orElseWith  (fun () -> tryGetService<IRestDelete> serviceProvider >>| Adapt.For<'a, 'id>)
+        |> Option.defaultWith (fun () -> diActivate<DefaultRestDelete<'a, 'id>> serviceProvider :> _)
+      // invoke method within transaction
+      use! tx = instance.AsyncBeginTransaction ()
+      do! instance.AsyncInvoke id
+      tx.Commit ()
+      // send response
+      HttpContext.setResponseStatusCode 204 httpContext }
 
   type private IInvoker =
-    abstract Invoke : rawId:string * httpContext:HttpContext * services:DeleteServices * parameters:DeleteParameters -> Async<unit>
+    abstract Invoke : rawId:string * httpContext:HttpContext * services:RestMethodServices * parameters:DeleteParameters -> Async<unit>
 
-  type Invoker<'a, 'id when 'a :> IHasId<'id> and 'id : equality> () =
+  [<Sealed>]
+  type private Invoker<'a, 'id when 'a :> IHasId<'id> and 'id : equality> () =
     interface IInvoker with
       member __.Invoke (rawId, httpContext, services, parameters) =
         let id = Convert.ChangeType (rawId, typeof<'id>) :?> 'id
@@ -43,6 +56,8 @@ module internal DeleteInvoker =
 
   let private cache = ConcurrentDictionary<Type, IInvoker> ()
 
+  [<CompiledName("Invoke")>]
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
   let invoke rawId httpContext services (parameters : DeleteParameters) =
     let instance =
       cache.GetOrAdd (

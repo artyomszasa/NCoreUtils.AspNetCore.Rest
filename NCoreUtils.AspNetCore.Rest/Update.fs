@@ -3,7 +3,6 @@ namespace NCoreUtils.AspNetCore.Rest
 open System
 open System.Collections.Concurrent
 open Microsoft.AspNetCore.Http
-open Microsoft.Extensions.DependencyInjection
 open NCoreUtils
 open NCoreUtils.AspNetCore
 open NCoreUtils.Data
@@ -16,33 +15,48 @@ type UpdateParameters = {
   [<ParameterBinder(typeof<ManagedTypeBinder>)>]
   EntityType : Type }
 
-type UpdateServices = IServiceProvider
-
 module internal UpdateInvoker =
 
+  [<CompiledName("RestUpdate")>]
   [<RequiresExplicitTypeArguments>]
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  let private update<'a, 'id when 'a :> IHasId<'id> and 'id : equality> (id : 'id) httpContext (services : UpdateServices) (_ : UpdateParameters) = async {
-    let instance =
-      tryGetService<IRestUpdate<'a, 'id>> services
-      |> Option.orElseWith  (fun () -> tryGetService<IRestUpdate> services >>| Adapt.For<'a, 'id>)
-      |> Option.defaultWith (fun () -> ActivatorUtilities.CreateInstance<DefaultRestUpdate<'a, 'id>> services :> _)
-    let data =
-      let deserializer =
-        tryGetService<IDeserializer<'a>> services
-        |> Option.orElseWith  (fun () -> tryGetService<IDeserializer> services >>| Adapt.For<'a>)
-        |> Option.defaultWith (fun () -> ActivatorUtilities.CreateInstance<DefaultDeserializer<'a>> services :> _)
-      HttpContext.requestBody httpContext
-      |> deserializer.Deserialize
-    use! tx = instance.AsyncBeginTransaction ()
-    do! instance.AsyncInvoke (id, data) |> Async.Ignore
-    tx.Commit ()
-    HttpContext.setResponseStatusCode 204 httpContext }
+  let private update<'a, 'id when 'a :> IHasId<'id> and 'id : equality>
+    (id : 'id)
+    (httpContext : HttpContext)
+    { ServiceProvider   = serviceProvider
+      RestConfiguration = { AccessConfiguration = access } }
+    (_ : UpdateParameters) = async {
+      // --------------------------------
+      // validate if method is accessible
+      let! hasGlobalAccess = access.Global.AsyncValidate (serviceProvider, httpContext.User)
+      do if not hasGlobalAccess then UnauthorizedException () |> raise
+      let! hasMethodAccess = access.Update.AsyncValidate (serviceProvider, httpContext.User)
+      do if not hasMethodAccess then UnauthorizedException () |> raise
+      // initialize configured RestUpdate handler
+      let instance =
+        tryGetService<IRestUpdate<'a, 'id>> serviceProvider
+        |> Option.orElseWith  (fun () -> tryGetService<IRestUpdate> serviceProvider >>| Adapt.For<'a, 'id>)
+        |> Option.defaultWith (fun () -> diActivate<DefaultRestUpdate<'a, 'id>> serviceProvider :> _)
+      // deserialize input
+      let data =
+        let deserializer =
+          tryGetService<IDeserializer<'a>> serviceProvider
+          |> Option.orElseWith  (fun () -> tryGetService<IDeserializer> serviceProvider >>| Adapt.For<'a>)
+          |> Option.defaultWith (fun () -> diActivate<DefaultDeserializer<'a>> serviceProvider :> _)
+        HttpContext.requestBody httpContext
+        |> deserializer.Deserialize
+      // invoke method within transaction
+      use! tx = instance.AsyncBeginTransaction ()
+      do! instance.AsyncInvoke (id, data) |> Async.Ignore
+      tx.Commit ()
+      // send response
+      HttpContext.setResponseStatusCode 204 httpContext }
 
   type private IInvoker =
-    abstract Invoke : rawId:string * httpContext:HttpContext * services:UpdateServices * parameters:UpdateParameters -> Async<unit>
+    abstract Invoke : rawId:string * httpContext:HttpContext * services:RestMethodServices * parameters:UpdateParameters -> Async<unit>
 
-  type Invoker<'a, 'id when 'a :> IHasId<'id> and 'id : equality> () =
+  [<Sealed>]
+  type private Invoker<'a, 'id when 'a :> IHasId<'id> and 'id : equality> () =
     interface IInvoker with
       member __.Invoke (rawId, httpContext, services, parameters) =
         let id = Convert.ChangeType (rawId, typeof<'id>) :?> 'id
@@ -50,6 +64,8 @@ module internal UpdateInvoker =
 
   let private cache = ConcurrentDictionary<Type, IInvoker> ()
 
+  [<CompiledName("Invoke")>]
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
   let invoke rawId httpContext services (parameters : UpdateParameters) =
     let instance =
       cache.GetOrAdd (
