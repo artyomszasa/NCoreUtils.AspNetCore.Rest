@@ -8,6 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 open NCoreUtils
 open NCoreUtils.Data
+open System
 
 type IRestQueryFilter =
   abstract FilterQuery : queryable:IQueryable<'a> * restQuery:RestQuery -> IQueryable<'a>
@@ -72,10 +73,10 @@ type IRestDelete<'a, 'id when 'a :> IHasId<'id> and 'id : equality> =
   abstract AsyncInvoke : id:'id -> Async<unit>
 
 type IRestListCollection =
-  abstract AsyncInvoke<'a> : restQuery:RestQuery -> Async<struct ('a[] * int)>
+  abstract AsyncInvoke<'a> : restQuery:RestQuery * accessValidator:(IQueryable -> Async<IQueryable>)  -> Async<struct ('a[] * int)>
 
 type IRestListCollection<'a> =
-  abstract AsyncInvoke : restQuery:RestQuery -> Async<struct ('a[] * int)>
+  abstract AsyncInvoke : restQuery:RestQuery * accessValidator:(IQueryable -> Async<IQueryable>) -> Async<struct ('a[] * int)>
 
 // **************************************************************************
 // C# interop
@@ -142,11 +143,16 @@ type RestDelete<'a, 'id when 'a :> IHasId<'id> and 'id : equality> () =
 
 [<AbstractClass>]
 type RestListCollection<'a> () =
-  abstract InvokeAsync : restQuery:RestQuery * cancellationToken:CancellationToken -> Task<struct ('a[] * int)>
+  abstract InvokeAsync : restQuery:RestQuery * accessValidator:Func<IQueryable, CancellationToken, Task<IQueryable>> * cancellationToken:CancellationToken -> Task<struct ('a[] * int)>
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  member internal this.InvokeDirect (restQuery, cancellationToken) = this.InvokeAsync (restQuery, cancellationToken)
+  member internal this.InvokeDirect (restQuery, accessValidator, cancellationToken) = this.InvokeAsync (restQuery, accessValidator, cancellationToken)
   interface IRestListCollection<'a> with
-    member this.AsyncInvoke restQuery = Async.Adapt (fun cancellationToken -> this.InvokeAsync (restQuery, cancellationToken))
+    member this.AsyncInvoke (restQuery, accessValidator) =
+      let adaptedAccessValidator =
+        Func<IQueryable, CancellationToken, Task<IQueryable>>
+          (fun queryable cancellationToken ->
+            Async.StartAsTask (accessValidator queryable, cancellationToken = cancellationToken))
+      Async.Adapt (fun cancellationToken -> this.InvokeAsync (restQuery, adaptedAccessValidator, cancellationToken))
 
 [<Extension>]
 [<AbstractClass; Sealed>]
@@ -212,7 +218,7 @@ type RestContractExtensions =
   [<Extension>]
   static member For<'a>(this : IRestListCollection) =
     { new IRestListCollection<'a> with
-        member __.AsyncInvoke restQuery = this.AsyncInvoke restQuery
+        member __.AsyncInvoke (restQuery, accessValidator) = this.AsyncInvoke (restQuery, accessValidator)
     }
 
   [<Extension>]
@@ -253,10 +259,13 @@ type RestContractExtensions =
 
   [<Extension>]
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  static member InvokeAsync (this : IRestListCollection<'a>, restQuery, cancellationToken) =
+  static member InvokeAsync (this : IRestListCollection<'a>, accessValidator, restQuery, cancellationToken) =
     match this with
-    | :? RestListCollection<'a> as inst -> inst.InvokeDirect (restQuery, cancellationToken)
-    | _                                 -> Async.StartAsTask (this.AsyncInvoke restQuery, cancellationToken = cancellationToken)
+    | :? RestListCollection<'a> as inst -> inst.InvokeDirect (restQuery, accessValidator, cancellationToken)
+    | _                                 ->
+      let adaptedAccessValidator queryable =
+        Async.Adapt (fun cancellationToken -> accessValidator.Invoke (queryable, cancellationToken))
+      Async.StartAsTask (this.AsyncInvoke (restQuery, adaptedAccessValidator), cancellationToken = cancellationToken)
 
   [<Extension>]
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]

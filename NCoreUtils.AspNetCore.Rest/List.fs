@@ -38,8 +38,13 @@ module internal ListInvoker =
         tryGetService<IRestListCollection<'a>> serviceProvider
         |> Option.orElseWith  (fun () -> tryGetService<IRestListCollection> serviceProvider >>| Adapt.For<'a>)
         |> Option.defaultWith (fun () -> diActivate<DefaultRestListCollection<'a>> serviceProvider :> _)
+      // create access validator
+      let accessValidator =
+        match access.List with
+        | :? IQueryAccessValidator as accessValidator -> fun queryable -> accessValidator.AsyncFilterQuery (queryable, serviceProvider, httpContext.User)
+        | _                                           -> async.Return
       // invoke method
-      let! (struct (items, total)) = instance.AsyncInvoke parameters.RestQuery
+      let! (struct (items, total)) = instance.AsyncInvoke (parameters.RestQuery, accessValidator)
       // set total header
       setResponseHeader "X-Total-Count" (total.ToString ()) httpContext
       // initialize configured serializer

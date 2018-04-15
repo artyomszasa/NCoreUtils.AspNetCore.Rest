@@ -4,18 +4,6 @@ open System
 open System.Collections.Generic
 open NCoreUtils
 open System.Security.Claims
-open System.Linq
-
-type IAccessValidator =
-  abstract AsyncValidate : serviceProvider:IServiceProvider * principal:ClaimsPrincipal -> Async<bool>
-
-type IEntityAccessValidator =
-  inherit IAccessValidator
-  abstract AsyncValidate : entity:obj * serviceProvider:IServiceProvider * principal:ClaimsPrincipal -> Async<bool>
-
-type IQueryAccessValidator =
-  inherit IAccessValidator
-  abstract AsyncFilterQuery : queryable:IQueryable * serviceProvider:IServiceProvider * principal:ClaimsPrincipal -> Async<IQueryable>
 
 [<NoEquality; NoComparison>]
 type RestAccessConfiguration = {
@@ -124,6 +112,7 @@ module RestAccessConfigurationBuilderExt =
 open System.Runtime.CompilerServices
 open System.Threading
 open System.Threading.Tasks
+open System.Reflection
 
 type private FA2 = Func<IServiceProvider, ClaimsPrincipal, CancellationToken, Task<bool>>
 type private FA1 = Func<ClaimsPrincipal, CancellationToken, Task<bool>>
@@ -209,3 +198,135 @@ type RestAccessConfigurationBuilderExtensions =
   static member ConfigureItem (this : RestAccessConfigurationBuilder, validate : FS1) = RestAccessConfigurationBuilderExtensions.OfTask validate |> this.ConfigureItem
   [<Extension>]
   static member ConfigureItem (this : RestAccessConfigurationBuilder, validate : FS2) = RestAccessConfigurationBuilderExtensions.OfTask validate |> this.ConfigureItem
+
+  [<RequiresExplicitTypeArguments>]
+  static member private CreateAccessValidator<'validation when 'validation :> IAccessValidation> () =
+    { new IAccessValidator with
+        member __.AsyncValidate (serviceProvider, principal) = async {
+          let struct (validation, shouldDispose) =
+            match tryGetService<'validation> serviceProvider with
+            | Some validation -> struct (validation, false)
+            | _               -> struct (diActivate<'validation> serviceProvider, true)
+          try return! validation.AsyncValidate principal
+          finally
+            match struct (shouldDispose, box validation) with
+            | struct (true, (:? IDisposable as disposable)) -> disposable.Dispose ()
+            | _ -> () }
+    }
+
+  [<RequiresExplicitTypeArguments>]
+  static member private CreateEntityAccessValidator<'validation when 'validation :> IEntityAccessValidation> () =
+    { new IEntityAccessValidator with
+        member __.AsyncValidate (serviceProvider, principal) = async {
+          let struct (validation, shouldDispose) =
+            match tryGetService<'validation> serviceProvider with
+            | Some validation -> struct (validation, false)
+            | _               -> struct (diActivate<'validation> serviceProvider, true)
+          try return! validation.AsyncValidate principal
+          finally
+            match struct (shouldDispose, box validation) with
+            | struct (true, (:? IDisposable as disposable)) -> disposable.Dispose ()
+            | _ -> () }
+        member __.AsyncValidate (entity, serviceProvider, principal) = async {
+          let struct (validation, shouldDispose) =
+            match tryGetService<'validation> serviceProvider with
+            | Some validation -> struct (validation, false)
+            | _               -> struct (diActivate<'validation> serviceProvider, true)
+          try return! validation.AsyncValidate (entity, principal)
+          finally
+            match struct (shouldDispose, box validation) with
+            | struct (true, (:? IDisposable as disposable)) -> disposable.Dispose ()
+            | _ -> () }
+    }
+
+  [<RequiresExplicitTypeArguments>]
+  static member private CreateQueryAccessValidator<'validation when 'validation :> IQueryAccessValidation> () =
+    { new IQueryAccessValidator with
+        member __.AsyncValidate (serviceProvider, principal) = async {
+          let struct (validation, shouldDispose) =
+            match tryGetService<'validation> serviceProvider with
+            | Some validation -> struct (validation, false)
+            | _               -> struct (diActivate<'validation> serviceProvider, true)
+          try return! validation.AsyncValidate principal
+          finally
+            match struct (shouldDispose, box validation) with
+            | struct (true, (:? IDisposable as disposable)) -> disposable.Dispose ()
+            | _ -> () }
+        member __.AsyncFilterQuery (queryable, serviceProvider, principal) = async {
+          let struct (validation, shouldDispose) =
+            match tryGetService<'validation> serviceProvider with
+            | Some validation -> struct (validation, false)
+            | _               -> struct (diActivate<'validation> serviceProvider, true)
+          try return! validation.AsyncFilterQuery (queryable, principal)
+          finally
+            match struct (shouldDispose, box validation) with
+            | struct (true, (:? IDisposable as disposable)) -> disposable.Dispose ()
+            | _ -> () }
+    }
+
+
+  [<Extension>]
+  [<RequiresExplicitTypeArguments>]
+  static member ConfigureGlobal<'validation when 'validation :> IAccessValidation> (this : RestAccessConfigurationBuilder) =
+    RestAccessConfigurationBuilderExtensions.CreateAccessValidator<'validation> ()
+    |> this.ConfigureGlobal
+
+  [<Extension>]
+  [<RequiresExplicitTypeArguments>]
+  static member ConfigureCreate<'validation when 'validation :> IAccessValidation> (this : RestAccessConfigurationBuilder) =
+    let validator =
+      match typeof<IEntityAccessValidation>.IsAssignableFrom typeof<'validation> with
+      | true ->
+        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateEntityAccessValidator", BindingFlags.Public ||| BindingFlags.Static)
+        let m = g.MakeGenericMethod [| typeof<'validation> |]
+        m.Invoke (null, [| |]) :?> IAccessValidator
+      | _    -> RestAccessConfigurationBuilderExtensions.CreateAccessValidator<'validation> ()
+    this.ConfigureCreate validator
+
+  [<Extension>]
+  [<RequiresExplicitTypeArguments>]
+  static member ConfigureUpdate<'validation when 'validation :> IAccessValidation> (this : RestAccessConfigurationBuilder) =
+    let validator =
+      match typeof<IEntityAccessValidation>.IsAssignableFrom typeof<'validation> with
+      | true ->
+        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateEntityAccessValidator", BindingFlags.Public ||| BindingFlags.Static)
+        let m = g.MakeGenericMethod [| typeof<'validation> |]
+        m.Invoke (null, [| |]) :?> IAccessValidator
+      | _    -> RestAccessConfigurationBuilderExtensions.CreateAccessValidator<'validation> ()
+    this.ConfigureUpdate validator
+
+  [<Extension>]
+  [<RequiresExplicitTypeArguments>]
+  static member ConfigureDelete<'validation when 'validation :> IAccessValidation> (this : RestAccessConfigurationBuilder) =
+    let validator =
+      match typeof<IEntityAccessValidation>.IsAssignableFrom typeof<'validation> with
+      | true ->
+        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateEntityAccessValidator", BindingFlags.Public ||| BindingFlags.Static)
+        let m = g.MakeGenericMethod [| typeof<'validation> |]
+        m.Invoke (null, [| |]) :?> IAccessValidator
+      | _    -> RestAccessConfigurationBuilderExtensions.CreateAccessValidator<'validation> ()
+    this.ConfigureDelete validator
+
+  [<Extension>]
+  [<RequiresExplicitTypeArguments>]
+  static member ConfigureItem<'validation when 'validation :> IAccessValidation> (this : RestAccessConfigurationBuilder) =
+    let validator =
+      match typeof<IEntityAccessValidation>.IsAssignableFrom typeof<'validation> with
+      | true ->
+        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateEntityAccessValidator", BindingFlags.Public ||| BindingFlags.Static)
+        let m = g.MakeGenericMethod [| typeof<'validation> |]
+        m.Invoke (null, [| |]) :?> IAccessValidator
+      | _    -> RestAccessConfigurationBuilderExtensions.CreateAccessValidator<'validation> ()
+    this.ConfigureItem validator
+
+  [<Extension>]
+  [<RequiresExplicitTypeArguments>]
+  static member ConfigureList<'validation when 'validation :> IAccessValidation> (this : RestAccessConfigurationBuilder) =
+    let validator =
+      match typeof<IQueryAccessValidation>.IsAssignableFrom typeof<'validation> with
+      | true ->
+        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateQueryAccessValidator", BindingFlags.Public ||| BindingFlags.Static)
+        let m = g.MakeGenericMethod [| typeof<'validation> |]
+        m.Invoke (null, [| |]) :?> IAccessValidator
+      | _    -> RestAccessConfigurationBuilderExtensions.CreateAccessValidator<'validation> ()
+    this.ConfigureList validator

@@ -40,6 +40,12 @@ module internal ItemInvoker =
         |> Option.defaultWith (fun () -> diActivate<DefaultRestItem<'a, 'id>> serviceProvider :> _)
       // invoke method
       let! item = instance.AsyncInvoke id
+      // check entity access if specified
+      match access.Create with
+      | :? IEntityAccessValidator as entityAccessValidator ->
+        let! hasEntityAccess = entityAccessValidator.AsyncValidate (item, serviceProvider, httpContext.User)
+        do if not hasEntityAccess then ForbiddenException () |> raise
+      | _ -> ()
       // initialize configured serializer
       let serializer =
         tryGetService<ISerializer<'a>> serviceProvider

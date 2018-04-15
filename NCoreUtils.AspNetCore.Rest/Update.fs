@@ -45,6 +45,12 @@ module internal UpdateInvoker =
           |> Option.defaultWith (fun () -> diActivate<DefaultDeserializer<'a>> serviceProvider :> _)
         HttpContext.requestBody httpContext
         |> deserializer.Deserialize
+      // check entity access if specified
+      match access.Create with
+      | :? IEntityAccessValidator as entityAccessValidator ->
+        let! hasEntityAccess = entityAccessValidator.AsyncValidate (data, serviceProvider, httpContext.User)
+        do if not hasEntityAccess then ForbiddenException () |> raise
+      | _ -> ()
       // invoke method within transaction
       use! tx = instance.AsyncBeginTransaction ()
       do! instance.AsyncInvoke (id, data) |> Async.Ignore

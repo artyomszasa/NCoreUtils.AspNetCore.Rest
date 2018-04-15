@@ -23,7 +23,7 @@ type DefaultDeserializer<'a> (httpContextAccessor : IHttpContextAccessor, logger
       let request = HttpContext.request httpContextAccessor.HttpContext
       let headers = request.GetTypedHeaders ()
       match headers.ContentType with
-      | null -> invalidOp "Unable to deserialize entity as no content type has been specified in request."
+      | null -> UnsupportedMediaTypeException "Unable to deserialize entity as no content type has been specified in request." |> raise
       | contentType ->
       match contentType.MediaType with
       | HasValue mediaType ->
@@ -41,4 +41,4 @@ type DefaultDeserializer<'a> (httpContextAccessor : IHttpContextAccessor, logger
           with exn ->
             BadRequestException (sprintf "Unable to deserialize request body as %s" typeof<'a>.FullName, exn) |> raise
         | _ -> UnsupportedMediaTypeException () |> raise
-      | _ -> invalidOp "Unable to deserialize entity as no media type has been specified in request."
+      | _ -> UnsupportedMediaTypeException "Unable to deserialize entity as no media type has been specified in request." |> raise

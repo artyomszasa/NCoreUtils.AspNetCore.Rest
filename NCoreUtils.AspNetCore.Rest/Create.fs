@@ -47,6 +47,12 @@ module internal CreateInvoker =
           |> Option.defaultWith (fun () -> diActivate<DefaultDeserializer<'a>> serviceProvider :> _)
         HttpContext.requestBody httpContext
         |> deserializer.Deserialize
+      // check entity access if specified
+      match access.Create with
+      | :? IEntityAccessValidator as entityAccessValidator ->
+        let! hasEntityAccess = entityAccessValidator.AsyncValidate (data, serviceProvider, httpContext.User)
+        do if not hasEntityAccess then ForbiddenException () |> raise
+      | _ -> ()
       // invoke method within transaction
       let! item = async {
         use! tx = instance.AsyncBeginTransaction ()
