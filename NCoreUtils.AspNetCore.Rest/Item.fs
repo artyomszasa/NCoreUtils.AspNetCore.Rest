@@ -41,7 +41,7 @@ module internal ItemInvoker =
       // invoke method
       let! item = instance.AsyncInvoke id
       // check entity access if specified
-      match access.Create with
+      match access.Item with
       | :? IEntityAccessValidator as entityAccessValidator ->
         let! hasEntityAccess = entityAccessValidator.AsyncValidate (item, serviceProvider, httpContext.User)
         do if not hasEntityAccess then ForbiddenException () |> raise

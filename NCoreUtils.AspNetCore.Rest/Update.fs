@@ -46,7 +46,7 @@ module internal UpdateInvoker =
         HttpContext.requestBody httpContext
         |> deserializer.Deserialize
       // check entity access if specified
-      match access.Create with
+      match access.Update with
       | :? IEntityAccessValidator as entityAccessValidator ->
         let! hasEntityAccess = entityAccessValidator.AsyncValidate (data, serviceProvider, httpContext.User)
         do if not hasEntityAccess then ForbiddenException () |> raise

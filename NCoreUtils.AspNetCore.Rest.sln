@@ -7,6 +7,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NCoreUtils.AspNetCore.Rest.
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NCoreUtils.AspNetCore.Rest", "NCoreUtils.AspNetCore.Rest\NCoreUtils.AspNetCore.Rest.fsproj", "{9CF1F405-DAAA-4678-8F00-07BB1B098AA5}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "NCoreUtils.AspNetCore.Rest.Unit", "NCoreUtils.AspNetCore.Rest.Unit\NCoreUtils.AspNetCore.Rest.Unit.fsproj", "{4FA8347C-5B92-4DF4-A50E-27B8C5211059}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,5 +46,17 @@ Global
 		{9CF1F405-DAAA-4678-8F00-07BB1B098AA5}.Release|x64.Build.0 = Release|x64
 		{9CF1F405-DAAA-4678-8F00-07BB1B098AA5}.Release|x86.ActiveCfg = Release|x86
 		{9CF1F405-DAAA-4678-8F00-07BB1B098AA5}.Release|x86.Build.0 = Release|x86
+		{4FA8347C-5B92-4DF4-A50E-27B8C5211059}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4FA8347C-5B92-4DF4-A50E-27B8C5211059}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4FA8347C-5B92-4DF4-A50E-27B8C5211059}.Debug|x64.ActiveCfg = Debug|x64
+		{4FA8347C-5B92-4DF4-A50E-27B8C5211059}.Debug|x64.Build.0 = Debug|x64
+		{4FA8347C-5B92-4DF4-A50E-27B8C5211059}.Debug|x86.ActiveCfg = Debug|x86
+		{4FA8347C-5B92-4DF4-A50E-27B8C5211059}.Debug|x86.Build.0 = Debug|x86
+		{4FA8347C-5B92-4DF4-A50E-27B8C5211059}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4FA8347C-5B92-4DF4-A50E-27B8C5211059}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4FA8347C-5B92-4DF4-A50E-27B8C5211059}.Release|x64.ActiveCfg = Release|x64
+		{4FA8347C-5B92-4DF4-A50E-27B8C5211059}.Release|x64.Build.0 = Release|x64
+		{4FA8347C-5B92-4DF4-A50E-27B8C5211059}.Release|x86.ActiveCfg = Release|x86
+		{4FA8347C-5B92-4DF4-A50E-27B8C5211059}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 EndGlobal

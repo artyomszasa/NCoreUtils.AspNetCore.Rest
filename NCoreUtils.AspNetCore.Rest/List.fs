@@ -3,7 +3,6 @@ namespace NCoreUtils.AspNetCore.Rest
 open System
 open System.Collections.Concurrent
 open Microsoft.AspNetCore.Http
-open Microsoft.Extensions.DependencyInjection
 open NCoreUtils
 open NCoreUtils.AspNetCore
 open System.Runtime.CompilerServices
