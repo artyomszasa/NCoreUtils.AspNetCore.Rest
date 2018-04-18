@@ -19,7 +19,7 @@ type DefaultRestCreate<'a, 'id when 'a :> IHasId<'id> and 'id : equality> (repos
           | true ->
             debugf logger "Entity of type %s with key = %A already exists (data-create)." typeof<'a>.FullName data.Id
             ConflictException "Entity already exists." |> raise
-          | _ -> BadRequestException "New entities must not include id." |> raise
+          | _ -> () // BadRequestException "New entities must not include id." |> raise
       // persist entity
       let! item = repository.AsyncPersist data
       debugf logger "Entity of type %s has been created with key = %A (data-create)." typeof<'a>.FullName item.Id
