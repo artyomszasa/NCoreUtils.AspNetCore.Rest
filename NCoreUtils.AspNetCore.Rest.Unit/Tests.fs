@@ -1,61 +1,53 @@
 module NCoreUtils.AspNetCore.Rest.DefaultImplementationTests
 
 open System
-open Xunit
-open Moq
-open Microsoft.AspNetCore.Http
-open NCoreUtils
 open System.Collections.Immutable
-open System.IO
-open Microsoft.Extensions.Primitives
-open System.Text
-open Newtonsoft.Json
-open NCoreUtils.Data
 open System.Linq
-open NCoreUtils.Linq
-open System.Threading.Tasks
+open System.IO
+open System.Text
 open System.Threading
+open System.Threading.Tasks
+open Microsoft.AspNetCore.Http
+open Microsoft.Extensions.Primitives
+open Moq
+open NCoreUtils
+open NCoreUtils.Data
+open Newtonsoft.Json
+open Xunit
+
+// *********************************************************
+// IAsyncQueryProvider/AsyncQueryAdapter for test repository
 
 type EnumerableAsyncQueryProvider () =
-  // static let (|QVal|) (expr : Expression) =
-  //   match expr with
-  //   | ConstantExpression cexpr ->
-  //     match xep
-
-  interface IAsyncQueryProvider with
+  interface NCoreUtils.Linq.IAsyncQueryProvider with
 
     member __.ExecuteAsync<'a> expression =
       let mutable q = Unchecked.defaultof<_>
       if not (expression.TryExtractQueryable (&q)) then
         invalidOp "Should never happen"
-      // let pty = q.Provider.GetType ()
-      // match pty.IsConstructedGenericType && pty.GetGenericTypeDefinition () = typedefof<IQ>
-      // invalidOpf "%A" pty
       q.Provider.Execute<seq<'a>>(expression).ToAsyncEnumerable ()
 
     member __.ExecuteAsync<'a> (expression, _cancellationToken) =
       let mutable q = Unchecked.defaultof<_>
       if not (expression.TryExtractQueryable (&q)) then
         invalidOp "Should never happen"
-      // let pty = q.Provider.GetType ()
-      // // match pty.IsConstructedGenericType && pty.GetGenericTypeDefinition () = typedefof<IQ>
-      // invalidOpf "%A" pty
       q.Provider.Execute<'a> expression |> Task.FromResult
 
 type EnumerableQueryAdapter () =
-  interface IAsyncQueryAdapter with
+  interface NCoreUtils.Linq.IAsyncQueryAdapter with
     member __.GetAdapterAsync (next, provider, _cancellationToken) =
       let pty = provider.GetType ()
       match pty.IsConstructedGenericType && pty.GetGenericTypeDefinition () = typedefof<System.Linq.EnumerableQuery<_>> with
-      | true -> EnumerableAsyncQueryProvider () |> Task.FromResult<IAsyncQueryProvider>
+      | true -> EnumerableAsyncQueryProvider () |> Task.FromResult<NCoreUtils.Linq.IAsyncQueryProvider>
       | _    -> next.Invoke ()
 
-do AsyncQueryAdapters.Add <| EnumerableQueryAdapter ()
+do NCoreUtils.Linq.AsyncQueryAdapters.Add <| EnumerableQueryAdapter ()
 
-type XObject = {
-    mutable Id : int }
-    with
-      interface IHasId<int> with member this.Id = this.Id
+// *********************************************************
+// Test object
+type XObject = { [<field:JsonIgnore>] mutable Id : int } with interface IHasId<int> with member this.Id = this.Id
+
+// *********************************************************
 
 let private restConfiguration =
   { PathPrefix = []

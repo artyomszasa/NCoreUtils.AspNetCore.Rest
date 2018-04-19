@@ -6,6 +6,7 @@ open NCoreUtils.AspNetCore
 open NCoreUtils.AspNetCore.Rest
 open NCoreUtils.Logging
 
+[<RequireQualifiedAccess>]
 module RestMiddleware =
 
   let rec private stripPrefix (prefix : CaseInsensitive list) path =
@@ -25,6 +26,13 @@ module RestMiddleware =
       | true -> Some <| List.ofSeq values
       | _    -> None
 
+  /// <summary>
+  /// Executes REST processing pipeline.
+  /// </summary>
+  /// <param name="configuration">REST pipeline configuration.</param>
+  /// <param name="HttpContext">Current HttpContext.</param>
+  /// <param name="asyncNext">A function that handles the request or calls the given next function.</param>
+  [<CompiledName("Run")>]
   let run (configuration : RestConfiguration) httpContext asyncNext =
     match stripPrefix configuration.PathPrefix <| HttpContext.path httpContext with
     | None -> asyncNext

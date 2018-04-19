@@ -2,7 +2,6 @@ namespace NCoreUtils.AspNetCore.Rest
 
 open System
 open System.Reflection
-open System.Runtime.CompilerServices
 
 [<AutoOpen>]
 module private DefaultDefaultOrderPropertyHelpers =
@@ -13,23 +12,27 @@ module private DefaultDefaultOrderPropertyHelpers =
 
   let inline eqname value propertyInfo = name propertyInfo |> eq value
 
+  let inline (|HasNamedProperty|_|) name (properties : PropertyInfo[]) =
+    properties |> Array.tryFind (eqname name)
+
 
 /// Provides default implementation for retrieving default ordering property.
 type DefaultDefaultOrderProperty () =
-
-  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  member __.Select<'a> () =
-      let properties = typeof<'a>.GetProperties(BindingFlags.Instance ||| BindingFlags.Public);
-      match properties |> Array.tryFind (eqname "Updated") with
-      | Some p -> struct (p, true)
-      | _ ->
-      match properties |> Array.tryFind (eqname "Created") with
-      | Some p -> struct (p, true)
-      | _ ->
-      match properties |> Array.tryFind (eqname "Id") with
-      | Some p -> struct (p, false)
-      | _      -> struct (properties |> Array.head, false)
-
+  abstract Select<'a> : unit -> OrderByProperty
+  /// <summary>
+  /// Default implementation for retrieving default ordering property. Probes properties in following order: Updated,
+  /// Created, Id, first defined property.
+  /// </summary>
+  /// <typeparam name="a">Type of the object ot return default ordering property for.</typeparam>
+  /// <returns>
+  /// Tuple containing default ordering property and whether default ordering direction is descending.
+  /// </returns>
+  default __.Select<'a> () =
+      match typeof<'a>.GetProperties(BindingFlags.Instance ||| BindingFlags.Public) with
+      | HasNamedProperty "Updated" p -> { Property = p; IsDescending = true }
+      | HasNamedProperty "Created" p -> { Property = p; IsDescending = true }
+      | HasNamedProperty "Id"      p -> { Property = p; IsDescending = false }
+      | properties                   -> { Property = properties |> Array.head; IsDescending = false }
 
   interface IDefaultOrderProperty with
     member this.Select<'a> () = this.Select<'a> ()

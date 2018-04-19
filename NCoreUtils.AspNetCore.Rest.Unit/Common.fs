@@ -1,13 +1,13 @@
 namespace NCoreUtils.AspNetCore.Rest
 
 open System
-open Moq
-open Microsoft.AspNetCore.Http
 open System.IO
-open Microsoft.Extensions.Primitives
-open System.Security.Claims
-open Microsoft.Extensions.Logging
 open System.Reflection
+open System.Security.Claims
+open Microsoft.AspNetCore.Http
+open Microsoft.Extensions.Primitives
+open Microsoft.Extensions.Logging
+open Moq
 open NCoreUtils
 
 // type ServiceMocker (mock : Mock<IServiceProvider>) =

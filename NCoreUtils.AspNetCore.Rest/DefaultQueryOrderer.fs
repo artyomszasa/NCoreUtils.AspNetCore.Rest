@@ -8,7 +8,7 @@ open System.Reflection
 open NCoreUtils
 open System.Runtime.CompilerServices
 
-module OrderByApplier =
+module internal OrderByApplier =
 
   type private IApplier =
     abstract OrderBy : IQueryable * LambdaExpression * isDescending:bool -> IOrderedQueryable
@@ -18,7 +18,7 @@ module OrderByApplier =
 
   let private memberCache = ConcurrentDictionary<struct (Type * string), PropertyInfo> ()
 
-  let private defaultPropertyCache = ConcurrentDictionary<Type, struct (PropertyInfo * bool)> ()
+  let private defaultPropertyCache = ConcurrentDictionary<Type, OrderByProperty> ()
 
   type private Applier<'a, 'key> () =
     interface IApplier with
@@ -100,7 +100,7 @@ module OrderByApplier =
   [<RequiresExplicitTypeArguments>]
   [<CompiledName("OrderByDefaultMember")>]
   let orderByDefaultMember<'a> (serviceProvider : IServiceProvider) source =
-    let struct (propertyInfo, isDescending) =
+    let { Property = propertyInfo; IsDescending = isDescending } =
       defaultPropertyCache.GetOrAdd (
         typeof<'a>,
         fun (_ : Type) ->
@@ -112,25 +112,46 @@ module OrderByApplier =
       )
     orderBy<'a> (propertyInfo.CreateSelector ()) isDescending source
 
-
-type DefaultQueryOrderer<'a> (serviceProvider : IServiceProvider) =
-  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  static let getResult (choice : Choice<IQueryable<'a>, IOrderedQueryable<'a>>) =
+[<AutoOpen>]
+module private DefaultQueryOrdererHelpers =
+  let inline getResult (choice : Choice<IQueryable<'a>, IOrderedQueryable<'a>>) =
     match choice with
     | Choice2Of2 result -> result
     | _                 -> invalidOp "should never happen"
+
+/// Provides default query ordering.
+type DefaultQueryOrderer<'a> =
+  val private serviceProvider : IServiceProvider
+
+  /// <summary>
+  /// Initializes new instance from the specified parameters.
+  /// </summary>
+  /// <param name="serviceProvider">Service provider.</param>
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  new (serviceProvider) = { serviceProvider = serviceProvider }
+
+  abstract OrderQuery : queryable:IQueryable<'a> * restQuery:RestQuery -> IOrderedQueryable<'a>
+
+  /// <summary>
+  /// Orders generic queryable using provided REST query.
+  /// </summary>
+  /// <typeparam name="a">Element type of the queryable.</typeparam>
+  /// <param name="queryable">Source queryable.</param>
+  /// <param name="restQuery">REST query to apply.</param>
+  /// <returns>Ordered queryable.</returns>
+  default this.OrderQuery (queryable : IQueryable<'a>, restQuery : RestQuery) =
+    match restQuery.SortBy.Length with
+    | 0 -> OrderByApplier.orderByDefaultMember<'a> this.serviceProvider queryable
+    | _ ->
+      Seq.zip restQuery.SortBy restQuery.SortByDirection
+      |> Seq.fold
+        (fun q (by, dir) ->
+          match q with
+          | Choice1Of2 queryable -> Choice2Of2 <| OrderByApplier.orderByMember<'a> by (dir = RestSortByDirection.Desc) queryable
+          | Choice2Of2 queryable -> Choice2Of2 <| OrderByApplier.thenByMember<'a>  by (dir = RestSortByDirection.Desc) queryable
+        )
+        (Choice1Of2 queryable)
+      |> getResult
   interface IRestQueryOrderer<'a> with
-    member __.OrderQuery (queryable : IQueryable<'a>, restQuery : RestQuery) =
-      match restQuery.SortBy.Length with
-      | 0 -> OrderByApplier.orderByDefaultMember<'a> serviceProvider queryable
-      | _ ->
-        Seq.zip restQuery.SortBy restQuery.SortByDirection
-        |> Seq.fold
-          (fun q (by, dir) ->
-            match q with
-            | Choice1Of2 queryable -> Choice2Of2 <| OrderByApplier.orderByMember<'a> by (dir = RestSortByDirection.Desc) queryable
-            | Choice2Of2 queryable -> Choice2Of2 <| OrderByApplier.thenByMember<'a>  by (dir = RestSortByDirection.Desc) queryable
-          )
-          (Choice1Of2 queryable)
-        |> getResult
+    member this.OrderQuery (queryable, restQuery) = this.OrderQuery (queryable, restQuery)
 

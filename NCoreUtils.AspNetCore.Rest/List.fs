@@ -10,9 +10,12 @@ open System.Runtime.CompilerServices
 // **************************************************************************
 // LIST COLLECTION
 
+/// Bound parameters for REST LIST method.
 type ListParameters = {
+  /// Type of the entity being queried.
   [<ParameterBinder(typeof<ManagedTypeBinder>)>]
   EntityType : Type
+  /// Quering options from the request.
   [<ParameterName("")>]
   RestQuery  : RestQuery }
 

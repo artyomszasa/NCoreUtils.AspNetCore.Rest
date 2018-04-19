@@ -6,16 +6,29 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.DependencyInjection.Extensions
 open NCoreUtils.AspNetCore.Rest
 
+/// Contains extensions for adding REST reslated services to the container.
 [<Sealed; AbstractClass>]
 [<Extension>]
 type RestServiceCollectionExtensions =
 
+  /// <summary>
+  /// Configures container based REST configuration.
+  /// <summary>
+  /// <param name="this">Service container.</param>
+  /// <param name="configure">REST configuration function.</param>
+  /// <returns>Service container reference for chaining.</returns>
   [<Extension>]
   static member ConfigureRest (this : IServiceCollection, configure : Action<Rest.RestConfigurationBuilder>) =
     let builder = Rest.RestConfigurationBuilder ()
     configure.Invoke builder
+    this.TryAddScoped<CurrentRestTypeName> ()
     builder.Build () |> this.AddSingleton
 
+  /// <summary>
+  /// Registers default REST implementation as services.
+  /// <summary>
+  /// <param name="this">Service container.</param>
+  /// <returns>Service container reference for chaining.</returns>
   [<Extension>]
   static member AddDefaultRestServices (this : IServiceCollection) =
     this.TryAddScoped (typedefof<IDeserializer<_>>, typedefof<DefaultDeserializer<_>>)
