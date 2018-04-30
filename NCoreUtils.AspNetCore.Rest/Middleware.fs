@@ -30,7 +30,7 @@ module RestMiddleware =
   /// Executes REST processing pipeline.
   /// </summary>
   /// <param name="configuration">REST pipeline configuration.</param>
-  /// <param name="HttpContext">Current HttpContext.</param>
+  /// <param name="httpContext">Current HttpContext.</param>
   /// <param name="asyncNext">A function that handles the request or calls the given next function.</param>
   [<CompiledName("Run")>]
   let run (configuration : RestConfiguration) httpContext asyncNext =
@@ -54,3 +54,14 @@ module RestMiddleware =
         | [ _     ], _                     -> MethodNotAllowedException () |> raise
         | _                                -> asyncNext
       | _ -> asyncNext
+
+  /// <summary>
+  /// Executes REST processing pipeline.
+  /// </summary>
+  /// <param name="configuration">REST pipeline configuration.</param>
+  /// <param name="httpContext">Current HttpContext.</param>
+  /// <param name="next">A function that handles the request or calls the given next function.</param>
+  [<CompiledName("Run")>]
+  let runAsTask configuration httpContext (next : System.Func<System.Threading.Tasks.Task>) =
+    let asyncNext = Async.Adapt (fun _ -> next.Invoke ())
+    Async.StartAsTask (run configuration httpContext asyncNext) :> System.Threading.Tasks.Task
