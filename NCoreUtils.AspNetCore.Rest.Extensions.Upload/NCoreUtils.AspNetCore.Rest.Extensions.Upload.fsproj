@@ -4,13 +4,13 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <Version>1.0.11</Version>
     <!-- NuGet -->
-    <PackageId>NCoreUtils.AspNetCore.Rest.Abstraction</PackageId>
+    <PackageId>NCoreUtils.AspNetCore.Rest.Extensions.Upload</PackageId>
     <Title>$(PackageId)</Title>
     <Authors>Artyom Antyipin</Authors>
-    <Description>Rest implementation abstractions for ASP.NET Core.</Description>
+    <Description>Rest data upload extension for ASP.NET Core.</Description>
     <Copyright>Artyom Antyipin</Copyright>
     <RepositoryUrl>https://github.com/artyomszasa/NCoreUtils.AspNetCore.Rest.git</RepositoryUrl>
-    <PackageReleaseNotes>Refectored transactional REST methods.</PackageReleaseNotes>
+    <!-- <PackageReleaseNotes></PackageReleaseNotes> -->
     <!-- Assembly Info -->
     <Product>NCoreUtils</Product>
     <AssemblyName>$(PackageId)</AssemblyName>
@@ -18,23 +18,23 @@
     <!-- Compilation -->
     <OutputType>Library</OutputType>
     <DebugType>portable</DebugType>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!--<GenerateDocumentationFile>true</GenerateDocumentationFile>-->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="ImmutableArrayBinder.fs" />
-    <Compile Include="RestQuery.fs" />
-    <Compile Include="Output.fs" />
-    <Compile Include="AccessValidator.fs" />
     <Compile Include="Contract.fs" />
+    <Compile Include="Deserializer.fs" />
+    <Compile Include="Emitter.fs" />
+    <Compile Include="ServiceCollectionRestUploadExtensions.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.Data.Abstractions" Version="1.1.4" />
-    <PackageReference Include="NCoreUtils.FSharp" Version="1.0.2" />
-    <PackageReference Include="NCoreUtils.FSharp.DependencyInjection" Version="1.0.2" />
-    <PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
+    <ProjectReference Include="..\NCoreUtils.AspNetCore.Rest\NCoreUtils.AspNetCore.Rest.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
   </ItemGroup>
 
 </Project>
