@@ -9,6 +9,7 @@ open NCoreUtils
 open NCoreUtils.AspNetCore
 open NCoreUtils.Logging
 open Newtonsoft.Json
+open Newtonsoft.Json.Serialization
 
 [<AutoOpen>]
 module private DefaultDeserializerHelpers =
@@ -56,7 +57,10 @@ type DefaultDeserializer<'a> =
       | EQI "text/json" ->
         try
           let encoding = contentType.Encoding |?? utf8
-          let serializer = new JsonSerializer ()
+          let settings =
+            tryGetService<JsonSerializerSettings> this.httpContextAccessor.HttpContext.RequestServices
+            |> Option.defaultWith (fun () -> JsonSerializerSettings (ContractResolver = CamelCasePropertyNamesContractResolver ()))
+          let serializer = JsonSerializer.Create settings
           use reader = new StreamReader (stream, encoding, true, 8192, true)
           use jsonReader = new JsonTextReader (reader)
           let data = serializer.Deserialize<'a> jsonReader

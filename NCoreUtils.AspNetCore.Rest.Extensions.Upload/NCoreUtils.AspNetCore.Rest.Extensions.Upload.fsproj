@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>1.0.11</Version>
+    <Version>1.1.1</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.AspNetCore.Rest.Extensions.Upload</PackageId>
     <Title>$(PackageId)</Title>
@@ -10,7 +10,7 @@
     <Description>Rest data upload extension for ASP.NET Core.</Description>
     <Copyright>Artyom Antyipin</Copyright>
     <RepositoryUrl>https://github.com/artyomszasa/NCoreUtils.AspNetCore.Rest.git</RepositoryUrl>
-    <!-- <PackageReleaseNotes></PackageReleaseNotes> -->
+    <PackageReleaseNotes>NuGet dependencies version bump.</PackageReleaseNotes>
     <!-- Assembly Info -->
     <Product>NCoreUtils</Product>
     <AssemblyName>$(PackageId)</AssemblyName>
