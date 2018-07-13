@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.AspNetCore.Rest</PackageId>
     <Title>$(PackageId)</Title>
@@ -56,11 +56,11 @@
     <ProjectReference Include="..\NCoreUtils.AspNetCore.Rest.Abstractions\NCoreUtils.AspNetCore.Rest.Abstractions.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.1.1" />
     <PackageReference Include="NCoreUtils.Data.Protocol.Abstractions" Version="1.1.0" />
-    <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="1.1.1" />
-    <PackageReference Include="NCoreUtils.FSharp.Data" Version="1.1.1" />
-    <PackageReference Include="NCoreUtils.FSharp.Linq" Version="1.1.1" />
-    <PackageReference Include="NCoreUtils.FSharp.Logging" Version="1.1.1" />
+    <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="1.1.3" />
+    <PackageReference Include="NCoreUtils.FSharp.Data" Version="1.1.3" />
+    <PackageReference Include="NCoreUtils.FSharp.Linq" Version="1.1.3" />
+    <PackageReference Include="NCoreUtils.FSharp.Logging" Version="1.1.3" />
   </ItemGroup>
 </Project>
