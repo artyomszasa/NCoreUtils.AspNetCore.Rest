@@ -480,7 +480,7 @@ type RestAccessConfigurationBuilderExtensions =
   static member ConfigureItem (this : RestAccessConfigurationBuilder, validate : FS2) = RestAccessConfigurationBuilderExtensions.OfTask validate |> this.ConfigureItem
 
   [<RequiresExplicitTypeArguments>]
-  static member private CreateAccessValidator<'validation when 'validation :> IAccessValidation> () =
+  static member internal CreateAccessValidator<'validation when 'validation :> IAccessValidation> () =
     { new IAccessValidator with
         member __.AsyncValidate (serviceProvider, principal) = async {
           let struct (validation, shouldDispose) =
@@ -495,7 +495,7 @@ type RestAccessConfigurationBuilderExtensions =
     }
 
   [<RequiresExplicitTypeArguments>]
-  static member private CreateEntityAccessValidator<'validation when 'validation :> IEntityAccessValidation> () =
+  static member internal CreateEntityAccessValidator<'validation when 'validation :> IEntityAccessValidation> () =
     { new IEntityAccessValidator with
         member __.AsyncValidate (serviceProvider, principal) = async {
           let struct (validation, shouldDispose) =
@@ -520,7 +520,7 @@ type RestAccessConfigurationBuilderExtensions =
     }
 
   [<RequiresExplicitTypeArguments>]
-  static member private CreateQueryAccessValidator<'validation when 'validation :> IQueryAccessValidation> () =
+  static member internal CreateQueryAccessValidator<'validation when 'validation :> IQueryAccessValidation> () =
     { new IQueryAccessValidator with
         member __.AsyncValidate (serviceProvider, principal) = async {
           let struct (validation, shouldDispose) =
@@ -569,7 +569,7 @@ type RestAccessConfigurationBuilderExtensions =
     let validator =
       match typeof<IEntityAccessValidation>.IsAssignableFrom typeof<'validation> with
       | true ->
-        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateEntityAccessValidator", BindingFlags.Public ||| BindingFlags.Static)
+        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateEntityAccessValidator", BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Static)
         let m = g.MakeGenericMethod [| typeof<'validation> |]
         m.Invoke (null, [| |]) :?> IAccessValidator
       | _    -> RestAccessConfigurationBuilderExtensions.CreateAccessValidator<'validation> ()
@@ -587,7 +587,7 @@ type RestAccessConfigurationBuilderExtensions =
     let validator =
       match typeof<IEntityAccessValidation>.IsAssignableFrom typeof<'validation> with
       | true ->
-        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateEntityAccessValidator", BindingFlags.Public ||| BindingFlags.Static)
+        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateEntityAccessValidator", BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Static)
         let m = g.MakeGenericMethod [| typeof<'validation> |]
         m.Invoke (null, [| |]) :?> IAccessValidator
       | _    -> RestAccessConfigurationBuilderExtensions.CreateAccessValidator<'validation> ()
@@ -605,7 +605,7 @@ type RestAccessConfigurationBuilderExtensions =
     let validator =
       match typeof<IEntityAccessValidation>.IsAssignableFrom typeof<'validation> with
       | true ->
-        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateEntityAccessValidator", BindingFlags.Public ||| BindingFlags.Static)
+        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateEntityAccessValidator", BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Static)
         let m = g.MakeGenericMethod [| typeof<'validation> |]
         m.Invoke (null, [| |]) :?> IAccessValidator
       | _    -> RestAccessConfigurationBuilderExtensions.CreateAccessValidator<'validation> ()
@@ -623,7 +623,7 @@ type RestAccessConfigurationBuilderExtensions =
     let validator =
       match typeof<IEntityAccessValidation>.IsAssignableFrom typeof<'validation> with
       | true ->
-        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateEntityAccessValidator", BindingFlags.Public ||| BindingFlags.Static)
+        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateEntityAccessValidator", BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Static)
         let m = g.MakeGenericMethod [| typeof<'validation> |]
         m.Invoke (null, [| |]) :?> IAccessValidator
       | _    -> RestAccessConfigurationBuilderExtensions.CreateAccessValidator<'validation> ()
@@ -641,7 +641,7 @@ type RestAccessConfigurationBuilderExtensions =
     let validator =
       match typeof<IQueryAccessValidation>.IsAssignableFrom typeof<'validation> with
       | true ->
-        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateQueryAccessValidator", BindingFlags.Public ||| BindingFlags.Static)
+        let g = typeof<RestAccessConfigurationBuilderExtensions>.GetMethod ("CreateQueryAccessValidator", BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.Static)
         let m = g.MakeGenericMethod [| typeof<'validation> |]
         m.Invoke (null, [| |]) :?> IAccessValidator
       | _    -> RestAccessConfigurationBuilderExtensions.CreateAccessValidator<'validation> ()
