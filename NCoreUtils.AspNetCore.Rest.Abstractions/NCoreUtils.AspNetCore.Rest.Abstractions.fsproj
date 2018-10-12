@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.AspNetCore.Rest.Abstraction</PackageId>
     <Title>$(PackageId)</Title>
@@ -32,8 +32,8 @@
 
   <ItemGroup>
     <PackageReference Include="NCoreUtils.Data.Abstractions" Version="1.2.2" />
-    <PackageReference Include="NCoreUtils.FSharp" Version="2.0.0" />
-    <PackageReference Include="NCoreUtils.FSharp.DependencyInjection" Version="2.0.0" />
+    <PackageReference Include="NCoreUtils.FSharp" Version="2.0.2" />
+    <PackageReference Include="NCoreUtils.FSharp.DependencyInjection" Version="2.0.2" />
     <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
   </ItemGroup>
 

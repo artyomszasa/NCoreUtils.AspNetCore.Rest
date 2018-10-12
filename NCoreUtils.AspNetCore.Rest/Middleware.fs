@@ -11,12 +11,12 @@ module RestMiddleware =
 
   let rec private stripPrefix (prefix : CaseInsensitive list) path =
     match prefix, path with
-    | [], _ -> Some path
-    | _, [] -> None
+    | [], _ -> ValueSome path
+    | _, [] -> ValueNone
     | x :: prefix', y :: path' ->
     match x = y with
     | true -> stripPrefix prefix' path'
-    | _    -> None
+    | _    -> ValueNone
 
   let private mkHeaderParameterSource httpContext : ParameterSource =
     let headers = HttpContext.requestHeaders httpContext
@@ -35,8 +35,8 @@ module RestMiddleware =
   [<CompiledName("Run")>]
   let run (configuration : RestConfiguration) httpContext asyncNext =
     match stripPrefix configuration.PathPrefix <| HttpContext.path httpContext with
-    | None -> asyncNext
-    | Some path ->
+    | ValueNone -> asyncNext
+    | ValueSome path ->
       let logger = (getRequiredService<ILoggerFactory> httpContext.RequestServices).CreateLogger "NCoreUtils.AspNetCore.RestMiddleware"
       debugf logger "Probing path [%s]" (path |> Seq.map (fun ci -> ci.Value) |> String.concat ",")
       match path with

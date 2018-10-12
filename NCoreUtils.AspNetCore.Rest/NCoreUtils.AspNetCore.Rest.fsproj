@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.AspNetCore.Rest</PackageId>
     <Title>$(PackageId)</Title>
@@ -58,9 +58,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.1.1" />
     <PackageReference Include="NCoreUtils.Data.Protocol.Abstractions" Version="2.0.0" />
-    <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="2.0.0" />
-    <PackageReference Include="NCoreUtils.FSharp.Data" Version="2.0.0" />
-    <PackageReference Include="NCoreUtils.FSharp.Linq" Version="2.0.0" />
-    <PackageReference Include="NCoreUtils.FSharp.Logging" Version="2.0.0" />
+    <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="2.0.2" />
+    <PackageReference Include="NCoreUtils.FSharp.Data" Version="2.0.2" />
+    <PackageReference Include="NCoreUtils.FSharp.Linq" Version="2.0.2" />
+    <PackageReference Include="NCoreUtils.FSharp.Logging" Version="2.0.2" />
   </ItemGroup>
 </Project>
