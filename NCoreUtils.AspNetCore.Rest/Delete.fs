@@ -26,7 +26,8 @@ module internal DeleteInvoker =
     (id : 'id)
     (httpContext : HttpContext)
     { ServiceProvider   = serviceProvider
-      RestConfiguration = { AccessConfiguration = access } }
+      RestConfiguration = { AccessConfiguration = access }
+      RestMethodInvoker = restMethodInvoker }
     (_ : DeleteParameters) = async {
       // --------------------------------
       // validate if method is accessible
@@ -39,10 +40,17 @@ module internal DeleteInvoker =
         tryGetService<IRestDelete<'a, 'id>> serviceProvider
         |> Option.orElseWith  (fun () -> tryGetService<IRestDelete> serviceProvider >>| Adapt.For<'a, 'id>)
         |> Option.defaultWith (fun () -> diActivate<DefaultRestDelete<'a, 'id>> serviceProvider :> _)
-      // invoke method within transaction
-      use! tx = instance.AsyncBeginTransaction ()
-      do! instance.AsyncInvoke id
-      tx.Commit ()
+      // invoke method using invoker
+      do!
+        let boxed =
+          match instance with
+          | :? IBoxedInvoke<'id, unit> as boxed -> boxed
+          | _  -> { new IBoxedInvoke<'id, unit> with
+                      member __.Instance = box instance
+                      member __.AsyncInvoke arg = instance.AsyncInvoke arg
+                  }
+        RestMethodInvocation<'a, 'id, unit> (boxed, id)
+        |> restMethodInvoker.AsyncInvoke
       // send response
       HttpContext.setResponseStatusCode 204 httpContext }
 

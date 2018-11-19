@@ -7,6 +7,7 @@ open Microsoft.AspNetCore.Http
 open NCoreUtils
 open NCoreUtils.AspNetCore
 open NCoreUtils.Data
+open Common
 
 // **************************************************************************
 // CREATE
@@ -26,7 +27,8 @@ module internal CreateInvoker =
     (httpContext : HttpContext)
     { ServiceProvider   = serviceProvider
       CurrentTypeName   = { Value = typeName }
-      RestConfiguration = { AccessConfiguration = access; PathPrefix = pathPrefix } }
+      RestConfiguration = { AccessConfiguration = access; PathPrefix = pathPrefix }
+      RestMethodInvoker = restMethodInvoker }
     (_ : CreateParameters) = async {
       // --------------------------------
       // validate if method is accessible
@@ -53,12 +55,17 @@ module internal CreateInvoker =
         let! hasEntityAccess = entityAccessValidator.AsyncValidate (data, serviceProvider, httpContext.User)
         do if not hasEntityAccess then ForbiddenException () |> raise
       | _ -> ()
-      // invoke method within transaction
-      let! item = async {
-        use! tx = instance.AsyncBeginTransaction ()
-        let! item = instance.AsyncInvoke data
-        tx.Commit ()
-        return item }
+      // invoke method using invoker
+      let! item =
+        let boxed =
+          match instance with
+          | :? IBoxedInvoke<'a, 'a> as boxed -> boxed
+          | _  -> { new IBoxedInvoke<'a, 'a> with
+                      member __.Instance = box instance
+                      member __.AsyncInvoke arg = instance.AsyncInvoke arg
+                  }
+        RestMethodInvocation<'a, 'a, 'a> (boxed, data)
+        |> restMethodInvoker.AsyncInvoke
       // send response
       let request = HttpContext.request httpContext
       let struct (host, port) =

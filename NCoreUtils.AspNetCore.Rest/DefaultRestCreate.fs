@@ -54,3 +54,6 @@ type DefaultRestCreate<'a, 'id when 'a :> IHasId<'id> and 'id : equality> =
     return item }
   interface IRestCreate<'a, 'id> with
     member this.AsyncInvoke data = this.AsyncInvoke data
+  interface IBoxedInvoke<'a, 'a> with
+    member this.Instance = box this
+    member this.AsyncInvoke data = this.AsyncInvoke data

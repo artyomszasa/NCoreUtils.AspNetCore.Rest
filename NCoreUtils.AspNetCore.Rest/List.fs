@@ -27,7 +27,8 @@ module internal ListInvoker =
   let private list<'a>
     (httpContext : HttpContext)
     { ServiceProvider   = serviceProvider
-      RestConfiguration = { AccessConfiguration = access } }
+      RestConfiguration = { AccessConfiguration = access }
+      RestMethodInvoker = restMethodInvoker }
     (parameters : ListParameters) = async {
       // --------------------------------
       // validate if method is accessible
@@ -46,7 +47,16 @@ module internal ListInvoker =
         | :? IQueryAccessValidator as accessValidator -> fun queryable -> accessValidator.AsyncFilterQuery (queryable, serviceProvider, httpContext.User)
         | _                                           -> async.Return
       // invoke method
-      let! (struct (items, total)) = instance.AsyncInvoke (parameters.RestQuery, accessValidator)
+      let! (struct (items, total)) =
+        let boxed =
+          match instance with
+          | :? IBoxedInvoke<RestQuery, Linq.IQueryable -> Async<Linq.IQueryable>, struct ('a[] * int)> as boxed -> boxed
+          | _  -> { new IBoxedInvoke<_, _, struct ('a[] * int)> with
+                      member __.Instance = box instance
+                      member __.AsyncInvoke (arg1, arg2) = instance.AsyncInvoke (arg1, arg2)
+                  }
+        RestMethodInvocation<'a, _, _, _> (boxed, parameters.RestQuery, accessValidator)
+        |> restMethodInvoker.AsyncInvoke
       // set total header
       setResponseHeader "X-Total-Count" (total.ToString ()) httpContext
       // initialize configured serializer

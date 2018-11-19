@@ -4,11 +4,13 @@ open System.Linq
 open System.IO
 open System.Reflection
 open System.Runtime.CompilerServices
+open System.Runtime.InteropServices
 open System.Threading
 open System.Threading.Tasks
 open NCoreUtils
 open NCoreUtils.Data
 open System
+open System.Collections.Generic
 
 /// Represents property based ordering description.
 [<Struct>]
@@ -18,6 +20,25 @@ type OrderByProperty = {
   Property     : PropertyInfo
   /// Gets whether ordering direction is descending.
   IsDescending : bool }
+
+[<AbstractClass>]
+type RestMethodInvocation =
+  new () = { }
+  abstract ItemType   : Type
+  abstract Instance   : obj
+  abstract Arguments  : IReadOnlyList<obj>
+  abstract ReturnType : Type
+
+[<AbstractClass>]
+type RestMethodInvocation<'TResult> =
+  inherit RestMethodInvocation
+  new () = { inherit RestMethodInvocation () }
+  default __.ReturnType = typeof<Async<'TResult>>
+  abstract AsyncInvoke : unit -> Async<'TResult>
+
+[<Interface>]
+type IRestMethodInvoker =
+  abstract AsyncInvoke<'TResult> : target:RestMethodInvocation<'TResult> -> Async<'TResult>
 
 /// Defines functionality for filtering generic queryable based on REST query.
 [<Interface>]
@@ -333,6 +354,17 @@ type IRestListCollection<'a> =
 // **************************************************************************
 // C# interop
 
+[<AbstractClass>]
+type AsyncRestMethodInvoker () =
+  abstract InvokeAsync<'TResult>
+    :  RestMethodInvocation<'TResult>
+    *  [<Optional>] cancellationToken:CancellationToken
+    -> Task<'TResult>
+  member inline internal this.InvokeDirect<'TResult> (target, cancellationToken) = this.InvokeAsync<'TResult> (target, cancellationToken)
+  interface IRestMethodInvoker with
+    member this.AsyncInvoke target = Async.Adapt (fun cancellationToken -> this.InvokeAsync (target, cancellationToken))
+
+
 /// <summary>
 /// Represents generic object serializer.
 /// </summary>
@@ -624,6 +656,18 @@ type RestContractExtensions =
     { new IRestListCollection<'a> with
         member __.AsyncInvoke (restQuery, accessValidator) = this.AsyncInvoke (restQuery, accessValidator)
     }
+
+  [<Extension>]
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  static member InvokeAsync (this : RestMethodInvocation<_>, [<Optional>] cancellationToken) =
+    Async.StartAsTask (this.AsyncInvoke (), cancellationToken = cancellationToken)
+
+  [<Extension>]
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  static member InvokeAsync (this : IRestMethodInvoker, target : RestMethodInvocation<_>, [<Optional>] cancellationToken) =
+    match this with
+    | :? AsyncRestMethodInvoker as inst -> inst.InvokeDirect (target, cancellationToken)
+    | _                                 -> Async.StartAsTask (this.AsyncInvoke target, cancellationToken = cancellationToken)
 
   /// <summary>
   /// Serializes object of the predefined type to configurable output.

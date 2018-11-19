@@ -21,6 +21,7 @@ type RestServiceCollectionExtensions =
   static member ConfigureRest (this : IServiceCollection, configure : Action<Rest.RestConfigurationBuilder>) =
     let builder = Rest.RestConfigurationBuilder ()
     configure.Invoke builder
+    this.TryAddSingleton<IRestMethodInvoker, DefaultRestMethodInvoker> ()
     this.TryAddScoped<CurrentRestTypeName> ()
     builder.Build () |> this.AddSingleton
 

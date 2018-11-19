@@ -75,3 +75,6 @@ type DefaultRestListCollection<'a>  =
 
   interface IRestListCollection<'a> with
     member this.AsyncInvoke (restQuery, accessValidator) = this.AsyncInvoke (restQuery, accessValidator)
+  interface IBoxedInvoke<RestQuery, Linq.IQueryable -> Async<Linq.IQueryable>, struct ('a[] * int)> with
+    member this.Instance = box this
+    member this.AsyncInvoke (restQuery, accessValidator) = this.AsyncInvoke (restQuery, accessValidator)

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.0.2</Version>
+    <Version>2.0.3-alpha1</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.AspNetCore.Rest</PackageId>
     <Title>$(PackageId)</Title>
@@ -10,7 +10,7 @@
     <Description>Rest implementation for ASP.NET Core.</Description>
     <Copyright>Artyom Antyipin</Copyright>
     <RepositoryUrl>https://github.com/artyomszasa/NCoreUtils.AspNetCore.Rest.git</RepositoryUrl>
-    <PackageReleaseNotes>Fixed null reference exception in configuration extensions.</PackageReleaseNotes>
+    <PackageReleaseNotes>Add overridable rest method invoker logic.</PackageReleaseNotes>
     <!-- Assembly Info -->
     <Product>NCoreUtils</Product>
     <AssemblyName>$(PackageId)</AssemblyName>
@@ -20,6 +20,7 @@
     <DebugType>portable</DebugType>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!--<TreatWarningsAsErrors>true</TreatWarningsAsErrors>-->
+    <NoWarn>FS2003</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

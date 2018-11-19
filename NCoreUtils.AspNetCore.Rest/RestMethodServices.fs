@@ -10,4 +10,6 @@ type RestMethodServices = {
   /// Holds unresolved type name of the entity being accessed.
   CurrentTypeName   : CurrentRestTypeName
   /// REST configuration.
-  RestConfiguration : RestConfiguration }
+  RestConfiguration : RestConfiguration
+  /// Overridable method invoker.
+  RestMethodInvoker : IRestMethodInvoker }

@@ -24,7 +24,8 @@ module internal UpdateInvoker =
     (id : 'id)
     (httpContext : HttpContext)
     { ServiceProvider   = serviceProvider
-      RestConfiguration = { AccessConfiguration = access } }
+      RestConfiguration = { AccessConfiguration = access }
+      RestMethodInvoker = restMethodInvoker }
     (_ : UpdateParameters) = async {
       // --------------------------------
       // validate if method is accessible
@@ -51,10 +52,18 @@ module internal UpdateInvoker =
         let! hasEntityAccess = entityAccessValidator.AsyncValidate (data, serviceProvider, httpContext.User)
         do if not hasEntityAccess then ForbiddenException () |> raise
       | _ -> ()
-      // invoke method within transaction
-      use! tx = instance.AsyncBeginTransaction ()
-      do! instance.AsyncInvoke (id, data) |> Async.Ignore
-      tx.Commit ()
+      // invoke method
+      do!
+        let boxed =
+          match instance with
+          | :? IBoxedInvoke<'id, 'a, 'a> as boxed -> boxed
+          | _  -> { new IBoxedInvoke<_, _, _> with
+                      member __.Instance = box instance
+                      member __.AsyncInvoke (arg1, arg2) = instance.AsyncInvoke (arg1, arg2)
+                  }
+        RestMethodInvocation<'a, _, _, _> (boxed, id, data)
+        |> restMethodInvoker.AsyncInvoke
+        |> Async.Ignore
       // send response
       HttpContext.setResponseStatusCode 204 httpContext }
 

@@ -7,6 +7,7 @@ open Microsoft.Extensions.Primitives
 open NCoreUtils
 open NCoreUtils.AspNetCore
 open NCoreUtils.Data
+open System.Collections.Generic
 
 let inline idType ty =
   let mutable idTy = Unchecked.defaultof<_>
@@ -54,3 +55,35 @@ type internal Adapt =
 
   [<RequiresExplicitTypeArguments>]
   static member inline For<'a> (list : IRestListCollection) = list.For<'a> ()
+
+[<Interface>]
+type IBoxedInvoke<'TArg, 'TResult> =
+  abstract Instance : obj
+  abstract AsyncInvoke : arg:'TArg -> Async<'TResult>
+
+[<Interface>]
+type IBoxedInvoke<'TArg1, 'TArg2, 'TResult> =
+  abstract Instance : obj
+  abstract AsyncInvoke : arg1:'TArg1 * arg2:'TArg2 -> Async<'TResult>
+
+[<AbstractClass>]
+type RestMethodInvocation<'TItem, 'TResult> () =
+  inherit RestMethodInvocation<'TResult> ()
+  override __.ItemType = typeof<'TItem>
+
+[<Sealed>]
+type RestMethodInvocation<'TItem, 'TArg, 'TResult> (b : IBoxedInvoke<'TArg, 'TResult>, arg : 'TArg) =
+  inherit RestMethodInvocation<'TItem, 'TResult> ()
+  let arguments = [| box arg |] :> IReadOnlyList<_>
+  override __.Arguments = arguments
+  override __.Instance = b.Instance
+  override __.AsyncInvoke () = b.AsyncInvoke arg
+
+[<Sealed>]
+type RestMethodInvocation<'TItem, 'TArg1, 'TArg2, 'TResult> (b : IBoxedInvoke<'TArg1, 'TArg2, 'TResult>, arg1 : 'TArg1, arg2 : 'TArg2) =
+  inherit RestMethodInvocation<'TItem, 'TResult> ()
+  let arguments = [| box arg1; box arg2 |] :> IReadOnlyList<_>
+  override __.Arguments = arguments
+  override __.Instance = b.Instance
+  override __.AsyncInvoke () = b.AsyncInvoke (arg1, arg2)
+

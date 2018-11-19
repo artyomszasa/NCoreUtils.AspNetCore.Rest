@@ -26,7 +26,8 @@ module internal ItemInvoker =
     (id : 'id)
     (httpContext : HttpContext)
     { ServiceProvider = serviceProvider
-      RestConfiguration = { AccessConfiguration = access } }
+      RestConfiguration = { AccessConfiguration = access }
+      RestMethodInvoker = restMethodInvoker }
     (_ : ItemParameters) = async {
       // --------------------------------
       // validate if method is accessible
@@ -40,7 +41,16 @@ module internal ItemInvoker =
         |> Option.orElseWith  (fun () -> tryGetService<IRestItem> serviceProvider >>| Adapt.For<'a, 'id>)
         |> Option.defaultWith (fun () -> diActivate<DefaultRestItem<'a, 'id>> serviceProvider :> _)
       // invoke method
-      let! item = instance.AsyncInvoke id
+      let! item =
+        let boxed =
+          match instance with
+          | :? IBoxedInvoke<'id, 'a> as boxed -> boxed
+          | _  -> { new IBoxedInvoke<'id, 'a> with
+                      member __.Instance = box instance
+                      member __.AsyncInvoke arg = instance.AsyncInvoke arg
+                  }
+        RestMethodInvocation<'a, 'id, 'a> (boxed, id)
+        |> restMethodInvoker.AsyncInvoke
       // check entity access if specified
       match access.Item with
       | :? IEntityAccessValidator as entityAccessValidator ->

@@ -58,3 +58,6 @@ type DefaultRestUpdate<'a, 'id when 'a :> IHasId<'id> and 'id : equality> =
 
   interface IRestUpdate<'a, 'id> with
     member this.AsyncInvoke (id, data) = this.AsyncInvoke (id, data)
+  interface IBoxedInvoke<'id, 'a, 'a> with
+    member this.Instance = box this
+    member this.AsyncInvoke (id, data) = this.AsyncInvoke (id, data)

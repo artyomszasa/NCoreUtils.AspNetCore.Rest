@@ -37,3 +37,7 @@ type DefaultRestItem<'a, 'id when 'a :> IHasId<'id> and 'id : equality> =
 
   interface IRestItem<'a, 'id> with
     member this.AsyncInvoke id = this.AsyncInvoke id
+  interface IBoxedInvoke<'id, 'a> with
+    member this.Instance = box this
+    member this.AsyncInvoke id = this.AsyncInvoke id
+

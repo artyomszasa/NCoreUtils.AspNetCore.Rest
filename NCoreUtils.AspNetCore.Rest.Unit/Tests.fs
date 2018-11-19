@@ -101,7 +101,8 @@ let ``LIST method`` () =
   let restServices =
     { ServiceProvider   = ctx.HttpContext.RequestServices
       CurrentTypeName   = { Value = CaseInsensitive "xobject" }
-      RestConfiguration = restConfiguration}
+      RestConfiguration = restConfiguration
+      RestMethodInvoker = DefaultRestMethodInvoker () }
   let listParameters =
     { EntityType = typeof<XObject>
       RestQuery =
@@ -138,7 +139,8 @@ let ``ITEM method`` () =
   let restServices =
     { ServiceProvider   = ctx.HttpContext.RequestServices
       CurrentTypeName   = { Value = CaseInsensitive "xobject" }
-      RestConfiguration = restConfiguration}
+      RestConfiguration = restConfiguration
+      RestMethodInvoker = DefaultRestMethodInvoker () }
   let (itemParameters : ItemParameters) = { EntityType = typeof<XObject> }
   // invoke function
   ItemInvoker.invoke "1" ctx.HttpContext restServices itemParameters |> Async.RunSynchronously
@@ -184,7 +186,8 @@ let ``CREATE method`` () =
   let restServices =
     { ServiceProvider   = ctx.HttpContext.RequestServices
       CurrentTypeName   = { Value = CaseInsensitive "xobject" }
-      RestConfiguration = restConfiguration}
+      RestConfiguration = restConfiguration
+      RestMethodInvoker = DefaultRestMethodInvoker () }
   let (createParameters : CreateParameters) = { EntityType = typeof<XObject> }
   // invoke function
   CreateInvoker.invoke ctx.HttpContext restServices createParameters |> Async.RunSynchronously
