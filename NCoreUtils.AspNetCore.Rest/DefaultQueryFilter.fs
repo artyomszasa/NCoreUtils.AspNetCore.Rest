@@ -32,7 +32,7 @@ type DefaultQueryFilter<'a> =
     | true -> queryable
     | _ ->
       let expressionBuilder = this.serviceProvider.GetRequiredService<IDataQueryExpressionBuilder> ()
-      let predicate = expressionBuilder.BuildExpression<'a>(restQuery.Filter) :?> Expression<Func<'a, bool>>
+      let predicate = expressionBuilder.BuildExpression(typeof<'a>, restQuery.Filter) :?> Expression<Func<'a, bool>>
       Queryable.Where (queryable, predicate)
 
   interface IRestQueryFilter<'a> with
