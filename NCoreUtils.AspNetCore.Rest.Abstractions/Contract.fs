@@ -35,6 +35,7 @@ type RestMethodInvocation<'TResult> =
   new () = { inherit RestMethodInvocation () }
   default __.ReturnType = typeof<Async<'TResult>>
   abstract AsyncInvoke : unit -> Async<'TResult>
+  abstract UpdateArguments : IReadOnlyList<obj> -> RestMethodInvocation<'TResult>
 
 [<Interface>]
 type IRestMethodInvoker =

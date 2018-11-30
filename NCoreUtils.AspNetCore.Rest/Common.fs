@@ -77,7 +77,16 @@ type RestMethodInvocation<'TItem, 'TArg, 'TResult> (b : IBoxedInvoke<'TArg, 'TRe
   let arguments = [| box arg |] :> IReadOnlyList<_>
   override __.Arguments = arguments
   override __.Instance = b.Instance
-  override __.AsyncInvoke () = b.AsyncInvoke arg
+  override __.AsyncInvoke () = b.AsyncInvoke (arg)
+  override __.UpdateArguments newArguments =
+    match newArguments.Count <> arguments.Count with
+    | true -> invalidArgf "arguments" "arguments must contain 1 element, but is contains %d." newArguments.Count
+    | _ ->
+      let newArg =
+        match newArguments.[0] with
+        | :? 'TArg as arg -> arg
+        | _               -> invalidOpf "Argument 0 is not compatible with type %A" typeof<'TArg>
+      RestMethodInvocation<'TItem, 'TArg, 'TResult> (b, newArg) :> _
 
 [<Sealed>]
 type RestMethodInvocation<'TItem, 'TArg1, 'TArg2, 'TResult> (b : IBoxedInvoke<'TArg1, 'TArg2, 'TResult>, arg1 : 'TArg1, arg2 : 'TArg2) =
@@ -86,4 +95,17 @@ type RestMethodInvocation<'TItem, 'TArg1, 'TArg2, 'TResult> (b : IBoxedInvoke<'T
   override __.Arguments = arguments
   override __.Instance = b.Instance
   override __.AsyncInvoke () = b.AsyncInvoke (arg1, arg2)
+  override __.UpdateArguments newArguments =
+    match newArguments.Count <> arguments.Count with
+    | true -> invalidArgf "arguments" "arguments must contain 2 elements, but is contains %d." newArguments.Count
+    | _ ->
+      let newArg1 =
+        match newArguments.[0] with
+        | :? 'TArg1 as arg -> arg
+        | _                -> invalidOpf "Argument 0 is not compatible with type %A" typeof<'TArg1>
+      let newArg2 =
+        match newArguments.[1] with
+        | :? 'TArg2 as arg -> arg
+        | _                -> invalidOpf "Argument 1 is not compatible with type %A" typeof<'TArg2>
+      RestMethodInvocation<'TItem, 'TArg1, 'TArg2, 'TResult> (b, newArg1, newArg2) :> _
 
