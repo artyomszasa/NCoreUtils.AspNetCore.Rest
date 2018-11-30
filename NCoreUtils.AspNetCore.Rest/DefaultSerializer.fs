@@ -93,8 +93,9 @@ type DefaultSerializer<'a> =
       JsonConvert.SerializeObject (item, this.jsonSettings)
       |> encoding.GetBytes
     let contentType = sprintf "application/json; charset=%s" encoding.HeaderName
-    use! stream = output.AsyncInitialize { Length = Nullable.mk data.LongLength; ContentType = contentType }
-    do! stream.AsyncWrite data }
+    let! stream = output.AsyncInitialize { Length = Nullable.mk data.LongLength; ContentType = contentType }
+    do! stream.AsyncWrite data
+    do! stream.AsyncFlush () }
 
   /// <summary>
   /// Serializes object of the specified type to configurable output directly into output stream.
@@ -105,7 +106,7 @@ type DefaultSerializer<'a> =
   default this.AsyncNonBufferedSerialize (output : IConfigurableOutput<Stream>, item : 'a) = async {
     let encoding = this.configuration.Encoding |?? utf8
     let contentType = sprintf "application/json; charset=%s" encoding.HeaderName
-    use! stream = output.AsyncInitialize { Length = Nullable.empty; ContentType = contentType }
+    let! stream = output.AsyncInitialize { Length = Nullable.empty; ContentType = contentType }
     use  writer = new StreamWriter (stream, encoding, this.configuration.BufferSize, leaveOpen = true)
     let jsonSerializer = JsonSerializer.Create this.jsonSettings
     jsonSerializer.Serialize (writer, item) }
