@@ -74,7 +74,7 @@ module internal UpdateInvoker =
   type private Invoker<'a, 'id when 'a :> IHasId<'id> and 'id : equality> () =
     interface IInvoker with
       member __.Invoke (rawId, httpContext, services, parameters) =
-        let id = Convert.ChangeType (rawId, typeof<'id>) :?> 'id
+        let id = GenericParser.parse<'id> rawId
         update<'a, 'id> id httpContext services parameters
 
   let private cache = ConcurrentDictionary<Type, IInvoker> ()

@@ -7,8 +7,6 @@ open System.Threading
 open NCoreUtils
 open System.Linq.Expressions
 
-let mutable private idSupply = 0L
-
 type PropertyInfo with
   member this.CreateSelector (?parameterType : Type) =
     let eArgType =
@@ -18,5 +16,5 @@ type PropertyInfo with
           invalidOpf "%s cannot be used as parameter type for property selector of %s.%s." ptype.FullName this.DeclaringType.FullName this.Name
         ptype
       | _ -> this.DeclaringType
-    let eArg = Expression.Parameter (eArgType, sprintf "__propertySelectorArg%d" (Interlocked.Increment (&idSupply)))
+    let eArg = Expression.Parameter eArgType
     Expression.Lambda (Expression.Property (eArg, this), [| eArg |])

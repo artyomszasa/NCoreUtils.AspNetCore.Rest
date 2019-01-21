@@ -2,9 +2,9 @@ namespace NCoreUtils.AspNetCore.Rest
 
 open System.Runtime.CompilerServices
 open Microsoft.Extensions.Logging
+open NCoreUtils
 open NCoreUtils.AspNetCore
 open NCoreUtils.Data
-open NCoreUtils.Linq
 open NCoreUtils.Logging
 
 /// <summary>
@@ -26,7 +26,11 @@ type DefaultRestCreate<'a, 'id when 'a :> IHasId<'id> and 'id : equality> =
     { inherit DefaultTransactedMethod<'a, 'id> (repository)
       logger     = loggerFactory.CreateLogger "NCoreUtils.AspNetCore.Rest.DefaultRestCreate" }
 
+  abstract HasValidId : data: 'a -> bool
+
   abstract AsyncInvoke : data:'a -> Async<'a>
+
+  default __.HasValidId data = data.HasValidId ()
 
   /// <summary>
   /// Performes REST CREATE action for the predefined type.
@@ -38,10 +42,10 @@ type DefaultRestCreate<'a, 'id when 'a :> IHasId<'id> and 'id : equality> =
   /// </returns>
   default this.AsyncInvoke (data : 'a) = async {
     // check if already exists
-    if data.HasValidId () then
+    if this.HasValidId data then
       let! exists =
         let id = data.Id
-        this.Repository.Items |> Q.asyncExists (fun item -> item.Id = id)
+        this.Repository.AsyncLookup data.Id >>| (box >> isNull >> not)
       do
         match exists with
         | true ->

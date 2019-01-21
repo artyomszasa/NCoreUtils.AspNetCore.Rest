@@ -7,7 +7,11 @@ open Microsoft.Extensions.Primitives
 open NCoreUtils
 open NCoreUtils.AspNetCore
 open NCoreUtils.Data
+open System.Collections.Concurrent
 open System.Collections.Generic
+open System.Globalization
+open System.Reflection
+open System.Runtime.CompilerServices
 
 let inline idType ty =
   let mutable idTy = Unchecked.defaultof<_>
@@ -108,4 +112,84 @@ type RestMethodInvocation<'TItem, 'TArg1, 'TArg2, 'TResult> (b : IBoxedInvoke<'T
         | :? 'TArg2 as arg -> arg
         | _                -> invalidOpf "Argument 1 is not compatible with type %A" typeof<'TArg2>
       RestMethodInvocation<'TItem, 'TArg1, 'TArg2, 'TResult> (b, newArg1, newArg2) :> _
+
+module GenericParser =
+
+  let private thruthy =
+    [ "true"
+      "1"
+      "on" ]
+    |> Seq.map CaseInsensitive
+    |> Set.ofSeq
+
+  let private customParsers = ConcurrentDictionary<Type, (string -> obj) voption> ()
+
+  let private tryCreateParser (targetType : Type) =
+    match targetType.GetMethod ("Parse", BindingFlags.Public ||| BindingFlags.Static) with
+    | null -> ValueNone
+    | m    ->
+    match m.ReturnType = targetType with
+    | false -> ValueNone
+    | _ ->
+    match m.GetParameters () with
+    | [| p |] when p.ParameterType = typeof<string> ->
+      ValueSome <| fun (raw: string) -> m.Invoke (null, [| raw |])
+    | [| p1; p2 |] when p1.ParameterType = typeof<string> && p2.ParameterType = typeof<IFormatProvider> ->
+      ValueSome <| fun (raw: string) -> m.Invoke (null, [| raw; CultureInfo.InvariantCulture |])
+    | _ -> ValueNone
+
+  let private tryCreateParserCached (targetType : Type) =
+    let mutable res = Unchecked.defaultof<_>
+    if not (customParsers.TryGetValue (targetType, &res)) then
+      res <- tryCreateParser targetType
+      customParsers.TryAdd (targetType, res) |> ignore
+    res
+
+  [<CompiledName("Parse")>]
+  let parseObj (targetType : Type) (raw : string) =
+    match targetType with
+    | _ when targetType = typeof<string> ->
+      raw :> obj
+    | _ when targetType = typeof<bool> ->
+      Set.contains (CaseInsensitive raw) thruthy |> box
+    | _ when targetType = typeof<int8> ->
+      SByte.Parse (raw, NumberStyles.Integer, CultureInfo.InvariantCulture) |> box
+    | _ when targetType = typeof<int16> ->
+      Int16.Parse (raw, NumberStyles.Integer, CultureInfo.InvariantCulture) |> box
+    | _ when targetType = typeof<int32> ->
+      Int32.Parse (raw, NumberStyles.Integer, CultureInfo.InvariantCulture) |> box
+    | _ when targetType = typeof<int64> ->
+      Int64.Parse (raw, NumberStyles.Integer, CultureInfo.InvariantCulture) |> box
+    | _ when targetType = typeof<uint8> ->
+      Byte.Parse (raw, NumberStyles.Integer, CultureInfo.InvariantCulture) |> box
+    | _ when targetType = typeof<uint16> ->
+      UInt16.Parse (raw, NumberStyles.Integer, CultureInfo.InvariantCulture) |> box
+    | _ when targetType = typeof<uint32> ->
+      UInt32.Parse (raw, NumberStyles.Integer, CultureInfo.InvariantCulture) |> box
+    | _ when targetType = typeof<uint64> ->
+      UInt64.Parse (raw, NumberStyles.Integer, CultureInfo.InvariantCulture) |> box
+    | _ when targetType = typeof<char> ->
+      match raw with
+      | null                -> invalidOp "Unable to convert null to char."
+      | s when s.Length = 1 -> box s.[0]
+      | _                   -> invalidOpf "Unable to convert \"%s\" to char." raw
+    | _ when targetType = typeof<DateTime> ->
+      DateTime.Parse (raw, CultureInfo.InvariantCulture) |> box
+    | _ when targetType = typeof<decimal> ->
+      Decimal.Parse (raw, NumberStyles.Float, CultureInfo.InvariantCulture) |> box
+    | _ when targetType = typeof<single> ->
+      Single.Parse (raw, NumberStyles.Float, CultureInfo.InvariantCulture) |> box
+    | _ when targetType = typeof<float> ->
+      Double.Parse (raw, NumberStyles.Float, CultureInfo.InvariantCulture) |> box
+    | _ when targetType.IsEnum ->
+      Enum.Parse (targetType, raw, true)
+    | _ ->
+      match tryCreateParserCached targetType with
+      | ValueSome parser -> parser raw
+      | _ -> invalidOpf "Nu suitable method found to convert string to %A" targetType
+
+  [<CompiledName("Parse")>]
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  [<RequiresExplicitTypeArguments>]
+  let parse<'a> raw = parseObj typeof<'a> raw :?> 'a
 

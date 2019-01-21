@@ -5,8 +5,11 @@ open System.Collections.Concurrent
 open System.Linq.Expressions
 open System.Linq
 open System.Reflection
-open NCoreUtils
 open System.Runtime.CompilerServices
+open Microsoft.Extensions.DependencyInjection
+open NCoreUtils
+open NCoreUtils.Data
+open System.Text.RegularExpressions
 
 module internal OrderByApplier =
 
@@ -84,7 +87,7 @@ module internal OrderByApplier =
         fun (struct (ty, name)) -> ty.GetProperty (name, BindingFlags.Instance ||| BindingFlags.Public ||| BindingFlags.NonPublic ||| BindingFlags.FlattenHierarchy ||| BindingFlags.IgnoreCase)
       )
     match propertyInfo with
-    | null -> invalidOpf "No property %s is defined for type %s." typeof<'a>.FullName memberName
+    | null -> invalidOpf "No property \"%s\" is defined for type %s." memberName typeof<'a>.FullName
     | _ -> propertyInfo.CreateSelector ()
 
   [<RequiresExplicitTypeArguments>]
@@ -114,23 +117,76 @@ module internal OrderByApplier =
 
 [<AutoOpen>]
 module private DefaultQueryOrdererHelpers =
+
+  let mayBeExpressionRegex = Regex ("[=><.+*/-]", RegexOptions.Compiled ||| RegexOptions.CultureInvariant)
+
   let inline getResult (choice : Choice<IQueryable<'a>, IOrderedQueryable<'a>>) =
     match choice with
     | Choice2Of2 result -> result
     | _                 -> invalidOp "should never happen"
 
+  let inline mayBeExpression (input: string) = mayBeExpressionRegex.IsMatch input
+
+/// Represents ordering option.
+[<Struct>]
+[<StructuralEquality; NoComparison>]
+type OrderingOption = {
+  /// Ordering criteria.
+  By: string
+  /// Ordereing direction.
+  Direction: RestSortByDirection }
+
 /// Provides default query ordering.
 type DefaultQueryOrderer<'a> =
   val private serviceProvider : IServiceProvider
+
+  val mutable private queryParser : IDataQueryExpressionBuilder voption
+
+  member this.QueryParser
+    with [<MethodImpl(MethodImplOptions.AggressiveInlining)>] get () =
+      match this.queryParser with
+      | ValueNone ->
+        let queryParser = this.serviceProvider.GetRequiredService<IDataQueryExpressionBuilder> ()
+        this.queryParser <- ValueSome queryParser
+        queryParser
+      | ValueSome queryParser -> queryParser
 
   /// <summary>
   /// Initializes new instance from the specified parameters.
   /// </summary>
   /// <param name="serviceProvider">Service provider.</param>
   [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  new (serviceProvider) = { serviceProvider = serviceProvider }
+  new (serviceProvider) =
+    { serviceProvider = serviceProvider
+      queryParser     = ValueNone }
+
+  abstract GetOrderingOptions : restQuery:RestQuery -> seq<OrderingOption>
 
   abstract OrderQuery : queryable:IQueryable<'a> * restQuery:RestQuery -> IOrderedQueryable<'a>
+
+  [<RequiresExplicitTypeArguments>]
+  abstract OrderBy<'a> : by:string * isDescending:bool * IQueryable<'a> -> IOrderedQueryable<'a>
+
+  [<RequiresExplicitTypeArguments>]
+  abstract ThenBy<'a> : by:string * isDescending:bool * IOrderedQueryable<'a> -> IOrderedQueryable<'a>
+
+  /// <summary>
+  /// Normalizes ordering options if possible.
+  /// </summary>
+  /// <param name="restQuery">REST query.</param>
+  /// <returns>Normalized ordering options.</returns>
+  default __.GetOrderingOptions restQuery =
+    match restQuery.SortBy.Length, restQuery.SortByDirection.Length with
+    | 0, 0 -> Seq.empty
+    | _, 0 ->
+      let dir = RestSortByDirection.Asc
+      restQuery.SortBy |> Seq.map (fun by -> { By = by.Trim (); Direction = dir })
+    | _, 1 ->
+      let dir = restQuery.SortByDirection.[0]
+      restQuery.SortBy |> Seq.map (fun by -> { By = by.Trim (); Direction = dir })
+    | a, b when a <= b ->
+      Seq.map2 (fun (by : string) dir -> { By = by.Trim (); Direction = dir }) restQuery.SortBy restQuery.SortByDirection
+    | _ -> invalidOpf "Invalid or ambigous ordering options (sortBy = %A, sortByDirection = %A)" restQuery.SortBy restQuery.SortByDirection
 
   /// <summary>
   /// Orders generic queryable using provided REST query.
@@ -143,15 +199,53 @@ type DefaultQueryOrderer<'a> =
     match restQuery.SortBy.Length with
     | 0 -> OrderByApplier.orderByDefaultMember<'a> this.serviceProvider queryable
     | _ ->
-      Seq.zip restQuery.SortBy restQuery.SortByDirection
+      this.GetOrderingOptions restQuery
       |> Seq.fold
-        (fun q (by, dir) ->
+        (fun q { By = by; Direction = dir } ->
+          let isDescending = dir = RestSortByDirection.Desc
           match q with
-          | Choice1Of2 queryable -> Choice2Of2 <| OrderByApplier.orderByMember<'a> by (dir = RestSortByDirection.Desc) queryable
-          | Choice2Of2 queryable -> Choice2Of2 <| OrderByApplier.thenByMember<'a>  by (dir = RestSortByDirection.Desc) queryable
+          | Choice1Of2 queryable -> Choice2Of2 <| this.OrderBy<'a> (by, isDescending, queryable)
+          | Choice2Of2 queryable -> Choice2Of2 <| this.ThenBy<'a>  (by, isDescending, queryable)
         )
         (Choice1Of2 queryable)
       |> getResult
+
+  /// <summary>
+  /// Applies ordering to the unordered query.
+  /// </summary>
+  /// <typeparam name="a">Element type of the queryable.</typeparam>
+  /// <param name="by">Ordering criteria.</param>
+  /// <param name="isDescending">Ordering direction.</param>
+  /// <param name="queryable">Source queryable.</param>
+  default this.OrderBy<'a> (by, isDescending, queryable) =
+    match mayBeExpression by with
+    | true ->
+      try
+        let lambda = this.QueryParser.BuildExpression (typeof<'a>, by)
+        OrderByApplier.orderBy<'a> lambda isDescending queryable
+      with exn ->
+        let message = sprintf "SortBy expression contains special characters but could not be parsed as data expression: \"%s\"." by
+        InvalidOperationException (message, exn) |> raise
+    | _ -> OrderByApplier.orderByMember<'a> by isDescending queryable
+
+  /// <summary>
+  /// Applies additional ordering to the ordered query.
+  /// </summary>
+  /// <typeparam name="a">Element type of the queryable.</typeparam>
+  /// <param name="by">Ordering criteria.</param>
+  /// <param name="isDescending">Ordering direction.</param>
+  /// <param name="queryable">Source queryable.</param>
+  default this.ThenBy<'a> (by, isDescending, queryable) =
+    match mayBeExpression by with
+    | true ->
+      try
+        let lambda = this.QueryParser.BuildExpression (typeof<'a>, by)
+        OrderByApplier.thenBy<'a> lambda isDescending queryable
+      with exn ->
+        let message = sprintf "SortBy expression contains special characters but could not be parsed as data expression: \"%s\"." by
+        InvalidOperationException (message, exn) |> raise
+    | _ -> OrderByApplier.thenByMember<'a> by isDescending queryable
+
   interface IRestQueryOrderer<'a> with
     member this.OrderQuery (queryable, restQuery) = this.OrderQuery (queryable, restQuery)
 

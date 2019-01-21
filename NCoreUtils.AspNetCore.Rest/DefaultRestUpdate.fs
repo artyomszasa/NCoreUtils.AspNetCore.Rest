@@ -2,9 +2,9 @@ namespace NCoreUtils.AspNetCore.Rest
 
 open System.Runtime.CompilerServices
 open Microsoft.Extensions.Logging
+open NCoreUtils
 open NCoreUtils.AspNetCore
 open NCoreUtils.Data
-open NCoreUtils.Linq
 open NCoreUtils.Logging
 
 type VariableAttribute () = inherit System.Attribute ()
@@ -45,7 +45,7 @@ type DefaultRestUpdate<'a, 'id when 'a :> IHasId<'id> and 'id : equality> =
     // check that data has the same id
     do if id <> data.Id then BadRequestException "Entity data has invalid id." |> raise
     // check whether entity with specified id exists
-    let! exists = this.Repository.Items |> Q.asyncExists (fun item -> item.Id = id)
+    let! exists = this.Repository.AsyncLookup data.Id >>| (box >> isNull >> not)
     // if not --> raise error
     do if not exists then NotFoundException () |> raise
     // if exists --> persists new value

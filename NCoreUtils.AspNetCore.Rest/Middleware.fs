@@ -1,5 +1,6 @@
 namespace NCoreUtils.AspNetCore
 
+open System
 open Microsoft.Extensions.Logging
 open NCoreUtils
 open NCoreUtils.AspNetCore
@@ -23,7 +24,11 @@ module RestMiddleware =
     fun headerName ->
       let mutable values = Unchecked.defaultof<_>
       match headers.TryGetValue (headerName, &values) with
-      | true -> Some <| List.ofSeq values
+      | true ->
+        values
+        |> Seq.map (Uri.UnescapeDataString)
+        |> List.ofSeq
+        |> Some
       | _    -> None
 
   /// <summary>
