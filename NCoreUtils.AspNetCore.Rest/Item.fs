@@ -12,6 +12,7 @@ open System.Runtime.CompilerServices
 // ITEM
 
 /// Bound parameters for REST ITEM method.
+[<NoEquality; NoComparison>]
 type ItemParameters = {
   /// Type of the entity being requested.
   [<ParameterBinder(typeof<ManagedTypeBinder>)>]

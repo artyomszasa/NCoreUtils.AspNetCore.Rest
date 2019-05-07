@@ -8,6 +8,7 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
+open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Primitives
 open Moq
 open NCoreUtils
@@ -63,9 +64,12 @@ let private mockResponse () =
   let statusCode = ref 200
   mock.SetupGet(fun x -> x.Body).Returns buffer |> ignore
   mock.SetupGet(fun x -> x.Headers).Returns headers |> ignore
-  mock.SetupSet(fun x -> x.ContentType).Callback(fun v -> headers.["Content-Type"] <- ss v) |> ignore
-  mock.SetupSet(fun x -> x.ContentLength).Callback(fun v -> if v.HasValue then headers.["Content-Length"] <- ss (v.Value.ToString()) else headers.Remove "Content-Length" |> ignore) |> ignore
-  mock.SetupSet(fun x -> x.StatusCode).Callback(Action<_> ((:=) statusCode)) |> ignore
+  mock.SetupSet<string>(fun x -> x.ContentType <- It.IsAny<string> ())
+    .Callback(fun v -> headers.["Content-Type"] <- ss v) |> ignore
+  mock.SetupSet<Nullable<int64>>(fun x -> x.ContentLength <- It.IsAny<Nullable<int64>> ())
+    .Callback(fun v -> if v.HasValue then headers.["Content-Length"] <- ss (v.Value.ToString()) else headers.Remove "Content-Length" |> ignore) |> ignore
+  mock.SetupSet<int>(fun x -> x.StatusCode <- It.IsAny<int> ())
+    .Callback(Action<_> ((:=) statusCode)) |> ignore
   mock.Object, buffer, headers, statusCode
 
 let private mockRequest () =
@@ -87,6 +91,29 @@ type DummyDataContext () =
     member __.CurrentTransaction = Unchecked.defaultof<_>
     member __.BeginTransactionAsync (_, _) = new DummyDataTransaction () |> Task.FromResult<IDataTransaction>
     member __.Dispose () = ()
+
+[<Fact>]
+let ``RestQuery binding`` () =
+  let parameters =
+    Map.ofList
+      [ "X-Offset",            [ "10" ]
+        "X-Count",             [ "10" ]
+        "X-Filter",            [ "filter" ]
+        "X-Sort-By",           [ "a,b" ]
+        "X-Sort-By-Direction", [ "asc,desc" ] ]
+  let noServices = ServiceCollection().BuildServiceProvider(true)
+  let q =
+    NCoreUtils.ParameterBinding.asyncBindNoAttrs<RestQuery> noServices (fun key -> Map.tryFind key parameters) null
+    |> Async.RunSynchronously
+  Assert.Equal (10, q.Offset)
+  Assert.Equal (10, q.Count)
+  Assert.Equal ("filter", q.Filter)
+  Assert.Equal (2, q.SortBy.Length)
+  Assert.Equal (2, q.SortByDirection.Length)
+  Assert.Equal ("a", q.SortBy.[0])
+  Assert.Equal ("b", q.SortBy.[1])
+  Assert.Equal (RestSortByDirection.Asc, q.SortByDirection.[0])
+  Assert.Equal (RestSortByDirection.Desc, q.SortByDirection.[1])
 
 [<Fact>]
 let ``LIST method`` () =
@@ -176,7 +203,7 @@ let ``CREATE method`` () =
     let enc = UTF8Encoding false
     let requestStream = new MemoryStream (enc.GetBytes json, false)
     m.SetupGet(fun x -> x.Body).Returns requestStream |> ignore
-    let headers = new HeaderDictionary ()
+    let headers = HeaderDictionary ()
     headers.Add ("Content-Type", ss "application/json")
     m.SetupGet(fun x -> x.Headers).Returns headers |> ignore
     m.SetupGet(fun x -> x.Scheme).Returns "http" |> ignore

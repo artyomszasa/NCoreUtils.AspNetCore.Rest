@@ -11,6 +11,7 @@ open System.Runtime.CompilerServices
 // LIST COLLECTION
 
 /// Bound parameters for REST LIST method.
+[<NoEquality; NoComparison>]
 type ListParameters = {
   /// Type of the entity being queried.
   [<ParameterBinder(typeof<ManagedTypeBinder>)>]

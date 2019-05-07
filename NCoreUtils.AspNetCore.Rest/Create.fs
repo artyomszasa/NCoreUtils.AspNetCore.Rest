@@ -13,6 +13,7 @@ open Common
 // CREATE
 
 /// Bound parameters for REST CREATE method.
+[<NoEquality; NoComparison>]
 type CreateParameters = {
   /// Type of the entity being created.
   [<ParameterBinder(typeof<ManagedTypeBinder>)>]

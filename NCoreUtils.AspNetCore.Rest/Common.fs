@@ -9,21 +9,26 @@ open NCoreUtils.AspNetCore
 open NCoreUtils.Data
 open System.Collections.Concurrent
 open System.Collections.Generic
+open System.Diagnostics.CodeAnalysis
 open System.Globalization
 open System.Reflection
 open System.Runtime.CompilerServices
 
+[<ExcludeFromCodeCoverage>]
 let inline idType ty =
   let mutable idTy = Unchecked.defaultof<_>
   match IdUtils.TryGetIdType (ty, &idTy) with
   | true -> idTy
   | _    -> invalidOpf "Type %s does not implement IHasId interface." ty.FullName
 
+[<ExcludeFromCodeCoverage>]
 let inline activate (ty : Type) = Activator.CreateInstance (ty, true)
 
 [<RequiresExplicitTypeArguments>]
+[<ExcludeFromCodeCoverage>]
 let inline diActivate<'a> serviceProvider = ActivatorUtilities.CreateInstance<'a> serviceProvider
 
+[<ExcludeFromCodeCoverage>]
 let inline setResponseHeader (name : string) (value : string) httpContext =
   (HttpContext.response httpContext).Headers.Add (name, (StringValues : string -> _) value)
 
@@ -31,33 +36,43 @@ let inline setResponseHeader (name : string) (value : string) httpContext =
 type internal Adapt =
 
   [<RequiresExplicitTypeArguments>]
+  [<ExcludeFromCodeCoverage>]
   static member inline For<'a> (orderProperty : IDefaultOrderProperty) = orderProperty.For<'a> ()
 
   [<RequiresExplicitTypeArguments>]
+  [<ExcludeFromCodeCoverage>]
   static member inline For<'a> (queryFilter : IRestQueryFilter) = queryFilter.For<'a> ()
 
   [<RequiresExplicitTypeArguments>]
+  [<ExcludeFromCodeCoverage>]
   static member inline For<'a> (queryOrderer : IRestQueryOrderer) = queryOrderer.For<'a> ()
 
   [<RequiresExplicitTypeArguments>]
+  [<ExcludeFromCodeCoverage>]
   static member inline For<'a> (deserializer : IDeserializer) = deserializer.For<'a> ()
 
   [<RequiresExplicitTypeArguments>]
+  [<ExcludeFromCodeCoverage>]
   static member inline For<'a> (serializer : ISerializer) = serializer.For<'a> ()
 
   [<RequiresExplicitTypeArguments>]
+  [<ExcludeFromCodeCoverage>]
   static member inline For<'a, 'id when 'a :> IHasId<'id> and 'id : equality> (item : IRestItem) = item.For<'a, 'id> ()
 
   [<RequiresExplicitTypeArguments>]
+  [<ExcludeFromCodeCoverage>]
   static member inline For<'a, 'id when 'a :> IHasId<'id> and 'id : equality> (create : IRestCreate) = create.For<'a, 'id> ()
 
   [<RequiresExplicitTypeArguments>]
+  [<ExcludeFromCodeCoverage>]
   static member inline For<'a, 'id when 'a :> IHasId<'id> and 'id : equality> (update : IRestUpdate) = update.For<'a, 'id> ()
 
   [<RequiresExplicitTypeArguments>]
+  [<ExcludeFromCodeCoverage>]
   static member inline For<'a, 'id when 'a :> IHasId<'id> and 'id : equality> (delete : IRestDelete) = delete.For<'a, 'id> ()
 
   [<RequiresExplicitTypeArguments>]
+  [<ExcludeFromCodeCoverage>]
   static member inline For<'a> (list : IRestListCollection) = list.For<'a> ()
 
 [<Interface>]

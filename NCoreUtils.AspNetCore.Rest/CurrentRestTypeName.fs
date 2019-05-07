@@ -1,5 +1,6 @@
 namespace NCoreUtils.AspNetCore.Rest
 
+open System.Diagnostics.CodeAnalysis
 open Microsoft.Extensions.Logging
 open NCoreUtils
 open NCoreUtils.AspNetCore
@@ -7,6 +8,7 @@ open NCoreUtils.Logging
 
 /// Holds unresolved type name of the entity being created. Should be registered as scoped service.
 [<CLIMutable>]
+[<NoEquality; NoComparison>]
 type CurrentRestTypeName = {
   /// Gets or sets unresolved type name of the entity being created.
   mutable Value : CaseInsensitive }
@@ -14,6 +16,7 @@ type CurrentRestTypeName = {
 [<AutoOpen>]
 module internal CurrentRestTypeName =
 
+  [<ExcludeFromCodeCoverage>]
   let inline setCurrentRestTypeName value (inst : CurrentRestTypeName) =
     inst.Value <- value
 

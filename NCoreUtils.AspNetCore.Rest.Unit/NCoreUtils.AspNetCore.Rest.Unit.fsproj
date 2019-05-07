@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <GenerateProgramFile>false</GenerateProgramFile>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -10,19 +11,49 @@
     <Compile Include="Tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="coverlet.msbuild" Version="2.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />
-    <PackageReference Include="Moq" Version="4.8.2" />
-    <PackageReference Include="xunit" Version="2.3.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
-    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
-  </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.AspNetCore.Rest\NCoreUtils.AspNetCore.Rest.fsproj" />
   </ItemGroup>
-
+  <ItemGroup>
+    <PackageReference Include="coverlet.msbuild" Version="2.6.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.0.1" />
+    <PackageReference Include="Moq" Version="4.8.2" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1" />
+    <PackageReference Include="ReportGenerator" Version="4.1.4" PrivateAssets="All" />
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
+  </ItemGroup>
+  <Target Name="RunCoverageTests">
+    <PropertyGroup>
+      <ReportGeneratorPaths>$([System.IO.Directory]::GetFiles($(NuGetPackageRoot), "ReportGenerator.exe", System.IO.SearchOption.AllDirectories))</ReportGeneratorPaths>
+    </PropertyGroup>
+    <ItemGroup>
+      <ReportGeneratorVersion Include="%(PackageReference.Version)" Condition="%(PackageReference.Identity) == 'ReportGenerator'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <UseReportGeneratorVersion>@(ReportGeneratorVersion)</UseReportGeneratorVersion>
+    </PropertyGroup>
+    <ItemGroup>
+      <ReportGeneratorCandidates Include="$(ReportGeneratorPaths)" />
+      <ReportGeneratorPath Include="%(ReportGeneratorCandidates.Identity)" Condition="$([System.String]::new('%(ReportGeneratorCandidates.Identity)').Contains($(UseReportGeneratorVersion)))" />
+    </ItemGroup>
+    <PropertyGroup>
+      <UseReportGeneratorPath>@(ReportGeneratorPath)</UseReportGeneratorPath>
+    </PropertyGroup>
+    <Message Importance="High" Text="Version = @(ReportGeneratorVersion)" />
+    <Message Importance="High" Text="Candidates = %(ReportGeneratorCandidates.Identity)" />
+    <Message Importance="High" Text="Chosen path = $(UseReportGeneratorPath)" />
+    <PropertyGroup>
+      <CollectCoverage>True</CollectCoverage>
+      <CoverletOutputFormat>opencover</CoverletOutputFormat>
+    </PropertyGroup>
+    <!-- msbuild not integrated this yet...
+    <CallTarget Targets="VSTest" />
+    -->
+    <Exec Command="dotnet test --no-restore /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Include=&quot;[NCoreUtils.AspNetCore.Rest*]*&quot; /p:Exclude=&quot;[NCoreUtils.AspNetCore.Rest.Unit]*&quot; /p:ParallelizeTestCollections=false" />
+    <Exec Command="mono $(UseReportGeneratorPath) -reports:coverage.opencover.xml -targetdir:report -reporttypes:Html" Condition="'$(OS)' == 'Unix'" />
+    <Exec Command="$(UseReportGeneratorPath) -reports:coverage.opencover.xml -targetdir:report -reporttypes:Html" Condition="'$(OS)' != 'Unix'" />
+  </Target>
 </Project>

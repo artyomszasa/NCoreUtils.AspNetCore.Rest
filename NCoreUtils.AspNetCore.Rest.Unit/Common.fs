@@ -66,9 +66,12 @@ type Common private () =
     let statusCode = ref 200
     mock.SetupGet(fun x -> x.Body).Returns buffer |> ignore
     mock.SetupGet(fun x -> x.Headers).Returns headers |> ignore
-    mock.SetupSet(fun x -> x.ContentType).Callback(fun v -> headers.["Content-Type"] <- ss v) |> ignore
-    mock.SetupSet(fun x -> x.ContentLength).Callback(fun v -> if v.HasValue then headers.["Content-Length"] <- ss (v.Value.ToString()) else headers.Remove "Content-Length" |> ignore) |> ignore
-    mock.SetupSet(fun x -> x.StatusCode).Callback(Action<_> ((:=) statusCode)) |> ignore
+    mock.SetupSet<string>(fun x -> x.ContentType <- It.IsAny<string> ())
+      .Callback(fun v -> headers.["Content-Type"] <- ss v) |> ignore
+    mock.SetupSet<Nullable<int64>>(fun x -> x.ContentLength <- It.IsAny<Nullable<int64>> ())
+      .Callback(fun v -> if v.HasValue then headers.["Content-Length"] <- ss (v.Value.ToString()) else headers.Remove "Content-Length" |> ignore) |> ignore
+    mock.SetupSet<int>(fun x -> x.StatusCode <- It.IsAny<int> ())
+      .Callback(Action<_> ((:=) statusCode)) |> ignore
     match initResponse with
     | Some initResponse -> initResponse mock
     | _                 -> ()

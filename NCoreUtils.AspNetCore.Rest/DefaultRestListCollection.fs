@@ -1,6 +1,7 @@
 namespace NCoreUtils.AspNetCore.Rest
 
 open System
+open System.Diagnostics.CodeAnalysis
 open System.Linq
 open System.Runtime.CompilerServices
 open NCoreUtils
@@ -10,6 +11,7 @@ open Microsoft.Extensions.DependencyInjection
 
 [<AutoOpen>]
 module private DefaultRestListCollectionHelpers =
+  [<ExcludeFromCodeCoverage>]
   let inline unboxQuery (queryable : IQueryable) = queryable :?> IQueryable<'a>
 
 /// <summary>

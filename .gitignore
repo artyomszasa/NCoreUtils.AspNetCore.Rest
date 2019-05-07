@@ -2,3 +2,5 @@
 .vs
 NCoreUtils*/bin
 NCoreUtils*/obj
+NCoreUtils.AspNetCore.Rest.Unit/coverage.opencover.xml
+NCoreUtils.AspNetCore.Rest.Unit/report

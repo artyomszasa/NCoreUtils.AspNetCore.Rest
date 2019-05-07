@@ -12,6 +12,7 @@ open System.Runtime.CompilerServices
 // DELETE
 
 /// Bound parameters for REST DELETE method.
+[<NoEquality; NoComparison>]
 type DeleteParameters = {
   /// Type of the entity being deleted.
   [<ParameterBinder(typeof<ManagedTypeBinder>)>]

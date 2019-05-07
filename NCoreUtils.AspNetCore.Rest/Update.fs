@@ -11,6 +11,7 @@ open System.Runtime.CompilerServices
 // **************************************************************************
 // Update
 
+[<NoEquality; NoComparison>]
 type UpdateParameters = {
   [<ParameterBinder(typeof<ManagedTypeBinder>)>]
   EntityType : Type }
