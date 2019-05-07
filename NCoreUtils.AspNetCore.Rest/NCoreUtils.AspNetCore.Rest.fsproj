@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.0.3-alpha5</Version>
+    <Version>2.1.0</Version>
     <!-- NuGet -->
     <PackageId>NCoreUtils.AspNetCore.Rest</PackageId>
     <Title>$(PackageId)</Title>
@@ -10,7 +10,7 @@
     <Description>Rest implementation for ASP.NET Core.</Description>
     <Copyright>Artyom Antyipin</Copyright>
     <RepositoryUrl>https://github.com/artyomszasa/NCoreUtils.AspNetCore.Rest.git</RepositoryUrl>
-    <PackageReleaseNotes>Add overridable rest method invoker logic.</PackageReleaseNotes>
+    <PackageReleaseNotes>Target F# 4.6.</PackageReleaseNotes>
     <!-- Assembly Info -->
     <Product>NCoreUtils</Product>
     <AssemblyName>$(PackageId)</AssemblyName>
@@ -58,10 +58,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.2.0" />
-    <PackageReference Include="NCoreUtils.Data.Protocol.Abstractions" Version="2.1.0-beta4" />
-    <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="2.0.3-alpha0" />
-    <PackageReference Include="NCoreUtils.FSharp.Data" Version="2.0.2" />
-    <PackageReference Include="NCoreUtils.FSharp.Linq" Version="2.0.2" />
-    <PackageReference Include="NCoreUtils.FSharp.Logging" Version="2.0.3-alpha0" />
+    <PackageReference Include="NCoreUtils.Data.Protocol.Abstractions" Version="2.2.0" />
+    <PackageReference Include="NCoreUtils.FSharp.AspNetCore" Version="2.1.0" />
+    <PackageReference Include="NCoreUtils.FSharp.Data" Version="2.1.0" />
+    <PackageReference Include="NCoreUtils.FSharp.Linq" Version="2.1.0" />
+    <PackageReference Include="NCoreUtils.FSharp.Logging" Version="2.1.0" />
   </ItemGroup>
 </Project>
