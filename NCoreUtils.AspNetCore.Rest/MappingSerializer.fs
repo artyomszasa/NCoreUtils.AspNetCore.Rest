@@ -60,7 +60,6 @@ type MappingSerializer<'source, 'target> =
       let! mapped =
         sources
         |> Seq.map this.AsyncMap
-        |> Seq.toArray
         |> Async.Sequential
       let  serializer = this.GetDefaultSerializer<'target[]> this.serviceProvider
       do! serializer.AsyncSerialize (output, mapped)

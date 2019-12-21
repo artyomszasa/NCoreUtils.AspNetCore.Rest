@@ -19,14 +19,28 @@ open Xunit
 // *********************************************************
 // IAsyncQueryProvider/AsyncQueryAdapter for test repository
 
-type EnumerableAsyncQueryProvider () =
-  interface NCoreUtils.Linq.IAsyncQueryProvider with
+type private AsAsyncEnumerator<'T> (source : Collections.Generic.IEnumerator<'T>) =
+  interface Collections.Generic.IAsyncEnumerator<'T> with
+    member __.Current = source.Current
+    member __.DisposeAsync () =
+      source.Dispose ()
+      Unchecked.defaultof<_>
+    member __.MoveNextAsync () =
+      ValueTask<bool> (source.MoveNext ())
 
-    member __.ExecuteAsync<'a> expression =
+type private AsAsyncEnumerable<'T> (source : Collections.Generic.IEnumerable<'T>) =
+  interface Collections.Generic.IAsyncEnumerable<'T> with
+    member __.GetAsyncEnumerator _ = AsAsyncEnumerator<'T> (source.GetEnumerator ()) :> _
+
+
+type EnumerableAsyncQueryProvider () =
+  interface Linq.IAsyncQueryProvider with
+
+    member __.ExecuteEnumerableAsync<'a> (expression) =
       let mutable q = Unchecked.defaultof<_>
       if not (expression.TryExtractQueryable (&q)) then
         invalidOp "Should never happen"
-      q.Provider.Execute<seq<'a>>(expression).ToAsyncEnumerable ()
+      AsAsyncEnumerable<_> (q.Provider.Execute<seq<'a>>(expression)) :> Collections.Generic.IAsyncEnumerable<_>
 
     member __.ExecuteAsync<'a> (expression, _cancellationToken) =
       let mutable q = Unchecked.defaultof<_>
@@ -35,14 +49,14 @@ type EnumerableAsyncQueryProvider () =
       q.Provider.Execute<'a> expression |> Task.FromResult
 
 type EnumerableQueryAdapter () =
-  interface NCoreUtils.Linq.IAsyncQueryAdapter with
+  interface Linq.IAsyncQueryAdapter with
     member __.GetAdapterAsync (next, provider, _cancellationToken) =
       let pty = provider.GetType ()
-      match pty.IsConstructedGenericType && pty.GetGenericTypeDefinition () = typedefof<System.Linq.EnumerableQuery<_>> with
-      | true -> EnumerableAsyncQueryProvider () |> Task.FromResult<NCoreUtils.Linq.IAsyncQueryProvider>
+      match pty.IsConstructedGenericType && pty.GetGenericTypeDefinition () = typedefof<EnumerableQuery<_>> with
+      | true -> EnumerableAsyncQueryProvider () |> ValueTask<Linq.IAsyncQueryProvider>
       | _    -> next.Invoke ()
 
-do NCoreUtils.Linq.AsyncQueryAdapters.Add <| EnumerableQueryAdapter ()
+do Linq.AsyncQueryAdapters.Add <| EnumerableQueryAdapter ()
 
 // *********************************************************
 // Test object

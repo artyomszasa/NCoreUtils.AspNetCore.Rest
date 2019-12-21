@@ -112,7 +112,6 @@ type internal ImmutableArrayBinder (serviceProvider : IServiceProvider, itemBind
             | false -> None
             | true  -> Some <| [ value ]
           itemBinder.AsyncBind (descriptor', tryGetParameters'))
-      |> Seq.toArray
       |> Async.Sequential
       >>| (Seq.cast<'item> >> ImmutableArray.CreateRange)
   interface IValueBinder with

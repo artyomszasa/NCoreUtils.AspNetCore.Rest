@@ -1,5 +1,6 @@
 .vscode
 .vs
+.ionide
 NCoreUtils*/bin
 NCoreUtils*/obj
 NCoreUtils.AspNetCore.Rest.Unit/coverage.opencover.xml
