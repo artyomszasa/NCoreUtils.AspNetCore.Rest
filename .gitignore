@@ -1,0 +1,9 @@
+.vs
+.vscode
+.ionide
+.fake
+
+NCoreUtils*/obj
+NCoreUtils*/bin
+NCoreUtils*Unit/coverage*.xml
+NCoreUtils*Unit/report

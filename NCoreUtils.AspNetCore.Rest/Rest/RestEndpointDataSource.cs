@@ -1,0 +1,184 @@
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Primitives;
+
+namespace NCoreUtils.AspNetCore.Rest
+{
+    public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpointConventionBuilder
+    {
+        private static class Segments
+        {
+            public static RoutePattern Combine(RoutePatternPathSegment? parentSegment, params string[] args)
+            {
+                // var segment = RoutePatternFactory.Segment(RoutePatternFactory.LiteralPart(rawSegment));
+                // return parentSegment is null
+                //     ? RoutePatternFactory.Pattern(segment)
+                //     : RoutePatternFactory.Pattern(parentSegment, segment);
+                if (parentSegment is null)
+                {
+                    return RoutePatternFactory.Pattern(args.Select(arg => RoutePatternFactory.Segment(RoutePatternFactory.ParameterPart(arg))));
+                }
+                return RoutePatternFactory.Pattern(args.Select(arg => RoutePatternFactory.Segment(RoutePatternFactory.ParameterPart(arg))).Prepend(parentSegment));
+            }
+        }
+
+        private static readonly Func<Type, Type> _idTypeFactory = entityType =>
+        {
+            if (NCoreUtils.Data.IdUtils.TryGetIdType(entityType, out var idType))
+            {
+                return idType;
+            }
+            throw new InvalidOperationException($"{entityType} does not implement IHasId interface.");
+        };
+
+        private readonly List<Action<EndpointBuilder>> _conventions = new List<Action<EndpointBuilder>>();
+
+        private readonly object _sync = new object();
+
+        private readonly RestConfiguration _configuration;
+
+        private IReadOnlyList<Endpoint>? _endpoints;
+
+        public override IReadOnlyList<Endpoint> Endpoints
+        {
+            get
+            {
+                if (_endpoints is null)
+                {
+                    lock (_sync)
+                    {
+                        if (_endpoints is null)
+                        {
+                            _endpoints = BuildEndpoints();
+                        }
+                    }
+                }
+                return _endpoints;
+            }
+        }
+
+        public RestEndpointDataSource(RestConfiguration configuration)
+        {
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        }
+
+        private RouteEndpointBuilder ApplyConventions(RouteEndpointBuilder builder)
+        {
+            foreach (var convention in _conventions)
+            {
+                convention(builder);
+            }
+            return builder;
+        }
+
+        private IReadOnlyList<Endpoint> BuildEndpoints()
+        {
+            var endpoints = new List<Endpoint>();
+            var prefixPatternSegment = string.IsNullOrEmpty(_configuration.Prefix) ? default : RoutePatternFactory.Segment(RoutePatternFactory.LiteralPart(_configuration.Prefix));
+            var collectionRoutePattern = Segments.Combine(prefixPatternSegment, "type");
+            var itemRoutePattern = Segments.Combine(prefixPatternSegment, "type", "id");
+            // COMMON
+            var idTypeCache = new ConcurrentDictionary<Type, Type>();
+            var entitiesConfiguration = _configuration.EntitiesConfiguration;
+            Func<Func<HttpContext, Type, Task>, RequestDelegate> restCollectionMethod = implementation =>
+                new RequestDelegate(httpContext =>
+                {
+                    var entityType = (string)httpContext.Request.RouteValues["type"];
+                    if (entitiesConfiguration.TryResolveType(entityType, out var type))
+                    {
+                        return implementation(httpContext, type);
+                    }
+                    httpContext.Response.StatusCode = 404;
+                    return Task.CompletedTask;
+                });
+            Func<Func<HttpContext, Type, object, Task>, RequestDelegate> restItemMethod = implementation =>
+                new RequestDelegate(httpContext =>
+                {
+                    var entityType = (string)httpContext.Request.RouteValues["type"];
+                    if (entitiesConfiguration.TryResolveType(entityType, out var type))
+                    {
+                        var idType = idTypeCache.GetOrAdd(type, _idTypeFactory);
+                        return implementation(httpContext, type, Convert.ChangeType(httpContext.Request.RouteValues["id"], idType));
+                    }
+                    httpContext.Response.StatusCode = 404;
+                    return Task.CompletedTask;
+                });
+            var accessConfiguration = _configuration.AccessConfiguration;
+            // *********************************************************************************************************
+            // COLLECTION ENDPOINT
+            RequestDelegate collectionRequestDelegate = restCollectionMethod(
+                (httpContext, entityType) => Invoker.InvokeList(entityType, httpContext, accessConfiguration)
+            );
+            endpoints.Add(ApplyConventions(new RouteEndpointBuilder(collectionRequestDelegate, collectionRoutePattern, 100)
+            {
+                DisplayName = $"REST-COLLECTION",
+                Metadata = { new HttpMethodMetadata(new [] { "GET" }) }
+            }).Build());
+            // *********************************************************************************************************
+            // ITEM / REDUCTION ENDPOINT
+            RequestDelegate itemRequestDelegate = restCollectionMethod(
+                (httpContext, entityType) =>
+                {
+                    var arg = (string)httpContext.Request.RouteValues["id"];
+                    if (DefaultReductions.Names.Contains(arg))
+                    {
+                        return Invoker.InvokeReduction(entityType, httpContext, arg, accessConfiguration);
+                    }
+                    var idType = idTypeCache.GetOrAdd(entityType, _idTypeFactory);
+                    return Invoker.InvokeItem(entityType, httpContext, Convert.ChangeType(arg, idType), accessConfiguration);
+                }
+            );
+            endpoints.Add(ApplyConventions(new RouteEndpointBuilder(itemRequestDelegate, itemRoutePattern, 100)
+            {
+                DisplayName = $"REST-ITEM",
+                Metadata = { new HttpMethodMetadata(new [] { "GET" }) }
+            }).Build());
+            // *********************************************************************************************************
+            // CREATE ENDPOINT
+            RequestDelegate createRequestDelegate = restCollectionMethod(
+                (httpContext, entityType) => Invoker.InvokeCreate(entityType, httpContext, accessConfiguration)
+            );
+            endpoints.Add(ApplyConventions(new RouteEndpointBuilder(createRequestDelegate, collectionRoutePattern, 100)
+            {
+                DisplayName = $"REST-CREATE",
+                Metadata = { new HttpMethodMetadata(new [] { "POST" }) }
+            }).Build());
+            // *********************************************************************************************************
+            // UPDATE ENDPOINT
+            RequestDelegate updateRequestDelegate = restItemMethod(
+                (httpContext, entityType, id) => Invoker.InvokeUpdate(entityType, httpContext, id, accessConfiguration)
+            );
+            endpoints.Add(ApplyConventions(new RouteEndpointBuilder(updateRequestDelegate, itemRoutePattern, 100)
+            {
+                DisplayName = $"REST-UPDATE",
+                Metadata = { new HttpMethodMetadata(new [] { "PUT" }) }
+            }).Build());
+            // *********************************************************************************************************
+            // DELETE ENDPOINT
+            RequestDelegate deleteRequestDelegate = restItemMethod(
+                (httpContext, entityType, id) => Invoker.InvokeDelete(entityType, httpContext, id, accessConfiguration)
+            );
+            endpoints.Add(ApplyConventions(new RouteEndpointBuilder(deleteRequestDelegate, itemRoutePattern, 100)
+            {
+                DisplayName = $"REST-DELETE",
+                Metadata = { new HttpMethodMetadata(new [] { "DELETE" }) }
+            }).Build());
+            // *********************************************************************************************************
+            return endpoints;
+        }
+
+        public void Add(Action<EndpointBuilder> convention)
+            => _conventions.Add(convention);
+
+        public override IChangeToken GetChangeToken()
+            => NullChangeToken.Singleton;
+    }
+}
