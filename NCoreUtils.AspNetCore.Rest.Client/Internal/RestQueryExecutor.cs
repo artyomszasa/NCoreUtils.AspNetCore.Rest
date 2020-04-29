@@ -28,9 +28,9 @@ namespace NCoreUtils.Rest.Internal
         private static string AdaptReduction(string input)
             => _reductionMap.TryGetValue(input, out var replacement) ? replacement : input;
 
-        readonly HttpRestClient _client;
+        readonly IHttpRestClient _client;
 
-        public RestQueryExecutor(HttpRestClient client)
+        public RestQueryExecutor(IHttpRestClient client)
             => _client = client ?? throw new ArgumentNullException(nameof(client));
 
         public IAsyncEnumerable<T> ExecuteEnumerationAsync<T>(

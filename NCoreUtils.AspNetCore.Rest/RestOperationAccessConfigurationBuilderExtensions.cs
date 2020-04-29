@@ -3,10 +3,10 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
+using NCoreUtils.AspNetCore.Rest;
 using NCoreUtils.AspNetCore.Rest.Internal;
 
-namespace NCoreUtils.AspNetCore.Rest
+namespace NCoreUtils.AspNetCore
 {
     public static class RestOperationAccessConfigurationBuilderExtensions
     {

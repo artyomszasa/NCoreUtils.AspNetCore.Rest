@@ -140,6 +140,16 @@ namespace NCoreUtils.AspNetCore.Rest
                 query: BuildFromList(Query)
             );
 
+        public RestAccessConfigurationBuilder RestrictAll<TAccessValidator>()
+            where TAccessValidator : IAccessValidator
+            => this.ConfigureGlobal(b => b.Add<TAccessValidator>());
+
+        public RestAccessConfigurationBuilder RestrictAll(Func<ClaimsPrincipal, CancellationToken, ValueTask<bool>> callback)
+            => this.ConfigureGlobal(b => b.Use(callback));
+
+        public RestAccessConfigurationBuilder RestrictAll(Func<ClaimsPrincipal, bool> callback)
+            => this.ConfigureGlobal(b => b.Use(callback));
+
         public RestAccessConfigurationBuilder RestrictCreate<TAccessValidator>()
             where TAccessValidator : IAccessValidator
             => this.ConfigureCreate(b => b.Add<TAccessValidator>());

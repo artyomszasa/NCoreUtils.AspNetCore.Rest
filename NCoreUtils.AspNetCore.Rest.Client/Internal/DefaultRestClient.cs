@@ -12,9 +12,9 @@ namespace NCoreUtils.Rest.Internal
     {
         private readonly ExpressionParser _expressionParser;
 
-        private readonly HttpRestClient _httpRestClient;
+        private readonly IHttpRestClient _httpRestClient;
 
-        public DefaultRestClient(ExpressionParser expressionParser, HttpRestClient httpRestClient)
+        public DefaultRestClient(ExpressionParser expressionParser, IHttpRestClient httpRestClient)
         {
             _expressionParser = expressionParser ?? throw new ArgumentNullException(nameof(expressionParser));
             _httpRestClient = httpRestClient ?? throw new ArgumentNullException(nameof(httpRestClient));
@@ -27,16 +27,16 @@ namespace NCoreUtils.Rest.Internal
 
         public Task<TId> CreateAsync<TData, TId>(TData data, CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
-            => _httpRestClient.CreateAsync<TData, TId>(data, default, cancellationToken);
+            => _httpRestClient.CreateAsync<TData, TId>(data, cancellationToken);
 
         public Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
             => _httpRestClient.DeleteAsync<TData, TId>(id, cancellationToken);
 
         public Task<TData> ItemAsync<TData, TId>(TId id, CancellationToken cancellationToken = default) where TData : IHasId<TId>
-            => _httpRestClient.ItemAsync<TData, TId>(id, default, cancellationToken);
+            => _httpRestClient.ItemAsync<TData, TId>(id, cancellationToken);
 
         public Task UpdateAsync<TData, TId>(TId id, TData data, CancellationToken cancellationToken = default) where TData : IHasId<TId>
-            => _httpRestClient.UpdateAsync<TData, TId>(id, data, default, cancellationToken);
+            => _httpRestClient.UpdateAsync<TData, TId>(id, data, cancellationToken);
     }
 }

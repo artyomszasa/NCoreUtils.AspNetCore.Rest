@@ -64,7 +64,7 @@ namespace NCoreUtils.Rest.Internal
                     ++index;
                 }
                 var typename = _nameResolver.ResolveTypeName(typeof(TData));
-                if (location.AsSpan().Slice(index).StartsWith(typename))
+                if (location.AsSpan().Slice(index).StartsWith(typename.AsSpan()))
                 {
                     index += typename.Length;
                     while (index < location.Length && location[index] == '/')
@@ -114,7 +114,11 @@ namespace NCoreUtils.Rest.Internal
             }
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
+            #if NETSTANDARD2_1
             await using var stream = await response.Content.ReadAsStreamAsync();
+            #else
+            using var stream = await response.Content.ReadAsStreamAsync();
+            #endif
             return await _serializerFactory.DeserializeAsync<List<T>>(stream, cancellationToken);
         }
 
@@ -127,7 +131,11 @@ namespace NCoreUtils.Rest.Internal
             using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
+            #if NETSTANDARD2_1
             await using var stream = await response.Content.ReadAsStreamAsync();
+            #else
+            using var stream = await response.Content.ReadAsStreamAsync();
+            #endif
             return await _serializerFactory.DeserializeAsync<TData>(stream, cancellationToken);
         }
 
@@ -220,7 +228,11 @@ namespace NCoreUtils.Rest.Internal
             }
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
+            #if NETSTANDARD2_1
             await using var stream = await response.Content.ReadAsStreamAsync();
+            #else
+            using var stream = await response.Content.ReadAsStreamAsync();
+            #endif
             return await _serializerFactory.DeserializeAsync(stream, resultType, cancellationToken);
         }
     }
