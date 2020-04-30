@@ -43,9 +43,7 @@ type DefaultRestCreate<'a, 'id when 'a :> IHasId<'id> and 'id : equality> =
   default this.AsyncInvoke (data : 'a) = async {
     // check if already exists
     if this.HasValidId data then
-      let! exists =
-        let id = data.Id
-        this.Repository.AsyncLookup data.Id >>| (box >> isNull >> not)
+      let! exists = this.Repository.AsyncLookup data.Id >>| (box >> isNull >> not)
       do
         match exists with
         | true ->

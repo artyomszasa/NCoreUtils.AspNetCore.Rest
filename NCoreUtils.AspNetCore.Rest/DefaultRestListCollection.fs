@@ -1,6 +1,7 @@
 namespace NCoreUtils.AspNetCore.Rest
 
 open System
+open System.Diagnostics
 open System.Diagnostics.CodeAnalysis
 open System.Linq
 open System.Runtime.CompilerServices
@@ -8,6 +9,7 @@ open NCoreUtils
 open NCoreUtils.Data
 open NCoreUtils.Linq
 open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Logging
 
 [<AutoOpen>]
 module private DefaultRestListCollectionHelpers =
@@ -15,29 +17,23 @@ module private DefaultRestListCollectionHelpers =
   let inline unboxQuery (queryable : IQueryable) = queryable :?> IQueryable<'a>
 
 /// <summary>
-/// Provides default implementation for REST LIST method.
+/// Provides default generic implementation for REST LIST method.
 /// </summary>
 /// <typeparam name="a">Type of the target object.</typeparam>
-type DefaultRestListCollection<'a>  =
-  val mutable serviceProvider : IServiceProvider
-  val mutable repository : IDataRepository<'a>
+[<AbstractClass>]
+type DefaultRestListCollectionBase<'a> =
+  val mutable serviceProvider: IServiceProvider
 
-  /// <summary>
-  /// Initializes new instance from the specified parameters.
-  /// </summary>
-  /// <param name="serviceProvider">Service provider.</param>
-  /// <param name="repository">Repository to use.</param>
-  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
-  new (serviceProvider, repository) =
-    { serviceProvider = serviceProvider
-      repository = repository }
+  new (serviceProvider) =
+    { serviceProvider = serviceProvider }
+
+  abstract CreateQuery: unit -> IQueryable<'a>
 
   abstract AsyncInvoke : restQuery:RestQuery * accessValidator:(IQueryable -> Async<IQueryable>) -> Async<struct ('a[] * int)>
 
   /// <summary>
   /// Performes REST LIST action for the specified type with the specified parameters.
   /// </summary>
-  /// <typeparam name="a">Type of the target object.</typeparam>
   /// <param name="restQuery">Query options specified in the request.</param>
   /// <param name="accessValidator">
   /// Queryable decorator that filters out non-accessible entities depending on the access configuration.
@@ -47,6 +43,9 @@ type DefaultRestListCollection<'a>  =
   /// parameter, and total entity count for the conditions specified by the rest query parameter.
   /// </returns>
   default this.AsyncInvoke (restQuery, accessValidator) = async {
+    let logger = this.serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger (this.GetType().Name)
+    let stopwatch = Stopwatch ()
+    stopwatch.Start ()
     // create filter applier
     let applyFilters =
       let instance =
@@ -64,15 +63,26 @@ type DefaultRestListCollection<'a>  =
         |> Option.orElseWith  (fun () -> tryGetService<IRestQueryOrderer> this.serviceProvider >>| (fun selector -> selector.For<'a>()))
         |> Option.defaultWith (fun () -> ActivatorUtilities.CreateInstance<DefaultQueryOrderer<'a>> this.serviceProvider :> _)
       fun queryable -> instance.OrderQuery (queryable, restQuery)
+    let prepareMs = stopwatch.ElapsedMilliseconds
     // execute queries
-    let! query = this.repository.Items |> applyFilters
+    let! query = this.CreateQuery () |> applyFilters
     let! total = Q.asyncCount query
+    let totalMs = stopwatch.ElapsedMilliseconds - prepareMs
     let! items =
       query
       |> applyOrdering
       |> Q.skip restQuery.Offset
       |> Q.take restQuery.Count
       |> Q.asyncToArray
+    stopwatch.Stop ()
+    let overallMs = stopwatch.ElapsedMilliseconds
+    logger.LogInformation (
+      "REST LIST operation executed (prepare took {0}ms, total query took {1}ms, item query took {2}ms, overall time {3}ms)",
+      prepareMs,
+      totalMs,
+      overallMs - totalMs,
+      totalMs
+    )
     return struct (items, total) }
 
   interface IRestListCollection<'a> with
@@ -80,3 +90,23 @@ type DefaultRestListCollection<'a>  =
   interface IBoxedInvoke<RestQuery, Linq.IQueryable -> Async<Linq.IQueryable>, struct ('a[] * int)> with
     member this.Instance = box this
     member this.AsyncInvoke (restQuery, accessValidator) = this.AsyncInvoke (restQuery, accessValidator)
+
+/// <summary>
+/// Provides default repository based implementation for REST LIST method.
+/// </summary>
+/// <typeparam name="a">Type of the target object.</typeparam>
+type DefaultRestListCollection<'a>  =
+  inherit DefaultRestListCollectionBase<'a>
+  val mutable repository : IDataRepository<'a>
+
+  /// <summary>
+  /// Initializes new instance from the specified parameters.
+  /// </summary>
+  /// <param name="serviceProvider">Service provider.</param>
+  /// <param name="repository">Repository to use.</param>
+  [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
+  new (serviceProvider, repository) =
+    { inherit DefaultRestListCollectionBase<'a> (serviceProvider)
+      repository = repository }
+
+  override this.CreateQuery () = this.repository.Items

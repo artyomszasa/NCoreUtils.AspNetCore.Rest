@@ -334,7 +334,7 @@ type IRestListCollection =
   abstract AsyncInvoke<'a> : restQuery:RestQuery * accessValidator:(IQueryable -> Async<IQueryable>)  -> Async<struct ('a[] * int)>
 
 /// <summary>
-/// Defines functionality to implement REST DELETE method for the concrete type.
+/// Defines functionality to implement REST LIST method for the concrete type.
 /// </summary>
 /// <typeparam name="a">Type of the target object.</typeparam>
 [<Interface>]

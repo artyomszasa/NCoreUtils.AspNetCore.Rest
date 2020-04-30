@@ -50,14 +50,14 @@ module RestMiddleware =
           |> getRequiredService<CurrentRestTypeName>
           |> setCurrentRestTypeName typeName
         match routeArgs, HttpContext.httpMethod httpContext with
-        | [],        HttpMethod.HttpGet    -> HttpContext.asyncBindAndExecute httpContext (mkHeaderParameterSource httpContext)  ListInvoker.invoke
-        | [],        HttpMethod.HttpPost   -> HttpContext.asyncBindAndExecute httpContext (mkHeaderParameterSource httpContext)  CreateInvoker.invoke
-        | [],        _                     -> MethodNotAllowedException () |> raise
-        | [ rawId ], HttpMethod.HttpGet    -> HttpContext.asyncBindAndExecute httpContext (mkHeaderParameterSource httpContext) (ItemInvoker.invoke   rawId.Value)
-        | [ rawId ], HttpMethod.HttpPut    -> HttpContext.asyncBindAndExecute httpContext (mkHeaderParameterSource httpContext) (UpdateInvoker.invoke rawId.Value)
-        | [ rawId ], HttpMethod.HttpDelete -> HttpContext.asyncBindAndExecute httpContext (mkHeaderParameterSource httpContext) (DeleteInvoker.invoke rawId.Value)
-        | [ _     ], _                     -> MethodNotAllowedException () |> raise
-        | _                                -> asyncNext
+        | [],        HttpGet    -> HttpContext.asyncBindAndExecute httpContext (mkHeaderParameterSource httpContext)  ListInvoker.invoke
+        | [],        HttpPost   -> HttpContext.asyncBindAndExecute httpContext (mkHeaderParameterSource httpContext)  CreateInvoker.invoke
+        | [],        _          -> MethodNotAllowedException () |> raise
+        | [ rawId ], HttpGet    -> HttpContext.asyncBindAndExecute httpContext (mkHeaderParameterSource httpContext) (ItemInvoker.invoke   rawId.Value)
+        | [ rawId ], HttpPut    -> HttpContext.asyncBindAndExecute httpContext (mkHeaderParameterSource httpContext) (UpdateInvoker.invoke rawId.Value)
+        | [ rawId ], HttpDelete -> HttpContext.asyncBindAndExecute httpContext (mkHeaderParameterSource httpContext) (DeleteInvoker.invoke rawId.Value)
+        | [ _     ], _          -> MethodNotAllowedException () |> raise
+        | _                     -> asyncNext
       | _ -> asyncNext
 
   /// <summary>
