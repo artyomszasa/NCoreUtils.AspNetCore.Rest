@@ -68,5 +68,8 @@ namespace NCoreUtils.AspNetCore.Rest
                 eArg
             );
         }
+
+        public static IQueryable<T> TakeWhenNonNegative<T>(this IQueryable<T> source, int value)
+            => value < 0 ? source : source.Take(value);
     }
 }

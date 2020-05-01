@@ -61,7 +61,7 @@ namespace NCoreUtils.AspNetCore.Rest
                 var finalQuery = filteredQueryTask.Result
                     .Apply(QueryOrderer, restQuery)
                     .Skip(restQuery.Offset)
-                    .Take(restQuery.Count);
+                    .TakeWhenNonNegative(restQuery.Count);
                 return finalQuery is IAsyncEnumerable<T> asEnumerable ? asEnumerable : finalQuery.ExecuteAsync(cancellationToken);
             }
 
@@ -71,7 +71,7 @@ namespace NCoreUtils.AspNetCore.Rest
                 var finalQuery = sourceQuery
                     .Apply(QueryOrderer, restQuery)
                     .Skip(restQuery.Offset)
-                    .Take(restQuery.Count);
+                    .TakeWhenNonNegative(restQuery.Count);
                 return finalQuery is IAsyncEnumerable<T> asEnumerable ? asEnumerable : finalQuery.ExecuteAsync(ctoken);
             });
         }

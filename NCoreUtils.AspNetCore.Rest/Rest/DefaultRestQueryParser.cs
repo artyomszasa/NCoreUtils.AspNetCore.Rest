@@ -86,12 +86,12 @@ namespace NCoreUtils.AspNetCore.Rest
                     ? ivalue
                     : 100000;
             // filter
-            var filter = headers.TryGetValue("X-Filter", out values) && values.Count > 0 ? values[0] : null;
+            var filter = headers.TryGetValue("X-Filter", out values) && values.Count > 0 ? Uri.UnescapeDataString(values[0]) : null;
             // sort by
             var sortByBuilder = TinyImmutableArray.CreateBuilder<string>();
             if (headers.TryGetValue("X-Sort-By", out values) && values.Count > 0)
             {
-                SplitSortBy(values[0].AsSpan(), ref sortByBuilder);
+                SplitSortBy(Uri.UnescapeDataString(values[0]).AsSpan(), ref sortByBuilder);
             }
             // sort by direction
             var sortByDirectionsBuilder = TinyImmutableArray.CreateBuilder<RestSortByDirection>();

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -73,6 +74,44 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             _deserializer = deserializer;
         }
 
+        private Uri CreateItemUri(HttpContext httpContext, TId id)
+        {
+            // TODO: generate location based on configuration instead...
+            var request = httpContext.Request;
+            var builder = new UriBuilder
+            {
+                Scheme = request.Scheme,
+                Path = request.Path.ToUriComponent()
+            };
+            if (request.Host.HasValue)
+            {
+                builder.Host = request.Host.Host;
+                if (request.Host.Port.HasValue)
+                {
+                    var port = request.Host.Port.Value;
+                    if (!((request.IsHttps && port == 443) || (!request.IsHttps && port == 80)))
+                    {
+                        builder.Port = port;
+                    }
+                }
+            }
+            else
+            {
+                builder.Host = "127.0.0.1";
+            }
+            var idPart = id is IConvertible convertible
+                ? convertible.ToString(CultureInfo.InvariantCulture)
+                : id!.ToString();
+            if (!builder.Path.EndsWith('/'))
+            {
+                builder.Path += idPart;
+            }
+            else
+            {
+                builder.Path += $"/{idPart}";
+            }
+            return builder.Uri;
+        }
 
         public override async ValueTask Invoke(HttpContext httpContext, CancellationToken cancellationToken)
         {
@@ -85,9 +124,8 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                 }
                 var data = await _deserializer.DeserializeAsync(httpContext.Request.Body, cancellationToken);
                 var invocation = new RestCreateInvocation<TData, TId>(_implementation, data);
-                await _methodInvoker.InvokeAsync(invocation, cancellationToken);
-                // FIXME: add location
-                // httpContext.Response.Headers.Append("Location", );
+                var result = await _methodInvoker.InvokeAsync(invocation, cancellationToken);
+                httpContext.Response.Headers.Append("Location", CreateItemUri(httpContext, result.Id).AbsoluteUri);
                 httpContext.Response.StatusCode = 201;
             }
             finally

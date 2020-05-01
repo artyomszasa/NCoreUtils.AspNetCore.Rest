@@ -89,27 +89,51 @@ namespace NCoreUtils.AspNetCore.Rest
             var idTypeCache = new ConcurrentDictionary<Type, Type>();
             var entitiesConfiguration = _configuration.EntitiesConfiguration;
             Func<Func<HttpContext, Type, Task>, RequestDelegate> restCollectionMethod = implementation =>
-                new RequestDelegate(httpContext =>
+                new RequestDelegate(async httpContext =>
                 {
-                    var entityType = (string)httpContext.Request.RouteValues["type"];
-                    if (entitiesConfiguration.TryResolveType(entityType, out var type))
+                    try
                     {
-                        return implementation(httpContext, type);
+                        var entityType = (string)httpContext.Request.RouteValues["type"];
+                        if (entitiesConfiguration.TryResolveType(entityType, out var type))
+                        {
+                            await implementation(httpContext, type);
+                        }
+                        else
+                        {
+                            httpContext.Response.StatusCode = 404;
+                        }
                     }
-                    httpContext.Response.StatusCode = 404;
-                    return Task.CompletedTask;
+                    catch (Exception exn)
+                    {
+                        httpContext.Response.StatusCode = exn is IStatusCodeResponse ecode
+                            ? ecode.StatusCode
+                            : exn is InvalidOperationException ? 400 : 500;
+                        httpContext.Response.Headers.Add("X-Message", exn.Message);
+                    }
                 });
             Func<Func<HttpContext, Type, object, Task>, RequestDelegate> restItemMethod = implementation =>
-                new RequestDelegate(httpContext =>
+                new RequestDelegate(async httpContext =>
                 {
-                    var entityType = (string)httpContext.Request.RouteValues["type"];
-                    if (entitiesConfiguration.TryResolveType(entityType, out var type))
+                    try
                     {
-                        var idType = idTypeCache.GetOrAdd(type, _idTypeFactory);
-                        return implementation(httpContext, type, Convert.ChangeType(httpContext.Request.RouteValues["id"], idType));
+                        var entityType = (string)httpContext.Request.RouteValues["type"];
+                        if (entitiesConfiguration.TryResolveType(entityType, out var type))
+                        {
+                            var idType = idTypeCache.GetOrAdd(type, _idTypeFactory);
+                            await implementation(httpContext, type, Convert.ChangeType(httpContext.Request.RouteValues["id"], idType));
+                        }
+                        else
+                        {
+                            httpContext.Response.StatusCode = 404;
+                        }
                     }
-                    httpContext.Response.StatusCode = 404;
-                    return Task.CompletedTask;
+                    catch (Exception exn)
+                    {
+                        httpContext.Response.StatusCode = exn is IStatusCodeResponse ecode
+                            ? ecode.StatusCode
+                            : exn is InvalidOperationException ? 400 : 500;
+                        httpContext.Response.Headers.Add("X-Message", exn.Message);
+                    }
                 });
             var accessConfiguration = _configuration.AccessConfiguration;
             // *********************************************************************************************************
