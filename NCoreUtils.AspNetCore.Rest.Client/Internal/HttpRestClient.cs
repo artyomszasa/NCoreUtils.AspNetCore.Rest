@@ -97,7 +97,10 @@ namespace NCoreUtils.Rest.Internal
         {
             var requestUri = _configuration.GetCollectionEndpoint<T>(_nameResolver);
             using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-            request.Headers.Add("X-Filter", Uri.EscapeDataString(filter));
+            if (!string.IsNullOrEmpty(filter))
+            {
+                request.Headers.Add("X-Filter", Uri.EscapeDataString(filter));
+            }
             if (!string.IsNullOrEmpty(sortBy))
             {
                 request.Headers.Add("X-Sort-By", Uri.EscapeDataString(sortBy));
@@ -211,7 +214,10 @@ namespace NCoreUtils.Rest.Internal
             };
             var requestUri = _configuration.GetItemOrReductionEndpoint<T>(_nameResolver, reduction);
             using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-            request.Headers.Add("X-Filter", Uri.EscapeDataString(filter));
+            if (!string.IsNullOrEmpty(filter))
+            {
+                request.Headers.Add("X-Filter", Uri.EscapeDataString(filter));
+            }
             if (!string.IsNullOrEmpty(sortBy))
             {
                 request.Headers.Add("X-Sort-By", Uri.EscapeDataString(sortBy));

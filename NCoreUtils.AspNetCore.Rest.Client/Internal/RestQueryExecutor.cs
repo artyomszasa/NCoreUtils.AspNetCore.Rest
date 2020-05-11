@@ -44,8 +44,8 @@ namespace NCoreUtils.Rest.Internal
             {
                 var results = await _client.ListCollectionAsync<T>(
                     target,
-                    NodeModule.Stringify(filter),
-                    NodeModule.Stringify(sortBy),
+                    filter is null ? default : NodeModule.Stringify(filter),
+                    sortBy is null ? default : NodeModule.Stringify(sortBy),
                     isDescending ? "desc" : "asc",
                     offset,
                     limit == 0 ? (int?)default : limit,
@@ -67,8 +67,8 @@ namespace NCoreUtils.Rest.Internal
             var result = await _client.ReductionAsync<TSource>(
                 AdaptReduction(reduction),
                 target,
-                NodeModule.Stringify(filter),
-                NodeModule.Stringify(sortBy),
+                filter is null ? default : NodeModule.Stringify(filter),
+                sortBy is null ? default : NodeModule.Stringify(sortBy),
                 isDescending ? "desc" : "asc",
                 offset,
                 limit == 0 ? (int?)default : limit,

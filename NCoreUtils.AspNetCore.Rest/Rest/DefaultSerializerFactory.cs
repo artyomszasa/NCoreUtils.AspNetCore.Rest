@@ -53,7 +53,7 @@ namespace NCoreUtils.AspNetCore.Rest
             => GetSerializer<T>().SerializeAsync(configurableStream, item, cancellationToken);
 
         public virtual ISerializer<T> GetSerializer<T>()
-            => ServiceProvider.GetRequiredService<ISerializer<T>>();
+            => ServiceProvider.GetService<ISerializer<T>>() ?? ActivatorUtilities.CreateInstance<DefaultSerializer<T>>(ServiceProvider);
 
         public ValueTask SerializeAsync(IConfigurableOutput<Stream> configurableStream, object item, Type type, CancellationToken cancellationToken = default)
             => Invoker.Serialize(this, configurableStream, item, type, cancellationToken);

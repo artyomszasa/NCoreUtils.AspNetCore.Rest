@@ -7,7 +7,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 
 namespace NCoreUtils.AspNetCore.Rest
@@ -91,9 +93,10 @@ namespace NCoreUtils.AspNetCore.Rest
             Func<Func<HttpContext, Type, Task>, RequestDelegate> restCollectionMethod = implementation =>
                 new RequestDelegate(async httpContext =>
                 {
+                    string? entityType = default;
                     try
                     {
-                        var entityType = (string)httpContext.Request.RouteValues["type"];
+                        entityType = (string)httpContext.Request.RouteValues["type"];
                         if (entitiesConfiguration.TryResolveType(entityType, out var type))
                         {
                             await implementation(httpContext, type);
@@ -105,18 +108,29 @@ namespace NCoreUtils.AspNetCore.Rest
                     }
                     catch (Exception exn)
                     {
-                        httpContext.Response.StatusCode = exn is IStatusCodeResponse ecode
-                            ? ecode.StatusCode
-                            : exn is InvalidOperationException ? 400 : 500;
+                        var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
+                        int statusCode;
+                        if (StatusCodeResponse.TryExtract(exn, out var ecode))
+                        {
+                            statusCode = ecode.StatusCode;
+                            logger.LogDebug(exn, "Expected error occured during endpoint execution.");
+                        }
+                        else
+                        {
+                            statusCode = exn is InvalidOperationException ? 400 : 500;
+                            logger.LogError(exn, "Error occured during endpoint execution.");
+                        }
+                        httpContext.Response.StatusCode = statusCode;
                         httpContext.Response.Headers.Add("X-Message", exn.Message);
                     }
                 });
             Func<Func<HttpContext, Type, object, Task>, RequestDelegate> restItemMethod = implementation =>
                 new RequestDelegate(async httpContext =>
                 {
+                    string? entityType = default;
                     try
                     {
-                        var entityType = (string)httpContext.Request.RouteValues["type"];
+                        entityType = (string)httpContext.Request.RouteValues["type"];
                         if (entitiesConfiguration.TryResolveType(entityType, out var type))
                         {
                             var idType = idTypeCache.GetOrAdd(type, _idTypeFactory);
@@ -129,9 +143,19 @@ namespace NCoreUtils.AspNetCore.Rest
                     }
                     catch (Exception exn)
                     {
-                        httpContext.Response.StatusCode = exn is IStatusCodeResponse ecode
-                            ? ecode.StatusCode
-                            : exn is InvalidOperationException ? 400 : 500;
+                        var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
+                        int statusCode;
+                        if (StatusCodeResponse.TryExtract(exn, out var ecode))
+                        {
+                            statusCode = ecode.StatusCode;
+                            logger.LogDebug(exn, "Expected error occured during endpoint execution.");
+                        }
+                        else
+                        {
+                            statusCode = exn is InvalidOperationException ? 400 : 500;
+                            logger.LogError(exn, "Error occured during endpoint execution.");
+                        }
+                        httpContext.Response.StatusCode = statusCode;
                         httpContext.Response.Headers.Add("X-Message", exn.Message);
                     }
                 });
