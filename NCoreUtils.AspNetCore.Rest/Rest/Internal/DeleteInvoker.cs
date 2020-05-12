@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.Data;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal
@@ -60,13 +61,13 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         public DeleteInvoker(
             IServiceProvider serviceProvider,
             RestAccessConfiguration accessConfiguration,
-            IRestMethodInvoker methodInvoker,
-            IRestDelete<TData, TId> implementation)
+            IRestMethodInvoker? methodInvoker = default,
+            IRestDelete<TData, TId>? implementation = default)
         {
             _serviceProvider = serviceProvider;
             _accessConfiguration = accessConfiguration;
-            _methodInvoker = methodInvoker;
-            _implementation = implementation;
+            _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
+            _implementation = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestDelete<TData, TId>>(serviceProvider);
         }
 
         public override async ValueTask Invoke(HttpContext httpContext, object id, CancellationToken cancellationToken)

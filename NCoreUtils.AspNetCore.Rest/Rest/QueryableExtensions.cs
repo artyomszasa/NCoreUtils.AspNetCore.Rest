@@ -63,7 +63,7 @@ namespace NCoreUtils.AspNetCore.Rest
             return Expression.Lambda<Func<TData, bool>>(
                 Expression.Equal(
                     BoxConstant(value),
-                    idSelector.SubstituteParameter(idSelector.Parameters[0], eArg)
+                    idSelector.Body.SubstituteParameter(idSelector.Parameters[0], eArg)
                 ),
                 eArg
             );

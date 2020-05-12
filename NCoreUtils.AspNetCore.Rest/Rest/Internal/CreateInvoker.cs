@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.Data;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal
@@ -63,15 +64,15 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         public CreateInvoker(
             IServiceProvider serviceProvider,
             RestAccessConfiguration accessConfiguration,
-            IRestMethodInvoker methodInvoker,
-            IRestCreate<TData, TId> implementation,
-            IDeserializer<TData> deserializer)
+            IRestMethodInvoker? methodInvoker = default,
+            IRestCreate<TData, TId>? implementation = default,
+            IDeserializer<TData>? deserializer = default)
         {
             _serviceProvider = serviceProvider;
             _accessConfiguration = accessConfiguration;
-            _methodInvoker = methodInvoker;
-            _implementation = implementation;
-            _deserializer = deserializer;
+            _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
+            _implementation = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestCreate<TData, TId>>(serviceProvider);
+            _deserializer = deserializer ?? ActivatorUtilities.CreateInstance<DefaultDeserializer<TData>>(serviceProvider);
         }
 
         private Uri CreateItemUri(HttpContext httpContext, TId id)
@@ -102,7 +103,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             var idPart = id is IConvertible convertible
                 ? convertible.ToString(CultureInfo.InvariantCulture)
                 : id!.ToString();
-            if (!builder.Path.EndsWith('/'))
+            if (builder.Path.EndsWith('/'))
             {
                 builder.Path += idPart;
             }

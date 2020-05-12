@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal
@@ -101,6 +102,54 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             }
             mayRequireDisposal = true;
             return (IAccessValidator)ActivatorUtilities.CreateInstance(serviceProvider, Type);
+        }
+
+        public bool TryCreateQueryAccessValidator(
+            IServiceProvider serviceProvider,
+            out bool mayRequireDisposal,
+            [NotNullWhen(true)] out IQueryAccessValidator? queryAccessValidator)
+        {
+            if (null != Type)
+            {
+                if (typeof(IQueryAccessValidator).IsAssignableFrom(Type))
+                {
+                    queryAccessValidator = (IQueryAccessValidator)ActivatorUtilities.CreateInstance(serviceProvider, Type);
+                    mayRequireDisposal = true;
+                    return true;
+                }
+                queryAccessValidator = default;
+                mayRequireDisposal = default;
+                return false;
+            }
+            if (null != Instance)
+            {
+                if (Instance is IQueryAccessValidator qav)
+                {
+                    queryAccessValidator = qav;
+                    mayRequireDisposal = false;
+                    return true;
+                }
+                queryAccessValidator = default;
+                mayRequireDisposal = default;
+                return false;
+            }
+            if (null != Factory)
+            {
+                var validator = Factory(serviceProvider);
+                if (validator is IQueryAccessValidator qav)
+                {
+                    queryAccessValidator = qav;
+                    mayRequireDisposal = true;
+                    return true;
+                }
+                (validator as IDisposable)?.Dispose();
+                queryAccessValidator = default;
+                mayRequireDisposal = default;
+                return false;
+            }
+            queryAccessValidator = default;
+            mayRequireDisposal = default;
+            return false;
         }
     }
 }

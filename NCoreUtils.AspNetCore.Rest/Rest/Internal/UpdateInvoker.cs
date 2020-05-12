@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.Data;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal
@@ -65,15 +66,15 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         public UpdateInvoker(
             IServiceProvider serviceProvider,
             RestAccessConfiguration accessConfiguration,
-            IRestMethodInvoker methodInvoker,
-            IRestUpdate<TData, TId> implementation,
-            IDeserializer<TData> deserializer)
+            IRestMethodInvoker? methodInvoker = default,
+            IRestUpdate<TData, TId>? implementation = default,
+            IDeserializer<TData>? deserializer = default)
         {
             _serviceProvider = serviceProvider;
             _accessConfiguration = accessConfiguration;
-            _methodInvoker = methodInvoker;
-            _implementation = implementation;
-            _deserializer = deserializer;
+            _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
+            _implementation = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestUpdate<TData, TId>>(serviceProvider);
+            _deserializer = deserializer ?? ActivatorUtilities.CreateInstance<DefaultDeserializer<TData>>(serviceProvider);
         }
 
         public override async ValueTask Invoke(HttpContext httpContext, object id, CancellationToken cancellationToken)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,7 +43,7 @@ namespace NCoreUtils.AspNetCore.Rest
             }
         }
 
-        sealed class CompositeAccessValidator : IAccessValidator
+        sealed class CompositeAccessValidator : IQueryAccessValidator
         {
             readonly IServiceProvider _serviceProvider;
 
@@ -52,6 +53,23 @@ namespace NCoreUtils.AspNetCore.Rest
             {
                 _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
                 _descriptors = descriptors;
+            }
+
+            public async ValueTask<IQueryable> FilterQueryAsync(IQueryable source, ClaimsPrincipal principal, CancellationToken cancellationToken)
+            {
+                var result = source;
+                foreach (var descriptor in _descriptors)
+                {
+                    if (descriptor.TryCreateQueryAccessValidator(_serviceProvider, out var mayRequireDisposal, out var queryAccessValidator))
+                    {
+                        result = await queryAccessValidator.FilterQueryAsync(result, principal, cancellationToken);
+                        if (mayRequireDisposal)
+                        {
+                            (queryAccessValidator as IDisposable)?.Dispose();
+                        }
+                    }
+                }
+                return result;
             }
 
             public async ValueTask<bool> ValidateAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)
