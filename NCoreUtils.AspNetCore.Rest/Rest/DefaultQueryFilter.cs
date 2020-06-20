@@ -27,7 +27,16 @@ namespace NCoreUtils.AspNetCore.Rest
             Expression<Func<T, bool>> predicate;
             try
             {
-                predicate = (Expression<Func<T, bool>>)_queryExpressionBuilder.BuildExpression(typeof(T), restQuery.Filter);
+                var expression = _queryExpressionBuilder.BuildExpression(typeof(T), restQuery.Filter);
+                if (expression.Body.TryExtractConstant(out var cbox))
+                {
+                    var cbool = (bool)Convert.ChangeType(cbox, typeof(bool));
+                    predicate = Expression.Lambda<Func<T, bool>>(QueryableExtensions.BoxConstant(cbool), expression.Parameters);
+                }
+                else
+                {
+                    predicate = (Expression<Func<T, bool>>)expression;
+                }
             }
             catch (Exception exn)
             {

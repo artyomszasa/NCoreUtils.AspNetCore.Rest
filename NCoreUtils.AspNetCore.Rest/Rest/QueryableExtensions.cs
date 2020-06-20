@@ -33,12 +33,6 @@ namespace NCoreUtils.AspNetCore.Rest
             throw new InvalidOperationException($"Invalid entity type {type}.");
         };
 
-        static Expression BoxConstant<T>(T value)
-        {
-            var box = new ValueBox<T>(value);
-            return Expression.Property(Expression.Constant(box), nameof(ValueBox<T>.Value));
-        }
-
         static Expression<Func<TData, TId>> CreateIdSelector<TData, TId>()
             where TData : IHasId<TId>
             => LinqExtensions.ReplaceExplicitProperties<Func<TData, TId>>(e => e.Id);
@@ -54,6 +48,12 @@ namespace NCoreUtils.AspNetCore.Rest
 
         internal static async ValueTask<IQueryable<T>> ApplyAsync<T>(this IQueryable<T> source, AsyncQueryFilter filter, CancellationToken cancellationToken)
             => (IQueryable<T>)await filter(source, cancellationToken);
+
+        public static Expression BoxConstant<T>(T value)
+        {
+            var box = new ValueBox<T>(value);
+            return Expression.Property(Expression.Constant(box), nameof(ValueBox<T>.Value));
+        }
 
         public static Expression<Func<TData, bool>> CreateIdEqualityPredicate<TData, TId>(TId value)
             where TData : IHasId<TId>
