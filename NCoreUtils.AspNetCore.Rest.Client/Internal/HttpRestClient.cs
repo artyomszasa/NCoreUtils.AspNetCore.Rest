@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
@@ -176,7 +177,7 @@ namespace NCoreUtils.Rest.Internal
             {
                 throw new InvalidOperationException($"Invalid id.");
             }
-            var requestUri = _configuration.GetCollectionEndpoint<TData>(_nameResolver);
+            var requestUri = _configuration.GetItemOrReductionEndpoint<TData>(_nameResolver, Convert.ToString(data.Id, CultureInfo.InvariantCulture));
             using var request = new HttpRequestMessage(HttpMethod.Put, requestUri)
             {
                 Content = new SerializedContent<TData>(data, _serializerFactory.GetSerializer<TData>())
@@ -234,6 +235,10 @@ namespace NCoreUtils.Rest.Internal
             }
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
+            if (HttpStatusCode.NoContent == response.StatusCode)
+            {
+                return resultType.IsValueType ? Activator.CreateInstance(resultType) : null!;
+            }
             #if NETSTANDARD2_1
             await using var stream = await response.Content.ReadAsStreamAsync();
             #else

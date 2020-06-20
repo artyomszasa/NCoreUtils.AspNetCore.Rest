@@ -4,7 +4,7 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>NCoreUtils.Rest</RootNamespace>
-    <Version>3.1.0-alpha8</Version>
+    <Version>3.1.0-alpha10</Version>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.AspNetCore.Rest.Client.Abstractions\NCoreUtils.AspNetCore.Rest.Client.Abstractions.csproj" />
