@@ -10,33 +10,33 @@ namespace NCoreUtils.Rest.Internal
 {
     public class DefaultRestClient : IRestClient
     {
-        private readonly ExpressionParser _expressionParser;
+        protected ExpressionParser ExpressionParser { get; }
 
-        private readonly IHttpRestClient _httpRestClient;
+        protected IHttpRestClient HttpRestClient { get; }
 
         public DefaultRestClient(ExpressionParser expressionParser, IHttpRestClient httpRestClient)
         {
-            _expressionParser = expressionParser ?? throw new ArgumentNullException(nameof(expressionParser));
-            _httpRestClient = httpRestClient ?? throw new ArgumentNullException(nameof(httpRestClient));
+            ExpressionParser = expressionParser ?? throw new ArgumentNullException(nameof(expressionParser));
+            HttpRestClient = httpRestClient ?? throw new ArgumentNullException(nameof(httpRestClient));
         }
 
-        public IQueryable<T> Collection<T>()
+        public virtual IQueryable<T> Collection<T>()
             => DirectQuery.Create<T>(
-                new QueryProvider(_expressionParser, new RestQueryExecutor(_httpRestClient))
+                new QueryProvider(ExpressionParser, new RestQueryExecutor(HttpRestClient))
             );
 
-        public Task<TId> CreateAsync<TData, TId>(TData data, CancellationToken cancellationToken = default)
+        public virtual Task<TId> CreateAsync<TData, TId>(TData data, CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
-            => _httpRestClient.CreateAsync<TData, TId>(data, cancellationToken);
+            => HttpRestClient.CreateAsync<TData, TId>(data, cancellationToken);
 
-        public Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
+        public virtual Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
-            => _httpRestClient.DeleteAsync<TData, TId>(id, cancellationToken);
+            => HttpRestClient.DeleteAsync<TData, TId>(id, cancellationToken);
 
-        public Task<TData> ItemAsync<TData, TId>(TId id, CancellationToken cancellationToken = default) where TData : IHasId<TId>
-            => _httpRestClient.ItemAsync<TData, TId>(id, cancellationToken);
+        public virtual Task<TData> ItemAsync<TData, TId>(TId id, CancellationToken cancellationToken = default) where TData : IHasId<TId>
+            => HttpRestClient.ItemAsync<TData, TId>(id, cancellationToken);
 
-        public Task UpdateAsync<TData, TId>(TId id, TData data, CancellationToken cancellationToken = default) where TData : IHasId<TId>
-            => _httpRestClient.UpdateAsync<TData, TId>(id, data, cancellationToken);
+        public virtual Task UpdateAsync<TData, TId>(TId id, TData data, CancellationToken cancellationToken = default) where TData : IHasId<TId>
+            => HttpRestClient.UpdateAsync<TData, TId>(id, data, cancellationToken);
     }
 }

@@ -38,18 +38,22 @@ namespace NCoreUtils.Rest.Internal
             Node? filter = null,
             Node? sortBy = null,
             bool isDescending = false,
+            IReadOnlyList<string>? fields = default,
+            IReadOnlyList<string>? includes = default,
             int offset = 0,
             int limit = 0)
             => new DelayedAsyncEnumerable<T>(async cancellationToken =>
             {
                 var results = await _client.ListCollectionAsync<T>(
-                    target,
-                    filter is null ? default : NodeModule.Stringify(filter),
-                    sortBy is null ? default : NodeModule.Stringify(sortBy),
-                    isDescending ? "desc" : "asc",
-                    offset,
-                    limit == 0 ? (int?)default : limit,
-                    cancellationToken
+                    target: target,
+                    filter: filter is null ? default : NodeModule.Stringify(filter),
+                    sortBy: sortBy is null ? default : NodeModule.Stringify(sortBy),
+                    sortByDirection: isDescending ? "desc" : "asc",
+                    fields: fields,
+                    includes: includes,
+                    offset: offset,
+                    limit: limit == 0 ? (int?)default : limit,
+                    cancellationToken: cancellationToken
                 );
                 return results.ToAsyncEnumerable();
             });

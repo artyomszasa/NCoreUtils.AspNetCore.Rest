@@ -20,13 +20,13 @@ namespace NCoreUtils.Rest.Internal
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        private readonly IRestClientConfiguration _configuration;
+        protected IRestClientConfiguration Configuration { get; }
 
-        private readonly IRestTypeNameResolver _nameResolver;
+        protected IRestTypeNameResolver NameResolver;
 
-        private readonly ISerializerFactory _serializerFactory;
+        protected ISerializerFactory SerializerFactory;
 
-        private readonly ILogger _logger;
+        protected ILogger Logger;
 
         private readonly IHttpClientFactory? _httpClientFactory;
 
@@ -42,14 +42,14 @@ namespace NCoreUtils.Rest.Internal
             {
                 throw new ArgumentNullException(nameof(serviceProvider));
             }
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _nameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
-            _serializerFactory = serializerFactory ?? ActivatorUtilities.CreateInstance<DefaultSerializerFactory>(serviceProvider);
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            NameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
+            SerializerFactory = serializerFactory ?? ActivatorUtilities.CreateInstance<DefaultSerializerFactory>(serviceProvider);
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _httpClientFactory = httpClientFactory;
         }
 
-        private void HandleErrors(HttpResponseMessage response, string requestUri)
+        protected virtual void HandleErrors(HttpResponseMessage response, string requestUri)
         {
             // FIXME: implement
             response.EnsureSuccessStatusCode();
@@ -57,14 +57,14 @@ namespace NCoreUtils.Rest.Internal
 
         private TId ParseLocation<TData, TId>(string location, string requestUri)
         {
-            if (location.StartsWith(_configuration.Endpoint))
+            if (location.StartsWith(Configuration.Endpoint))
             {
-                var index = _configuration.Endpoint.Length;
+                var index = Configuration.Endpoint.Length;
                 while (index < location.Length && location[index] == '/')
                 {
                     ++index;
                 }
-                var typename = _nameResolver.ResolveTypeName(typeof(TData));
+                var typename = NameResolver.ResolveTypeName(typeof(TData));
                 if (location.AsSpan().Slice(index).StartsWith(typename.AsSpan()))
                 {
                     index += typename.Length;
@@ -78,25 +78,27 @@ namespace NCoreUtils.Rest.Internal
             throw new RestException(requestUri, "REST CREATE returned invalid location.");
         }
 
-        private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected virtual async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             using var client = CreateClient();
             return await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         }
 
         protected virtual HttpClient CreateClient()
-            => _httpClientFactory?.CreateClient(_configuration.HttpClient) ?? new HttpClient();
+            => _httpClientFactory?.CreateClient(Configuration.HttpClient) ?? new HttpClient();
 
-        public async Task<IReadOnlyList<T>> ListCollectionAsync<T>(
+        public virtual async Task<IReadOnlyList<T>> ListCollectionAsync<T>(
             string? target = default,
             string? filter = default,
             string? sortBy = default,
             string? sortByDirection = default,
+            IReadOnlyList<string>? fields = default,
+            IReadOnlyList<string>? includes = default,
             int offset = 0,
             int? limit = default,
             CancellationToken cancellationToken = default)
         {
-            var requestUri = _configuration.GetCollectionEndpoint<T>(_nameResolver);
+            var requestUri = Configuration.GetCollectionEndpoint<T>(NameResolver);
             using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
             if (!string.IsNullOrEmpty(filter))
             {
@@ -123,35 +125,39 @@ namespace NCoreUtils.Rest.Internal
             #else
             using var stream = await response.Content.ReadAsStreamAsync();
             #endif
-            return await _serializerFactory.DeserializeAsync<List<T>>(stream, cancellationToken);
+            return await SerializerFactory.DeserializeAsync<List<T>>(stream, cancellationToken);
         }
 
-        public async Task<TData> ItemAsync<TData, TId>(
+        public virtual async Task<TData> ItemAsync<TData, TId>(
             TId id,
             CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
         {
-            var requestUri = _configuration.GetItemOrReductionEndpoint<TData>(_nameResolver, Convert.ToString(id, CultureInfo.InvariantCulture));
+            var requestUri = Configuration.GetItemOrReductionEndpoint<TData>(NameResolver, Convert.ToString(id, CultureInfo.InvariantCulture));
             using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
             using var response = await SendAsync(request, cancellationToken);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return default!;
+            }
             HandleErrors(response, requestUri);
             #if NETSTANDARD2_1
             await using var stream = await response.Content.ReadAsStreamAsync();
             #else
             using var stream = await response.Content.ReadAsStreamAsync();
             #endif
-            return await _serializerFactory.DeserializeAsync<TData>(stream, cancellationToken);
+            return await SerializerFactory.DeserializeAsync<TData>(stream, cancellationToken);
         }
 
-        public async Task<TId> CreateAsync<TData, TId>(
+        public virtual async Task<TId> CreateAsync<TData, TId>(
             TData data,
             CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
         {
-            var requestUri = _configuration.GetCollectionEndpoint<TData>(_nameResolver);
+            var requestUri = Configuration.GetCollectionEndpoint<TData>(NameResolver);
             using var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
             {
-                Content = new SerializedContent<TData>(data, _serializerFactory.GetSerializer<TData>())
+                Content = new SerializedContent<TData>(data, SerializerFactory.GetSerializer<TData>())
             };
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
@@ -163,7 +169,7 @@ namespace NCoreUtils.Rest.Internal
             return id;
         }
 
-        public async Task UpdateAsync<TData, TId>(
+        public virtual async Task UpdateAsync<TData, TId>(
             TId id,
             TData data,
             CancellationToken cancellationToken = default)
@@ -177,25 +183,25 @@ namespace NCoreUtils.Rest.Internal
             {
                 throw new InvalidOperationException($"Invalid id.");
             }
-            var requestUri = _configuration.GetItemOrReductionEndpoint<TData>(_nameResolver, Convert.ToString(data.Id, CultureInfo.InvariantCulture));
+            var requestUri = Configuration.GetItemOrReductionEndpoint<TData>(NameResolver, Convert.ToString(data.Id, CultureInfo.InvariantCulture));
             using var request = new HttpRequestMessage(HttpMethod.Put, requestUri)
             {
-                Content = new SerializedContent<TData>(data, _serializerFactory.GetSerializer<TData>())
+                Content = new SerializedContent<TData>(data, SerializerFactory.GetSerializer<TData>())
             };
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
         }
 
-        public async Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
+        public virtual async Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
         {
-            var requestUri = _configuration.GetItemOrReductionEndpoint<TData>(_nameResolver, Convert.ToString(id, CultureInfo.InvariantCulture));
+            var requestUri = Configuration.GetItemOrReductionEndpoint<TData>(NameResolver, Convert.ToString(id, CultureInfo.InvariantCulture));
             using var request = new HttpRequestMessage(HttpMethod.Delete, requestUri);
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
         }
 
-        public async Task<object> ReductionAsync<T>(
+        public virtual async Task<object> ReductionAsync<T>(
             string reduction,
             string? target = null,
             string? filter = null,
@@ -213,7 +219,7 @@ namespace NCoreUtils.Rest.Internal
                 "count" => typeof(int),
                 _ => throw new NotSupportedException($"Not dupported reduction: {reduction}.")
             };
-            var requestUri = _configuration.GetItemOrReductionEndpoint<T>(_nameResolver, reduction);
+            var requestUri = Configuration.GetItemOrReductionEndpoint<T>(NameResolver, reduction);
             using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
             if (!string.IsNullOrEmpty(filter))
             {
@@ -244,7 +250,7 @@ namespace NCoreUtils.Rest.Internal
             #else
             using var stream = await response.Content.ReadAsStreamAsync();
             #endif
-            return await _serializerFactory.DeserializeAsync(stream, resultType, cancellationToken);
+            return await SerializerFactory.DeserializeAsync(stream, resultType, cancellationToken);
         }
     }
 }

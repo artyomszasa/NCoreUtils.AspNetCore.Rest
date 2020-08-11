@@ -13,6 +13,8 @@ namespace NCoreUtils.Rest.Internal
             string? filter = default,
             string? sortBy = default,
             string? sortByDirection = default,
+            IReadOnlyList<string>? fields = default,
+            IReadOnlyList<string>? includes = default,
             int offset = 0,
             int? limit = default,
             CancellationToken cancellationToken = default);
