@@ -4,7 +4,7 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>NCoreUtils.AspNetCore</RootNamespace>
-    <Version>3.1.0-alpha9</Version>
+    <Version>3.1.0-beta00</Version>
   </PropertyGroup>
     <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -13,12 +13,12 @@
     <ProjectReference Include="..\NCoreUtils.AspNetCore.Rest.Abstractions\NCoreUtils.AspNetCore.Rest.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.AspNetCore.ResponseErrors.Abstractions" Version="3.1.0-alpha1" />
+    <PackageReference Include="NCoreUtils.AspNetCore.ResponseErrors.Abstractions" Version="3.1.0" />
     <PackageReference Include="NCoreUtils.CaseInsensitive" Version="1.0.1" />
-    <PackageReference Include="NCoreUtils.Data.Protocol.Abstractions" Version="3.1.0-alpha8" />
-    <PackageReference Include="NCoreUtils.Extensions.AsyncEnumerable" Version="1.0.0-alpha0" />
-    <PackageReference Include="NCoreUtils.Linq.Abstractions" Version="3.1.0-alpha8" />
-    <PackageReference Include="System.Linq.Async" Version="4.0.0" />
+    <PackageReference Include="NCoreUtils.Data.Protocol.Abstractions" Version="3.1.0" />
+    <PackageReference Include="NCoreUtils.Extensions.AsyncEnumerable" Version="1.0.0" />
+    <PackageReference Include="NCoreUtils.Linq.Abstractions" Version="3.1.0" />
+    <PackageReference Include="System.Linq.Async" Version="4.1.1" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
 </Project>

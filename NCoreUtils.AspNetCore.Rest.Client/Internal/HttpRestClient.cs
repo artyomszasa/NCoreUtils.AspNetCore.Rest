@@ -51,11 +51,19 @@ namespace NCoreUtils.Rest.Internal
 
         protected virtual void HandleErrors(HttpResponseMessage response, string requestUri)
         {
-            // FIXME: implement
+            // check X-Message header
+            if (response.StatusCode == HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.InternalServerError)
+            {
+                if (response.Headers.TryGetValues("X-Message", out var values))
+                {
+                    throw new RestException(response.RequestMessage.RequestUri.AbsoluteUri, string.Join(" ", values));
+                }
+            }
+            // fallback to non-informational exception if failed...
             response.EnsureSuccessStatusCode();
         }
 
-        private TId ParseLocation<TData, TId>(string location, string requestUri)
+        protected TId ParseLocation<TData, TId>(string location, string requestUri)
         {
             if (location.StartsWith(Configuration.Endpoint))
             {
@@ -75,7 +83,7 @@ namespace NCoreUtils.Rest.Internal
                     return (TId)Convert.ChangeType(location.Substring(index), typeof(TId));
                 }
             }
-            throw new RestException(requestUri, "REST CREATE returned invalid location.");
+            throw new RestException(requestUri, $"REST CREATE returned invalid location: {location}.");
         }
 
         protected virtual async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

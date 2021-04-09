@@ -140,7 +140,7 @@ namespace NCoreUtils.AspNetCore.Rest
 
         public RestAccessConfigurationBuilder ConfigureDelete(Action<IRestOperationAccessConfigurationBuilder<RestOperation.Delete>> configure)
         {
-            configure(new OperationAccessConfigurationBuilder<RestOperation.Delete>(Create));
+            configure(new OperationAccessConfigurationBuilder<RestOperation.Delete>(Delete));
             return this;
         }
 
