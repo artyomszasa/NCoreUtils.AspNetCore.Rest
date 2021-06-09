@@ -51,12 +51,16 @@ namespace NCoreUtils.Rest.Internal
 
         protected virtual void HandleErrors(HttpResponseMessage response, string requestUri)
         {
+            if (response is null)
+            {
+                throw new ArgumentNullException(nameof(response));
+            }
             // check X-Message header
             if (response.StatusCode == HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.InternalServerError)
             {
-                if (response.Headers.TryGetValues("X-Message", out var values))
+                if (!(response.Headers is null) && response.Headers.TryGetValues("X-Message", out var values))
                 {
-                    throw new RestException(response.RequestMessage.RequestUri.AbsoluteUri, string.Join(" ", values));
+                    throw new RestException(requestUri ?? string.Empty, string.Join(" ", values));
                 }
             }
             // fallback to non-informational exception if failed...

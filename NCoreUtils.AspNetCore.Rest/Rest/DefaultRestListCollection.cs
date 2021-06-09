@@ -37,19 +37,11 @@ namespace NCoreUtils.AspNetCore.Rest
             QueryOrderer = queryOrderer ?? ActivatorUtilities.CreateInstance<DefaultQueryOrderer<T>>(serviceProvider);
         }
 
-        /// <summary>
-        /// Performes REST LIST action for the specified type with the specified parameters.
-        /// </summary>
-        /// <param name="restQuery">Query options specified in the request.</param>
-        /// <param name="accessValidator">
-        /// Queryable decorator that filters out non-accessible entities depending on the access configuration.
-        /// </param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>
-        /// REST LIST response that contains partial resultset defined by Filter, Offset and Count properties of the
-        /// rest query parameter.
-        /// </returns>
-        public IAsyncEnumerable<T> InvokeAsync(RestQuery restQuery, AsyncQueryFilter accessValidator, CancellationToken cancellationToken)
+        /// <inheritdoc />
+        public IAsyncEnumerable<T> InvokeAsync(
+            RestQuery restQuery,
+            AsyncQueryFilter accessValidator,
+            CancellationToken cancellationToken)
         {
             var filteredQueryTask = Repository.Items
                 // apply filters
@@ -60,8 +52,8 @@ namespace NCoreUtils.AspNetCore.Rest
             {
                 var finalQuery = filteredQueryTask.Result
                     .Apply(QueryOrderer, restQuery)
-                    .Skip(restQuery.Offset)
-                    .TakeWhenNonNegative(restQuery.Count);
+                    .Skip(restQuery.GetOffset())
+                    .TakeWhenNonNegative(restQuery.GetCount());
                 return finalQuery is IAsyncEnumerable<T> asEnumerable ? asEnumerable : finalQuery.ExecuteAsync(cancellationToken);
             }
 
@@ -70,9 +62,43 @@ namespace NCoreUtils.AspNetCore.Rest
                 var sourceQuery = await filteredQueryTask;
                 var finalQuery = sourceQuery
                     .Apply(QueryOrderer, restQuery)
-                    .Skip(restQuery.Offset)
-                    .TakeWhenNonNegative(restQuery.Count);
+                    .Skip(restQuery.GetOffset())
+                    .TakeWhenNonNegative(restQuery.GetCount());
                 return finalQuery is IAsyncEnumerable<T> asEnumerable ? asEnumerable : finalQuery.ExecuteAsync(ctoken);
+            });
+        }
+
+        /// <inheritdoc />
+        public IAsyncEnumerable<TPartial> InvokePartialAsync<TPartial>(
+            RestQuery restQuery,
+            AsyncQueryFilter accessValidator,
+            System.Linq.Expressions.Expression<Func<T, TPartial>> selector,
+            CancellationToken cancellationToken)
+        {
+            var filteredQueryTask = Repository.Items
+                // apply filters
+                .Apply(QueryFilter, restQuery)
+                // apply access limitations
+                .ApplyAsync(accessValidator, cancellationToken);
+            if (filteredQueryTask.IsCompletedSuccessfully)
+            {
+                var finalQuery = filteredQueryTask.Result
+                    .Apply(QueryOrderer, restQuery)
+                    .Select(selector)
+                    .Skip(restQuery.GetOffset())
+                    .TakeWhenNonNegative(restQuery.GetCount());
+                return finalQuery is IAsyncEnumerable<TPartial> asEnumerable ? asEnumerable : finalQuery.ExecuteAsync(cancellationToken);
+            }
+
+            return AsyncEnumerable.Delay(async (ctoken) =>
+            {
+                var sourceQuery = await filteredQueryTask;
+                var finalQuery = sourceQuery
+                    .Apply(QueryOrderer, restQuery)
+                    .Select(selector)
+                    .Skip(restQuery.GetOffset())
+                    .TakeWhenNonNegative(restQuery.GetCount());
+                return finalQuery is IAsyncEnumerable<TPartial> asEnumerable ? asEnumerable : finalQuery.ExecuteAsync(ctoken);
             });
         }
     }

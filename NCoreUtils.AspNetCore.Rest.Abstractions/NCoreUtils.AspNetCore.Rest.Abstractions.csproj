@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NCoreUtils.Data.Abstractions" Version="3.1.0" />
+    <PackageReference Include="NCoreUtils.Extensions.Collections" Version="1.0.8-alpha00" />
     <PackageReference Include="NCoreUtils.Extensions.Memory" Version="1.0.8" />
     <PackageReference Include="System.Collections.Immutable" Version="1.7.1" />
   </ItemGroup>

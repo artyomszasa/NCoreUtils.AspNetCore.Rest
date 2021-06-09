@@ -28,26 +28,36 @@ namespace NCoreUtils.AspNetCore.Rest
 
         protected virtual IEnumerable<OrderingOption> GetOrderingOptions(RestQuery restQuery)
         {
-            if (0 == restQuery.SortBy.Count)
+            if (restQuery.SortBy is null || 0 == restQuery.SortBy.Count)
             {
                 yield break;
             }
-            if (1 == restQuery.SortByDirection.Count)
+            if (restQuery.SortByDirections is null || 0 == restQuery.SortByDirections.Count)
             {
-                var isDescending = restQuery.SortByDirection[0] == RestSortByDirection.Desc;
-                for (var i = 0; i < restQuery.SortBy.Count; ++i)
+                foreach (var by in restQuery.SortBy)
                 {
-                    yield return new OrderingOption(restQuery.SortBy[i], isDescending);
+                    yield return new OrderingOption(by, false);
                 }
                 yield break;
             }
-            if (restQuery.SortBy.Count > restQuery.SortByDirection.Count)
+            if (1 == restQuery.SortByDirections.Count)
             {
-                throw new InvalidOperationException($"Invalid or ambigous ordering options (sortBy = {restQuery.SortBy}, sortByDirection = {restQuery.SortByDirection}).");
+                var isDescending = restQuery.SortByDirections[0] == RestSortByDirection.Desc;
+                foreach (var by in restQuery.SortBy)
+                {
+                    yield return new OrderingOption(by, isDescending);
+                }
+                yield break;
+            }
+            if (restQuery.SortBy.Count > restQuery.SortByDirections.Count)
+            {
+                var bys = string.Join(", ", restQuery.SortBy);
+                var dirs = string.Join(", ", restQuery.SortByDirections);
+                throw new InvalidOperationException($"Invalid or ambigous ordering options (sortBy = {bys}, sortByDirection = {dirs}).");
             }
             for (var i = 0; i < restQuery.SortBy.Count; ++i)
             {
-                yield return new OrderingOption(restQuery.SortBy[i], restQuery.SortByDirection[i] == RestSortByDirection.Desc);
+                yield return new OrderingOption(restQuery.SortBy[i], restQuery.SortByDirections[i] == RestSortByDirection.Desc);
             }
         }
 
