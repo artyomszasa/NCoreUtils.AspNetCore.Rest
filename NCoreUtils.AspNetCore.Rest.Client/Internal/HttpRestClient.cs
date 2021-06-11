@@ -60,7 +60,8 @@ namespace NCoreUtils.Rest.Internal
             {
                 if (!(response.Headers is null) && response.Headers.TryGetValues("X-Message", out var values))
                 {
-                    throw new RestException(requestUri ?? string.Empty, string.Join(" ", values));
+                    var message = string.Join(" ", values.Select(Uri.UnescapeDataString));
+                    throw new RestException(requestUri ?? string.Empty, message);
                 }
             }
             // fallback to non-informational exception if failed...

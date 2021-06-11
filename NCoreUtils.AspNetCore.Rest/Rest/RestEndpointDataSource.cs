@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -108,6 +109,11 @@ namespace NCoreUtils.AspNetCore.Rest
                     }
                     catch (Exception exn)
                     {
+                        var errorAccessor = httpContext.RequestServices.GetService<IRestErrorAccessor>();
+                        if (!(errorAccessor is null) && errorAccessor is ServiceCollectionRestExtensions.RestErrorAccessor accessor)
+                        {
+                            accessor.Error = ExceptionDispatchInfo.Capture(exn);
+                        }
                         var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
                         int statusCode;
                         if (StatusCodeResponse.TryExtract(exn, out var ecode))
@@ -121,7 +127,7 @@ namespace NCoreUtils.AspNetCore.Rest
                             logger.LogError(exn, "Error occured during endpoint execution.");
                         }
                         httpContext.Response.StatusCode = statusCode;
-                        httpContext.Response.Headers.Add("X-Message", exn.Message);
+                        httpContext.Response.Headers.Add("X-Message", Uri.EscapeDataString(exn.Message));
                     }
                 });
             Func<Func<HttpContext, Type, object, Task>, RequestDelegate> restItemMethod = implementation =>
