@@ -22,9 +22,11 @@ namespace NCoreUtils.Rest.Internal
 
         protected IRestClientConfiguration Configuration { get; }
 
-        protected IRestTypeNameResolver NameResolver;
+        protected IRestTypeNameResolver NameResolver { get; }
 
-        protected ISerializerFactory SerializerFactory;
+        protected ISerializerFactory SerializerFactory { get; }
+
+        protected IRestQuerySerializer QuerySerializer { get; }
 
         protected ILogger Logger;
 
@@ -45,6 +47,7 @@ namespace NCoreUtils.Rest.Internal
             Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             NameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
             SerializerFactory = serializerFactory ?? ActivatorUtilities.CreateInstance<DefaultSerializerFactory>(serviceProvider);
+            QuerySerializer = serviceProvider.GetService<IRestQuerySerializer>() ?? RestQueryAsHeaderSerializer.Instance;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _httpClientFactory = httpClientFactory;
         }
@@ -113,24 +116,7 @@ namespace NCoreUtils.Rest.Internal
         {
             var requestUri = Configuration.GetCollectionEndpoint<T>(NameResolver);
             using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-            if (!string.IsNullOrEmpty(filter))
-            {
-                request.Headers.Add("X-Filter", Uri.EscapeDataString(filter));
-            }
-            if (!string.IsNullOrEmpty(sortBy))
-            {
-                request.Headers.Add("X-Sort-By", Uri.EscapeDataString(sortBy));
-                request.Headers.Add("X-Sort-By-Direction", sortByDirection);
-            }
-            request.Headers.Add("X-Offset", offset.ToString(CultureInfo.InvariantCulture));
-            if (limit.HasValue)
-            {
-                request.Headers.Add("X-Count", limit.Value.ToString(CultureInfo.InvariantCulture));
-            }
-            if (!string.IsNullOrEmpty(target))
-            {
-                request.Headers.Add("X-Type", target);
-            }
+            QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, offset, limit);
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
             #if NETSTANDARD2_1
@@ -230,28 +216,11 @@ namespace NCoreUtils.Rest.Internal
                 "first" => typeof(T),
                 "single" => typeof(T),
                 "count" => typeof(int),
-                _ => throw new NotSupportedException($"Not dupported reduction: {reduction}.")
+                _ => throw new NotSupportedException($"Not supported reduction: {reduction}.")
             };
             var requestUri = Configuration.GetItemOrReductionEndpoint<T>(NameResolver, reduction);
             using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-            if (!string.IsNullOrEmpty(filter))
-            {
-                request.Headers.Add("X-Filter", Uri.EscapeDataString(filter));
-            }
-            if (!string.IsNullOrEmpty(sortBy))
-            {
-                request.Headers.Add("X-Sort-By", Uri.EscapeDataString(sortBy));
-                request.Headers.Add("X-Sort-By-Direction", sortByDirection);
-            }
-            request.Headers.Add("X-Offset", offset.ToString(CultureInfo.InvariantCulture));
-            if (limit.HasValue)
-            {
-                request.Headers.Add("X-Count", limit.Value.ToString(CultureInfo.InvariantCulture));
-            }
-            if (!string.IsNullOrEmpty(target))
-            {
-                request.Headers.Add("X-Type", target);
-            }
+            QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, offset, limit);
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
             if (HttpStatusCode.NoContent == response.StatusCode)
