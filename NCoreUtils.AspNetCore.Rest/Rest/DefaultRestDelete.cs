@@ -41,7 +41,7 @@ namespace NCoreUtils.AspNetCore.Rest
                 Logger.LogDebug("No entity of type {0} found for key = {1} (rest-delete).", typeof(TData), id);
                 throw new NotFoundException();
             }
-            await Repository.RemoveAsync(item, cancellationToken: cancellationToken);
+            await Repository.RemoveAsync(item, force, cancellationToken: cancellationToken);
             Logger.LogInformation("Successfully removed entity of type {0} with key = {1} (data-delete).", typeof(TData), id);
         }
     }
