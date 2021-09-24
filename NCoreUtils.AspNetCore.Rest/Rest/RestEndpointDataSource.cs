@@ -42,6 +42,17 @@ namespace NCoreUtils.AspNetCore.Rest
             throw new InvalidOperationException($"{entityType} does not implement IHasId interface.");
         };
 
+        private static bool IsTruthy(string? value)
+            => value switch
+            {
+                null => false,
+                "true" => true,
+                "t" => true,
+                "1" => true,
+                "on" => true,
+                _ => false
+            };
+
         private readonly List<Action<EndpointBuilder>> _conventions = new List<Action<EndpointBuilder>>();
 
         private readonly object _sync = new object();
@@ -218,7 +229,13 @@ namespace NCoreUtils.AspNetCore.Rest
             // *********************************************************************************************************
             // DELETE ENDPOINT
             RequestDelegate deleteRequestDelegate = restItemMethod(
-                (httpContext, entityType, id) => Invoker.InvokeDelete(entityType, httpContext, id, accessConfiguration)
+                (httpContext, entityType, id) =>
+                {
+                    var request = httpContext.Request;
+                    var force = (request.Headers.TryGetValue("X-Force", out var hvs) && hvs.Any(IsTruthy))
+                        || (request.Query.TryGetValue("force", out var qvs) && qvs.Any(IsTruthy));
+                    return Invoker.InvokeDelete(entityType, httpContext, id, force, accessConfiguration);
+                }
             );
             endpoints.Add(ApplyConventions(new RouteEndpointBuilder(deleteRequestDelegate, itemRoutePattern, 100)
             {

@@ -121,7 +121,7 @@ namespace NCoreUtils.Rest
             string? sortByString = default;
             if (!string.IsNullOrEmpty(sortBy))
             {
-                sortByString = Uri.EscapeDataString(sortByString);
+                sortByString = Uri.EscapeDataString(sortBy);
                 newUriSize += "sort-by".Length + 2 + sortByString.Length;
             }
             string? sortByDirectionString = default;
@@ -135,7 +135,7 @@ namespace NCoreUtils.Rest
             {
                 newUriSize += "offset".Length + 2 + offsetString!.Length;
             }
-            string? limitString = limit.HasValue ? limit.Value.ToString() : default;
+            string? limitString = limit.HasValue && limit.Value != -1 ? limit.Value.ToString() : default;
             if (!string.IsNullOrEmpty(limitString))
             {
                 newUriSize += "count".Length + 2 + limitString!.Length;

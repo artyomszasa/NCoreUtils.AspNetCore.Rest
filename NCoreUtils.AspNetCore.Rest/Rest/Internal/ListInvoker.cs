@@ -154,7 +154,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                     ? (source, ctoken) => queryAccessValidator.FilterQueryAsync(source, context.User, ctoken)
                     : ListInvoker._noFilter;
                 using var restQuery = await _queryParser.ParseAsync(context.Request, cancellationToken);
-                if (restQuery.Fields is null || restQuery.Fields.Count == 0)
+                if (!restQuery.Fields.HasValue || restQuery.Fields.Value.Count == 0)
                 {
                     await DoInvoke(restQuery, filter, context.Response, cancellationToken);
                 }

@@ -12,7 +12,7 @@ namespace NCoreUtils.AspNetCore.Rest
     /// <typeparam name="TData">Type of the target object.</typeparam>
     /// <typeparam name="TId">Type of the Id property of the target object.</typeparam>
     public class DefaultRestDelete<TData, TId>
-        : DefaultTransactedMethod<TData, TId>, IRestDelete<TData, TId>, IBoxedInvoke<TId>
+        : DefaultTransactedMethod<TData, TId>, IRestDelete<TData, TId>, IBoxedVoidInvoke<TId, bool>
         where TData : IHasId<TId>
     {
         protected ILogger Logger { get; }
@@ -33,7 +33,7 @@ namespace NCoreUtils.AspNetCore.Rest
         /// </summary>
         /// <param name="id">Id of the object to delete.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        public virtual async ValueTask InvokeAsync(TId id, CancellationToken cancellationToken)
+        public virtual async ValueTask InvokeAsync(TId id, bool force, CancellationToken cancellationToken)
         {
             var item = await Repository.LookupAsync(id, cancellationToken);
             if (item is null)

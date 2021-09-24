@@ -40,9 +40,9 @@ namespace NCoreUtils.AspNetCore.Rest
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeUpdate(httpContext, id, accessConfiguration);
 
-            public static Task InvokeDelete(Type entityType, HttpContext httpContext, object id, RestAccessConfiguration accessConfiguration)
+            public static Task InvokeDelete(Type entityType, HttpContext httpContext, object id, bool force, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
-                    .InvokeDelete(httpContext, id, accessConfiguration);
+                    .InvokeDelete(httpContext, id, force, accessConfiguration);
 
             public static Task InvokeReduction(Type entityType, HttpContext httpContext, string reduction, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
@@ -56,7 +56,7 @@ namespace NCoreUtils.AspNetCore.Rest
 
             protected abstract Task InvokeUpdate(HttpContext httpContext, object id, RestAccessConfiguration accessConfiguration);
 
-            protected abstract Task InvokeDelete(HttpContext httpContext, object id, RestAccessConfiguration accessConfiguration);
+            protected abstract Task InvokeDelete(HttpContext httpContext, object id, bool force, RestAccessConfiguration accessConfiguration);
 
             protected abstract Task InvokeReduction(HttpContext httpContext, string reduction, RestAccessConfiguration accessConfiguration);
         }
@@ -69,9 +69,9 @@ namespace NCoreUtils.AspNetCore.Rest
                     .Invoke(httpContext, httpContext.RequestAborted)
                     .AsTask();
 
-            protected override Task InvokeDelete(HttpContext httpContext, object id, RestAccessConfiguration accessConfiguration)
+            protected override Task InvokeDelete(HttpContext httpContext, object id, bool force, RestAccessConfiguration accessConfiguration)
                 => ActivatorUtilities.CreateInstance<DeleteInvoker<TData, TId>>(httpContext.RequestServices, accessConfiguration)
-                    .Invoke(httpContext, id, httpContext.RequestAborted)
+                    .Invoke(httpContext, id, force, httpContext.RequestAborted)
                     .AsTask();
 
             protected override Task InvokeItem(HttpContext httpContext, object id, RestAccessConfiguration accessConfiguration)

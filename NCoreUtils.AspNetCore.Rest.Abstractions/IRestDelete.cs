@@ -16,7 +16,8 @@ namespace NCoreUtils.AspNetCore.Rest
         /// Performes REST DELETE action for the predefined type.
         /// </summary>
         /// <param name="id">Id of the object to delete.</param>
+        /// <param name="force">Whether to perform forced removal (see <c>NCoreUtils.Data</c>).</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        ValueTask InvokeAsync(TId id, CancellationToken cancellationToken);
+        ValueTask InvokeAsync(TId id, bool force, CancellationToken cancellationToken);
     }
 }

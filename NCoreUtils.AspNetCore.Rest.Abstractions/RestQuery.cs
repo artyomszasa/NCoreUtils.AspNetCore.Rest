@@ -11,11 +11,11 @@ namespace NCoreUtils.AspNetCore.Rest
     {
         public const int DefaultCount = 10000;
 
-        private string[]? _fields;
+        private ArraySegment<string>? _fields;
 
-        private string[]? _sortBy;
+        private ArraySegment<string>? _sortBy;
 
-        private RestSortByDirection[]? _sortByDirections;
+        private ArraySegment<RestSortByDirection>? _sortByDirections;
 
         public int? Offset { get; }
 
@@ -28,19 +28,19 @@ namespace NCoreUtils.AspNetCore.Rest
         /// otherwise all fields should be included. When not <c>null</c> the property names are sorted using culture
         /// invariant comparison.
         /// </summary>
-        public IReadOnlyList<string>? Fields
+        public ArraySegment<string>? Fields
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _fields;
         }
 
-        public IReadOnlyList<string>? SortBy
+        public ArraySegment<string>? SortBy
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _sortBy;
         }
 
-        public IReadOnlyList<RestSortByDirection>? SortByDirections
+        public ArraySegment<RestSortByDirection>? SortByDirections
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _sortByDirections;
@@ -51,9 +51,9 @@ namespace NCoreUtils.AspNetCore.Rest
             int? offset,
             int? count,
             string? filter,
-            string[]? fields,
-            string[]? sortBy,
-            RestSortByDirection[]? sortByDirections)
+            ArraySegment<string>? fields,
+            ArraySegment<string>? sortBy,
+            ArraySegment<RestSortByDirection>? sortByDirections)
         {
             Offset = offset;
             Count = count;
@@ -61,28 +61,31 @@ namespace NCoreUtils.AspNetCore.Rest
             _fields = fields;
             _sortBy = sortBy;
             _sortByDirections = sortByDirections;
-            if (!(_fields is null))
+            if (_fields.HasValue)
             {
-                Array.Sort(_fields, StringComparer.InvariantCulture);
+                Array.Sort(_fields.Value.Array, _fields.Value.Offset, _fields.Value.Count, StringComparer.InvariantCulture);
             }
         }
 
         void IDisposable.Dispose()
         {
-            var fields = Interlocked.Exchange(ref _fields, default);
-            if (!(fields is null))
+            if (_fields.HasValue)
             {
-                ArrayPool<string>.Shared.Return(fields);
+                var fields = _fields.Value;
+                _fields = default;
+                ArrayPool<string>.Shared.Return(fields.Array);
             }
-            var sortBy = Interlocked.Exchange(ref _sortBy, default);
-            if (!(sortBy is null))
+            if (_sortBy.HasValue)
             {
-                ArrayPool<string>.Shared.Return(sortBy);
+                var sortBy = _sortBy.Value;
+                _sortBy = default;
+                ArrayPool<string>.Shared.Return(sortBy.Array);
             }
-            var sortByDirections = Interlocked.Exchange(ref _sortByDirections, default);
-            if (!(sortByDirections is null))
+            if (_sortByDirections.HasValue)
             {
-                ArrayPool<RestSortByDirection>.Shared.Return(sortByDirections);
+                var sortByDirections = _sortByDirections.Value;
+                _sortByDirections = default;
+                ArrayPool<RestSortByDirection>.Shared.Return(sortByDirections.Array);
             }
         }
 
@@ -91,40 +94,46 @@ namespace NCoreUtils.AspNetCore.Rest
             var offset = other.Offset ?? Offset;
             var count = other.Count ?? Count;
             var filter = other.Filter ?? Filter;
-            string[]? fields;
-            if (!(other._fields is null))
+            ArraySegment<string>? fields;
+            if (other._fields.HasValue)
             {
-                fields = Interlocked.Exchange(ref other._fields, default);
+                fields = other._fields;
+                other._fields = default;
             }
-            else if (!(_fields is null))
+            else if (_fields.HasValue)
             {
-                fields = Interlocked.Exchange(ref _fields, default);
+                fields = _fields;
+                _fields = default;
             }
             else
             {
                 fields = default;
             }
-            string[]? sortBy;
-            if (!(other._sortBy is null))
+            ArraySegment<string>? sortBy;
+            if (other._sortBy.HasValue)
             {
-                sortBy = Interlocked.Exchange(ref other._sortBy, default);
+                sortBy = other._sortBy;
+                other._sortBy = default;
             }
-            else if (!(_sortBy is null))
+            else if (_sortBy.HasValue)
             {
-                sortBy = Interlocked.Exchange(ref _sortBy, default);
+                sortBy = _sortBy;
+                _sortBy = default;
             }
             else
             {
                 sortBy = default;
             }
-            RestSortByDirection[]? sortByDirections;
-            if (!(other._sortByDirections is null))
+            ArraySegment<RestSortByDirection>? sortByDirections;
+            if (other._sortByDirections.HasValue)
             {
-                sortByDirections = Interlocked.Exchange(ref other._sortByDirections, default);
+                sortByDirections = other._sortByDirections;
+                other._sortByDirections = default;
             }
-            else if (!(_sortBy is null))
+            else if (_sortByDirections.HasValue)
             {
-                sortByDirections = Interlocked.Exchange(ref _sortByDirections, default);
+                sortByDirections = _sortByDirections;
+                _sortByDirections = default;
             }
             else
             {

@@ -44,8 +44,8 @@ namespace NCoreUtils.AspNetCore.Rest.QueryParsers
                 count,
                 filter,
                 default,
-                sortBy.Count == 0 ? default : sortBy.Disown(),
-                sortByDirections.Count == 0 ? default : sortByDirections.Disown()
+                sortBy.Count == 0 ? default(ArraySegment<string>?) : sortBy.Disown(),
+                sortByDirections.Count == 0 ? default(ArraySegment<RestSortByDirection>?) : sortByDirections.Disown()
             ));
         }
     }

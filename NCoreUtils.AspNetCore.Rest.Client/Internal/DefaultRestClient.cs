@@ -29,9 +29,16 @@ namespace NCoreUtils.Rest.Internal
             where TData : IHasId<TId>
             => HttpRestClient.CreateAsync<TData, TId>(data, cancellationToken);
 
-        public virtual Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
+        public virtual Task DeleteAsync<TData, TId>(TId id, bool force, CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
-            => HttpRestClient.DeleteAsync<TData, TId>(id, cancellationToken);
+            => HttpRestClient.DeleteAsync<TData, TId>(id, force, cancellationToken);
+
+#if NETSTANDARD2_0
+        public Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
+            where TData : IHasId<TId>
+            => DeleteAsync<TData, TId>(id, false, cancellationToken);
+#endif
+
 
         public virtual Task<TData> ItemAsync<TData, TId>(TId id, CancellationToken cancellationToken = default) where TData : IHasId<TId>
             => HttpRestClient.ItemAsync<TData, TId>(id, cancellationToken);

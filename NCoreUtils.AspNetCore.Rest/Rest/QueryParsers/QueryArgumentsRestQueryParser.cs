@@ -49,9 +49,9 @@ namespace NCoreUtils.AspNetCore.Rest.QueryParsers
                 offset,
                 count,
                 filter,
-                fields.Count == 0 ? default : fields.Disown(),
-                sortBy.Count == 0 ? default : sortBy.Disown(),
-                sortByDirections.Count == 0 ? default : sortByDirections.Disown()
+                fields.Count == 0 ? default(ArraySegment<string>?) : fields.Disown(),
+                sortBy.Count == 0 ? default(ArraySegment<string>?) : sortBy.Disown(),
+                sortByDirections.Count == 0 ? default(ArraySegment<RestSortByDirection>?) : sortByDirections.Disown()
             ));
         }
     }

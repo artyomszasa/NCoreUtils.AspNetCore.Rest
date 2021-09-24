@@ -191,14 +191,25 @@ namespace NCoreUtils.Rest.Internal
             HandleErrors(response, requestUri);
         }
 
-        public virtual async Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
+        public virtual async Task DeleteAsync<TData, TId>(TId id, bool force, CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
         {
             var requestUri = Configuration.GetItemOrReductionEndpoint<TData>(NameResolver, Convert.ToString(id, CultureInfo.InvariantCulture));
             using var request = new HttpRequestMessage(HttpMethod.Delete, requestUri);
+            if (force)
+            {
+                request.Headers.Add("X-Force", "true");
+            }
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
         }
+
+#if NETSTANDARD2_0
+        public Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
+            where TData : IHasId<TId>
+            => DeleteAsync<TData, TId>(id, false, cancellationToken);
+#endif
+
 
         public virtual async Task<object> ReductionAsync<T>(
             string reduction,
