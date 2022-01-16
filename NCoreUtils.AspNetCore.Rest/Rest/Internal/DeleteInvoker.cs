@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -47,7 +48,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         public abstract ValueTask Invoke(HttpContext httpContext, object id, bool force, CancellationToken cancellationToken);
     }
 
-    public sealed class DeleteInvoker<TData, TId> : DeleteInvoker
+    public sealed class DeleteInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId> : DeleteInvoker
         where TData : IHasId<TId>
     {
         readonly IServiceProvider _serviceProvider;

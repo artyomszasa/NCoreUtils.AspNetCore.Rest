@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -52,10 +53,15 @@ namespace NCoreUtils.AspNetCore.Rest
 
         static readonly ConcurrentDictionary<(Type dataType, string memberName), PropertyInfo> _memberCache = new ConcurrentDictionary<(Type dataType, string memberName), PropertyInfo>();
 
-        static readonly Func<(Type dataType, Type keyType), Applier> _applierFactory =
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Only known types are passed.")]
+        private static readonly Func<(Type dataType, Type keyType), Applier> _applierFactory =
             key => (Applier)Activator.CreateInstance(typeof(Applier<,>).MakeGenericType(key.dataType, key.keyType), true)!;
 
-        static readonly Func<(Type dataType, string memberName), PropertyInfo> _memberResolver = args =>
+
+        private static readonly Func<(Type dataType, string memberName), PropertyInfo> _memberResolver = DoResolveMember;
+
+        [UnconditionalSuppressMessage("Trimming", "IL2080", Justification = "Ensured by caller.")]
+        private static PropertyInfo DoResolveMember((Type dataType, string memberName) args)
         {
             var property = args.dataType.GetProperty(args.memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy | BindingFlags.IgnoreCase);
             if (property is null)
@@ -63,7 +69,8 @@ namespace NCoreUtils.AspNetCore.Rest
                 throw new InvalidOperationException($"Unable to resolve member {args.memberName} for type {args.dataType}.");
             }
             return property;
-        };
+        }
+
 
         static bool TryGetSelectorType(LambdaExpression lambda, out (Type dataType, Type keyType) key)
         {
@@ -85,7 +92,7 @@ namespace NCoreUtils.AspNetCore.Rest
             throw new InvalidOperationException($"Invalid selector: ${lambda}.");
         }
 
-        protected static LambdaExpression CreateMemberSelector<TData>(string memberName)
+        protected static LambdaExpression CreateMemberSelector<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TData>(string memberName)
             => _memberCache.GetOrAdd((typeof(TData), memberName), _memberResolver).CreateSelector();
 
         protected static IOrderedQueryable<TData> OrderBy<TData>(IQueryable<TData> source, LambdaExpression lambda, bool isDescending)
@@ -109,14 +116,16 @@ namespace NCoreUtils.AspNetCore.Rest
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected static IOrderedQueryable<TData> OrderBy<TData>(IQueryable<TData> source, string memberName, bool isDescending)
+        protected static IOrderedQueryable<TData> OrderBy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TData>(IQueryable<TData> source, string memberName, bool isDescending)
             => OrderBy(source, CreateMemberSelector<TData>(memberName), isDescending);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected static IOrderedQueryable<TData> ThenBy<TData>(IOrderedQueryable<TData> source, string memberName, bool isDescending)
+        protected static IOrderedQueryable<TData> ThenBy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TData>(IOrderedQueryable<TData> source, string memberName, bool isDescending)
             => ThenBy(source, CreateMemberSelector<TData>(memberName), isDescending);
 
-        protected static IOrderedQueryable<TData> OrderByDefaultProperty<TData>(IQueryable<TData> source, IServiceProvider serviceProvider)
+        protected static IOrderedQueryable<TData> OrderByDefaultProperty<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TData>(
+            IQueryable<TData> source,
+            IServiceProvider serviceProvider)
         {
             var defaultOrderProperty = serviceProvider.GetOptionalService<IDefaultOrderProperty<TData>>();
             var property = defaultOrderProperty is null

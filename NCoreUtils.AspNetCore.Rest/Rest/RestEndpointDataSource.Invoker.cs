@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,36 +15,46 @@ namespace NCoreUtils.AspNetCore.Rest
         {
             private static readonly ConcurrentDictionary<Type, Invoker> _invokerCache = new ConcurrentDictionary<Type, Invoker>();
 
-            private static readonly Func<Type, Invoker> _invokerFactory = entityType =>
-            {
+            private static readonly Func<Type, Invoker> _invokerFactory = CreateInvoker;
 
+            [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Preserved by caller.")]
+            [UnconditionalSuppressMessage("Trimming", "IL2055", Justification = "Preserved by caller.")]
+            [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Preserved during registration.")]
+            private static Invoker CreateInvoker(Type entityType)
+            {
                 if (NCoreUtils.Data.IdUtils.TryGetIdType(entityType, out var idType))
                 {
                     return (Invoker)Activator.CreateInstance(typeof(Invoker<,>).MakeGenericType(entityType, idType), true)!;
                 }
                 throw new InvalidOperationException($"{entityType} does not implement IHasId interface.");
-            };
+            }
 
+            [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
             public static Task InvokeList(Type entityType, HttpContext httpContext, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeList(httpContext, accessConfiguration);
 
+            [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
             public static Task InvokeItem(Type entityType, HttpContext httpContext, object id, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeItem(httpContext, id, accessConfiguration);
 
+            [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
             public static Task InvokeCreate(Type entityType, HttpContext httpContext, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeCreate(httpContext, accessConfiguration);
 
+            [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
             public static Task InvokeUpdate(Type entityType, HttpContext httpContext, object id, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeUpdate(httpContext, id, accessConfiguration);
 
+            [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
             public static Task InvokeDelete(Type entityType, HttpContext httpContext, object id, bool force, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeDelete(httpContext, id, force, accessConfiguration);
 
+            [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
             public static Task InvokeReduction(Type entityType, HttpContext httpContext, string reduction, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeReduction(httpContext, reduction, accessConfiguration);
@@ -61,7 +72,7 @@ namespace NCoreUtils.AspNetCore.Rest
             protected abstract Task InvokeReduction(HttpContext httpContext, string reduction, RestAccessConfiguration accessConfiguration);
         }
 
-        private sealed class Invoker<TData, TId> : Invoker
+        private sealed class Invoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData, TId> : Invoker
             where TData : class, IHasId<TId>
         {
             protected override Task InvokeCreate(HttpContext httpContext, RestAccessConfiguration accessConfiguration)

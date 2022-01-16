@@ -10,7 +10,7 @@ namespace NCoreUtils.Rest
     {
         IQueryable<T> Collection<T>();
 
-        Task<TData> ItemAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
+        Task<TData?> ItemAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
             where TData : IHasId<TId>;
 
         Task<TId> CreateAsync<TData, TId>(TData data, CancellationToken cancellationToken = default)
@@ -25,10 +25,6 @@ namespace NCoreUtils.Rest
         [Obsolete("Use DeleteAsync(id, force, cancellationToken) instead.")]
         Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
-#if NETSTANDARD2_0
-            ;
-#else
             => DeleteAsync<TData, TId>(id, false, cancellationToken);
-#endif
     }
 }

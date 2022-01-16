@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using NCoreUtils.AspNetCore.Rest.Serialization;
 using NCoreUtils.Data;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal
@@ -48,7 +50,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         public abstract ValueTask Invoke(HttpContext httpContext, CancellationToken cancellationToken);
     }
 
-    public sealed class CreateInvoker<TData, TId> : CreateInvoker
+    public sealed class CreateInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId> : CreateInvoker
         where TData : notnull, IHasId<TId>
     {
         readonly IServiceProvider _serviceProvider;
@@ -65,14 +67,13 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             IServiceProvider serviceProvider,
             RestAccessConfiguration accessConfiguration,
             IRestMethodInvoker? methodInvoker = default,
-            IRestCreate<TData, TId>? implementation = default,
-            IDeserializer<TData>? deserializer = default)
+            IRestCreate<TData, TId>? implementation = default)
         {
             _serviceProvider = serviceProvider;
             _accessConfiguration = accessConfiguration;
             _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
             _implementation = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestCreate<TData, TId>>(serviceProvider);
-            _deserializer = deserializer ?? ActivatorUtilities.CreateInstance<DefaultDeserializer<TData>>(serviceProvider);
+            _deserializer = serviceProvider.GetOrCreateDeserializer<TData>();
         }
 
         private Uri CreateItemUri(HttpContext httpContext, TId id)

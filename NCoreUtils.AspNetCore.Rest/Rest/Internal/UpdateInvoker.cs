@@ -1,16 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using NCoreUtils.AspNetCore.Rest.Serialization;
 using NCoreUtils.Data;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal
 {
     public abstract class UpdateInvoker
     {
-        protected sealed class RestUpdateInvocation<TData, TId> : RestMethodInvocation<TData>
+        protected sealed class RestUpdateInvocation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId> : RestMethodInvocation<TData>
             where TData : class, IHasId<TId>
         {
             readonly IRestUpdate<TData, TId> _invoker;
@@ -50,7 +52,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         public abstract ValueTask Invoke(HttpContext httpContext, object id, CancellationToken cancellationToken);
     }
 
-    public sealed class UpdateInvoker<TData, TId> : UpdateInvoker
+    public sealed class UpdateInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId> : UpdateInvoker
         where TData : class, IHasId<TId>
     {
         readonly IServiceProvider _serviceProvider;
@@ -74,7 +76,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             _accessConfiguration = accessConfiguration;
             _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
             _implementation = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestUpdate<TData, TId>>(serviceProvider);
-            _deserializer = deserializer ?? ActivatorUtilities.CreateInstance<DefaultDeserializer<TData>>(serviceProvider);
+            _deserializer = serviceProvider.GetOrCreateDeserializer<TData>();
         }
 
         public override async ValueTask Invoke(HttpContext httpContext, object id, CancellationToken cancellationToken)

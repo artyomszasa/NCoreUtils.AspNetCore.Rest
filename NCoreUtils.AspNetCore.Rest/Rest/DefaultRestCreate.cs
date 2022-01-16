@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -12,7 +13,7 @@ namespace NCoreUtils.AspNetCore.Rest
     /// </summary>
     /// <typeparam name="TData">Type of the target object.</typeparam>
     /// <typeparam name="TId">Type of the Id property of the target object.</typeparam>
-    public class DefaultRestCreate<TData, TId>
+    public class DefaultRestCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId>
         : DefaultTransactedMethod<TData, TId>, IRestCreate<TData, TId>, IBoxedInvoke<TData, TData>
         where TData : IHasId<TId>
     {

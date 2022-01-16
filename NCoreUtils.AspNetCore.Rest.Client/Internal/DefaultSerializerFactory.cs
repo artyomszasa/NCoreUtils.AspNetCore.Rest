@@ -1,22 +1,18 @@
 using System;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace NCoreUtils.Rest.Internal
 {
     public class DefaultSerializerFactory : ISerializerFactory
     {
-        public static JsonSerializerOptions DefaultJsonOptions { get; } = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-
-        public JsonSerializerOptions JsonOptions { get; }
+        public JsonSerializerContext JsonSerializerContext { get; }
 
         public string ContentType { get; } = "application/json; charset=utf-8";
 
-        public DefaultSerializerFactory(JsonSerializerOptions? jsonOptions)
-            => JsonOptions = jsonOptions ?? DefaultJsonOptions;
+        public DefaultSerializerFactory(JsonSerializerContext jsonSerializerContext)
+            => JsonSerializerContext = jsonSerializerContext ?? throw new ArgumentNullException(nameof(jsonSerializerContext));
 
-        public ISerializer<T> GetSerializer<T>() => new DefaultSerializer<T>(ContentType, JsonOptions);
+        public ISerializer<T> GetSerializer<T>() => new DefaultSerializer<T>(ContentType, JsonSerializerContext);
     }
 }

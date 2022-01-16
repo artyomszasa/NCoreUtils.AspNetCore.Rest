@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ namespace NCoreUtils.AspNetCore.Rest
     /// </summary>
     /// <typeparam name="TData">Type of the target object.</typeparam>
     /// <typeparam name="TId">Type of the Id property of the target object.</typeparam>
-    public interface IRestItem<TData, TId>
+    public interface IRestItem<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId>
         where TData : IHasId<TId>
     {
         /// <summary>

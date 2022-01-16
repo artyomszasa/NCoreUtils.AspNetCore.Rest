@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,9 +41,13 @@ namespace NCoreUtils.Rest
 
         private static ConcurrentDictionary<Type, Invoker> _cache = new ConcurrentDictionary<Type, Invoker>();
 
-        private static Func<Type, Invoker> _factory = type =>
-            (Invoker)Activator.CreateInstance(typeof(Invoker<>).MakeGenericType(type), true)!;
+        private static Func<Type, Invoker> _factory = CreateInvoker;
 
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Method preserved by caller.")]
+        private static Invoker CreateInvoker(Type type)
+            => (Invoker)Activator.CreateInstance(typeof(Invoker<>).MakeGenericType(type), true)!;
+
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<>))]
         public static ValueTask<object> DeserializeAsync(
             this ISerializerFactory factory,
             Stream stream,
@@ -51,7 +56,8 @@ namespace NCoreUtils.Rest
             => _cache.GetOrAdd(returnType, _factory)
                 .DeserializeAsync(factory, stream, cancellationToken);
 
-        public static ValueTask SetializeAsync(
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<>))]
+        public static ValueTask SerializeAsync(
             this ISerializerFactory factory,
             Stream stream,
             object value,

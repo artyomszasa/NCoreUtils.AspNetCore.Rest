@@ -41,13 +41,13 @@ namespace NCoreUtils.Rest.Internal
             IReadOnlyList<string>? fields = default,
             IReadOnlyList<string>? includes = default,
             int offset = 0,
-            int limit = 0)
+            int? limit = default)
             => new DelayedAsyncEnumerable<T>(async cancellationToken =>
             {
                 var results = await _client.ListCollectionAsync<T>(
                     target: target,
-                    filter: filter is null ? default : NodeModule.Stringify(filter),
-                    sortBy: sortBy is null ? default : NodeModule.Stringify(sortBy),
+                    filter: filter?.ToString(),
+                    sortBy: sortBy?.ToString(),
                     sortByDirection: isDescending ? "desc" : "asc",
                     fields: fields,
                     includes: includes,
@@ -65,14 +65,14 @@ namespace NCoreUtils.Rest.Internal
             Node? sortBy = null,
             bool isDescending = false,
             int offset = 0,
-            int limit = 0,
+            int? limit = default,
             CancellationToken cancellationToken = default)
         {
             var result = await _client.ReductionAsync<TSource>(
                 AdaptReduction(reduction),
                 target,
-                filter is null ? default : NodeModule.Stringify(filter),
-                sortBy is null ? default : NodeModule.Stringify(sortBy),
+                filter?.ToString(),
+                sortBy?.ToString(),
                 isDescending ? "desc" : "asc",
                 offset,
                 limit == 0 ? (int?)default : limit,

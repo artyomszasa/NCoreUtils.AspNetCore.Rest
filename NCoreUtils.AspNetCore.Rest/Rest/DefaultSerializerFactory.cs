@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,14 +8,19 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace NCoreUtils.AspNetCore.Rest
 {
+    [Obsolete("JsonSerializerContext based seriialization is preferred.")]
+    [RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")]
     public class DefaultSerializerFactory : ISerializerFactory
     {
         private abstract class Invoker
         {
             private static readonly ConcurrentDictionary<Type, Invoker> _cache = new ConcurrentDictionary<Type, Invoker>();
 
-            private static readonly Func<Type, Invoker> _factory = type =>
-                (Invoker)Activator.CreateInstance(typeof(Invoker<>).MakeGenericType(type), true)!;
+            private static readonly Func<Type, Invoker> _factory = DoCreate;
+
+            [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Obsolete member.")]
+            private static Invoker DoCreate(Type type)
+                => (Invoker)Activator.CreateInstance(typeof(Invoker<>).MakeGenericType(type), true)!;
 
             public static ValueTask Serialize(DefaultSerializerFactory self,
                 IConfigurableOutput<Stream> configurableStream,

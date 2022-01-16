@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,7 @@ namespace NCoreUtils.AspNetCore.Rest
     /// </summary>
     /// <typeparam name="TData">Type of the target object.</typeparam>
     /// <typeparam name="TId">Type of the Id property of the target object.</typeparam>
-    public class DefaultRestDelete<TData, TId>
+    public class DefaultRestDelete<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId>
         : DefaultTransactedMethod<TData, TId>, IRestDelete<TData, TId>, IBoxedVoidInvoke<TId, bool>
         where TData : IHasId<TId>
     {

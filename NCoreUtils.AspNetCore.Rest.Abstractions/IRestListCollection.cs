@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Threading;
 
@@ -9,7 +10,7 @@ namespace NCoreUtils.AspNetCore.Rest
     /// Defines functionality to implement REST LIST method for the concrete type.
     /// </summary>
     /// <typeparam name="T">Type of the target object.</typeparam>
-    public interface IRestListCollection<T>
+    public interface IRestListCollection<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>
     {
         /// <summary>
         /// Performes REST LIST action for the predefined type with the specified parameters.

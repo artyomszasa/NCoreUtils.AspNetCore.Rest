@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using NCoreUtils.Data;
@@ -10,7 +11,7 @@ namespace NCoreUtils.AspNetCore.Rest
     /// </summary>
     /// <typeparam name="TData">Type of the target object.</typeparam>
     /// <typeparam name="TId">Type of the Id property of the target object.</typeparam>
-    public abstract class DefaultTransactedMethod<TData, TId> : IRestTransactedMethod
+    public abstract class DefaultTransactedMethod<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId> : IRestTransactedMethod
         where TData : IHasId<TId>
     {
         /// Gets underlying data repository.

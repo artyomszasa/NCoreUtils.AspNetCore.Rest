@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -9,7 +10,10 @@ namespace NCoreUtils.AspNetCore.Rest
     {
         static ConcurrentDictionary<Type, OrderByProperty> _cache = new ConcurrentDictionary<Type, OrderByProperty>();
 
-        static Func<Type, OrderByProperty> _factory = type =>
+        static Func<Type, OrderByProperty> _factory = Create;
+
+        [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "Ensured by caller.")]
+        private static OrderByProperty Create(Type type)
         {
             var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
             PropertyInfo? updatedProperty = null;
@@ -43,15 +47,16 @@ namespace NCoreUtils.AspNetCore.Rest
                 return new OrderByProperty(idProperty, false);
             }
             return new OrderByProperty(properties.First(), false);
-        };
+        }
 
         protected DefaultDefaultOrderProperty() { }
 
-        protected internal static OrderByProperty GetDefaultOrderByProperty(Type type)
+        protected internal static OrderByProperty GetDefaultOrderByProperty([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] Type type)
             => _cache.GetOrAdd(type, _factory);
     }
 
-    public class DefaultDefaultOrderProperty<T> : DefaultDefaultOrderProperty, IDefaultOrderProperty<T>
+    public class DefaultDefaultOrderProperty<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T>
+        : DefaultDefaultOrderProperty, IDefaultOrderProperty<T>
     {
         public OrderByProperty Select() => GetDefaultOrderByProperty(typeof(T));
     }

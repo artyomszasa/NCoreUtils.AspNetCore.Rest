@@ -1,16 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using NCoreUtils.AspNetCore.Rest.Serialization;
 using NCoreUtils.Data;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal
 {
     public abstract class ItemInvoker
     {
-        protected sealed class RestItemInvocation<TData, TId> : RestMethodInvocation<TData>
+        protected sealed class RestItemInvocation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId> : RestMethodInvocation<TData>
             where TData : IHasId<TId>
         {
             private readonly IRestItem<TData, TId> _invoker;
@@ -47,7 +49,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         public abstract ValueTask Invoke(HttpContext httpContext, object id, CancellationToken cancellationToken);
     }
 
-    public sealed class ItemInvoker<TData, TId> : ItemInvoker
+    public sealed class ItemInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId> : ItemInvoker
         where TData : class, IHasId<TId>
     {
         readonly IServiceProvider _serviceProvider;
@@ -65,13 +67,14 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             RestAccessConfiguration accessConfiguration,
             IRestMethodInvoker? methodInvoker = default,
             IRestItem<TData, TId>? implmentation = default,
-            ISerializer<TData>? serializer = default)
+            ISerializerFactory? serializerFactory = default)
         {
             _serviceProvider = serviceProvider;
             _accessConfiguration = accessConfiguration;
             _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
             _implementation = implmentation ?? ActivatorUtilities.CreateInstance<DefaultRestItem<TData, TId>>(serviceProvider);
-            _serializer = serializer ?? ActivatorUtilities.CreateInstance<DefaultSerializer<TData>>(serviceProvider);
+            _serializer = (serializerFactory ?? JsonSerializerContextSerializerFactory.Create(serviceProvider))
+                .GetSerializer<TData>();
         }
 
         public override async ValueTask Invoke(HttpContext httpContext, object id, CancellationToken cancellationToken)

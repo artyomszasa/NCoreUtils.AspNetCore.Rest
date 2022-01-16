@@ -63,7 +63,7 @@ namespace NCoreUtils.AspNetCore.Rest
             _sortByDirections = sortByDirections;
             if (_fields.HasValue)
             {
-                Array.Sort(_fields.Value.Array, _fields.Value.Offset, _fields.Value.Count, StringComparer.InvariantCulture);
+                Array.Sort(_fields.Value.Array!, _fields.Value.Offset, _fields.Value.Count, StringComparer.InvariantCulture);
             }
         }
 
@@ -73,19 +73,19 @@ namespace NCoreUtils.AspNetCore.Rest
             {
                 var fields = _fields.Value;
                 _fields = default;
-                ArrayPool<string>.Shared.Return(fields.Array);
+                ArrayPool<string>.Shared.Return(fields.Array!);
             }
             if (_sortBy.HasValue)
             {
                 var sortBy = _sortBy.Value;
                 _sortBy = default;
-                ArrayPool<string>.Shared.Return(sortBy.Array);
+                ArrayPool<string>.Shared.Return(sortBy.Array!);
             }
             if (_sortByDirections.HasValue)
             {
                 var sortByDirections = _sortByDirections.Value;
                 _sortByDirections = default;
-                ArrayPool<RestSortByDirection>.Shared.Return(sortByDirections.Array);
+                ArrayPool<RestSortByDirection>.Shared.Return(sortByDirections.Array!);
             }
         }
 

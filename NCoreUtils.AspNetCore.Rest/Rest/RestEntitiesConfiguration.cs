@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NCoreUtils.AspNetCore.Rest
 {
@@ -25,10 +26,10 @@ namespace NCoreUtils.AspNetCore.Rest
         { }
 
 
-        public bool TryResolveType(CaseInsensitive name, out Type type)
+        public bool TryResolveType(CaseInsensitive name, [MaybeNullWhen(false)] out Type type)
             => _entityTypes.TryGetValue(name, out type);
 
-        public bool TryGetName(Type type, out string name)
+        public bool TryGetName(Type type, [MaybeNullWhen(false)] out string name)
             => _entityNames.TryGetValue(type, out name);
     }
 }

@@ -12,7 +12,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         public static bool operator!=(AccessValidatorDescriptor a, AccessValidatorDescriptor b)
             => !a.Equals(b);
 
-        public static AccessValidatorDescriptor Create(Type type)
+        public static AccessValidatorDescriptor Create([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             if (!typeof(IAccessValidator).IsAssignableFrom(type))
             {
@@ -21,7 +21,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             return new AccessValidatorDescriptor(type, default, default);
         }
 
-        public static AccessValidatorDescriptor Create<T>()
+        public static AccessValidatorDescriptor Create<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>()
             where T : IAccessValidator
             => Create(typeof(T));
 
@@ -31,6 +31,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         public static AccessValidatorDescriptor Create(Func<IServiceProvider, IAccessValidator> factory)
             => new AccessValidatorDescriptor(default, default, factory);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
         public Type? Type { get; }
 
         public IAccessValidator? Instance { get; }
@@ -39,7 +40,10 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
 
         public bool IsEmpty => Type is null && Instance is null && Factory is null;
 
-        public AccessValidatorDescriptor(Type? type, IAccessValidator? instance, Func<IServiceProvider, IAccessValidator>? factory)
+        public AccessValidatorDescriptor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type? type,
+            IAccessValidator? instance,
+            Func<IServiceProvider, IAccessValidator>? factory)
         {
             Type = type;
             Instance = instance;

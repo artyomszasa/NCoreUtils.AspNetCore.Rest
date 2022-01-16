@@ -19,7 +19,7 @@ namespace NCoreUtils.Rest.Internal
             Headers.ContentType = MediaTypeHeaderValue.Parse(serializer.ContentType);
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             => Serializer.SerializeAsync(stream, Value).AsTask();
 
         protected override bool TryComputeLength(out long length)

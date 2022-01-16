@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
@@ -33,14 +34,17 @@ namespace NCoreUtils.AspNetCore.Rest
             }
         }
 
-        private static readonly Func<Type, Type> _idTypeFactory = entityType =>
+        private static readonly Func<Type, Type> _idTypeFactory = GetIdType;
+
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Exception is thrown if type is not preserved properly.")]
+        private static Type GetIdType(Type entityType)
         {
             if (NCoreUtils.Data.IdUtils.TryGetIdType(entityType, out var idType))
             {
                 return idType;
             }
             throw new InvalidOperationException($"{entityType} does not implement IHasId interface.");
-        };
+        }
 
         private static bool IsTruthy(string? value)
             => value switch
@@ -108,8 +112,8 @@ namespace NCoreUtils.AspNetCore.Rest
                     string? entityType = default;
                     try
                     {
-                        entityType = (string)httpContext.Request.RouteValues["type"];
-                        if (entitiesConfiguration.TryResolveType(entityType, out var type))
+                        entityType = (string?)httpContext.Request.RouteValues["type"];
+                        if (entityType is not null && entitiesConfiguration.TryResolveType(entityType, out var type))
                         {
                             await implementation(httpContext, type);
                         }
@@ -147,11 +151,11 @@ namespace NCoreUtils.AspNetCore.Rest
                     string? entityType = default;
                     try
                     {
-                        entityType = (string)httpContext.Request.RouteValues["type"];
-                        if (entitiesConfiguration.TryResolveType(entityType, out var type))
+                        entityType = (string?)httpContext.Request.RouteValues["type"];
+                        if (entityType is not null && entitiesConfiguration.TryResolveType(entityType, out var type))
                         {
                             var idType = idTypeCache.GetOrAdd(type, _idTypeFactory);
-                            await implementation(httpContext, type, Convert.ChangeType(httpContext.Request.RouteValues["id"], idType));
+                            await implementation(httpContext, type, Convert.ChangeType(httpContext.Request.RouteValues["id"], idType)!);
                         }
                         else
                         {
@@ -192,13 +196,13 @@ namespace NCoreUtils.AspNetCore.Rest
             RequestDelegate itemRequestDelegate = restCollectionMethod(
                 (httpContext, entityType) =>
                 {
-                    var arg = (string)httpContext.Request.RouteValues["id"];
-                    if (DefaultReductions.Names.Contains(arg))
+                    var arg = (string?)httpContext.Request.RouteValues["id"];
+                    if (arg is not null && DefaultReductions.Names.Contains(arg))
                     {
                         return Invoker.InvokeReduction(entityType, httpContext, arg, accessConfiguration);
                     }
                     var idType = idTypeCache.GetOrAdd(entityType, _idTypeFactory);
-                    return Invoker.InvokeItem(entityType, httpContext, Convert.ChangeType(arg, idType), accessConfiguration);
+                    return Invoker.InvokeItem(entityType, httpContext, Convert.ChangeType(arg, idType)!, accessConfiguration);
                 }
             );
             endpoints.Add(ApplyConventions(new RouteEndpointBuilder(itemRequestDelegate, itemRoutePattern, 100)

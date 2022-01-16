@@ -20,7 +20,7 @@ namespace NCoreUtils.Rest
 
         protected RestException(SerializationInfo info, StreamingContext context)
             : base(info, context)
-            => Uri = info.GetString(KeyUri);
+            => Uri = info.GetString(KeyUri) ?? string.Empty;
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {

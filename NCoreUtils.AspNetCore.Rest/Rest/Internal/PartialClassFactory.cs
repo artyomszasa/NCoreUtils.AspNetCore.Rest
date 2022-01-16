@@ -93,19 +93,23 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             return property;
         }
 
-        private static Type EmitPartial(TypeBuilder typeBuilder, Type sourceType, IReadOnlyList<string> fieldSelector)
+        private static Type EmitPartial(
+            TypeBuilder typeBuilder,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type sourceType,
+            IReadOnlyList<string> fieldSelector)
         {
             // fields and properties
-            var pfs = fieldSelector.Choose(name =>
+            var pfs = new List<(PropertyInfo prop, FieldInfo field)>(fieldSelector.Count);
+            foreach (var name in fieldSelector)
             {
-                var prop = sourceType.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
+                var prop = sourceType.GetProperty(name!, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
                 if (prop is null)
                 {
-                    return default;
+                    continue;
                 }
                 EmitProperty(typeBuilder, prop, out var field);
-                return (prop, field).Just();
-            }).ToList();
+                pfs.Add((prop, field));
+            }
             // ctor
             var parameters = pfs.MapToArray(pf => pf.prop.PropertyType);
             var ctor = typeBuilder.DefineConstructor(
@@ -129,14 +133,13 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                 }
                 il.Emit(OpCodes.Ret);
             }
-            #if NETSTANDARD2_1
-            return typeBuilder.CreateType();
-            #else
-            return typeBuilder.CreateTypeInfo()!.AsType();
-            #endif
+            return typeBuilder.CreateType()!;
         }
 
-        private static Type DoCreatePartialClass(Type sourceType, IReadOnlyList<string> fieldSelector)
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Dynamically emitted members cannot be trimmed.")]
+        private static Type DoCreatePartialClass(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type sourceType,
+            IReadOnlyList<string> fieldSelector)
         {
             if (_assemblyBuilder is null)
             {
@@ -165,7 +168,11 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             return type;
         }
 
-        internal static PartialClassInfo CreatePartialClass(Type sourceType, IReadOnlyList<string> fieldSelector)
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Dynamically emitted members cannot be trimmed.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2080", Justification = "Dynamically emitted members cannot be trimmed.")]
+        internal static PartialClassInfo CreatePartialClass(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type sourceType,
+            IReadOnlyList<string> fieldSelector)
         {
             lock (_cache)
             {
@@ -183,13 +190,20 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                     var selector = Expression.Lambda(
                         Expression.New(
                             ctor,
-                            ctorArgs.Select(e => Expression.Property(eArg, e.Name!.Substring(2))),
-                            ctorArgs.Select(e => ty.GetProperty(e.Name!.Substring(2), BindingFlags.Public | BindingFlags.Instance))
+                            ctorArgs.Select(ToParameter),
+                            ctorArgs.Select(ToMember)
                         ),
                         eArg
                     );
                     info = new PartialClassInfo(sourceType, fieldSelector, ty, selector);
                     inner.Add(fieldSelector, info);
+
+                    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Dynamically emitted members cannot be trimmed.")]
+                    [UnconditionalSuppressMessage("Trimming", "IL2080", Justification = "Dynamically emitted members cannot be trimmed.")]
+                    MemberInfo ToMember(ParameterInfo e) => ty!.GetProperty(e.Name!.Substring(2), BindingFlags.Public | BindingFlags.Instance)!;
+
+                    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Dynamically emitted members cannot be trimmed.")]
+                    MemberExpression ToParameter(ParameterInfo e) => Expression.Property(eArg!, e.Name!.Substring(2));
                 }
                 return info;
             }

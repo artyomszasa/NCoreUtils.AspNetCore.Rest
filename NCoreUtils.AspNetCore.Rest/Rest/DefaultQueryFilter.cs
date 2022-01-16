@@ -1,11 +1,12 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
-using NCoreUtils.Data;
+using NCoreUtils.Data.Protocol;
 
 namespace NCoreUtils.AspNetCore.Rest
 {
-    public class DefaultQueryFilter<T> : IRestQueryFilter<T>
+    public class DefaultQueryFilter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : IRestQueryFilter<T>
     {
         readonly IDataQueryExpressionBuilder? _queryExpressionBuilder;
 
@@ -30,7 +31,7 @@ namespace NCoreUtils.AspNetCore.Rest
                 var expression = _queryExpressionBuilder.BuildExpression(typeof(T), restQuery.Filter);
                 if (expression.Body.TryExtractConstant(out var cbox))
                 {
-                    var cbool = (bool)Convert.ChangeType(cbox, typeof(bool));
+                    var cbool = (bool)Convert.ChangeType(cbox, typeof(bool))!;
                     predicate = Expression.Lambda<Func<T, bool>>(QueryableExtensions.BoxConstant(cbool), expression.Parameters);
                 }
                 else

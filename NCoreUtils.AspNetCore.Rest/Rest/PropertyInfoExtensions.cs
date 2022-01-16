@@ -15,7 +15,7 @@ namespace NCoreUtils.AspNetCore.Rest
                     ? ptype
                     : throw new InvalidOperationException($"{ptype} cannot be used as parameter type for property selector of {property.DeclaringType}.{property.Name}.")
             };
-            var eArg = Expression.Parameter(eArgType);
+            var eArg = Expression.Parameter(eArgType ?? throw new InvalidOperationException("Unable to get parameter type."));
             return Expression.Lambda(Expression.Property(eArg, property), eArg);
         }
     }

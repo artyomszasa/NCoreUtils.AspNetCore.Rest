@@ -20,7 +20,7 @@ namespace NCoreUtils.Rest.Internal
             int? limit = default,
             CancellationToken cancellationToken = default);
 
-        Task<TData> ItemAsync<TData, TId>(
+        Task<TData?> ItemAsync<TData, TId>(
             TId id,
             CancellationToken cancellationToken = default)
             where TData : IHasId<TId>;
@@ -52,12 +52,6 @@ namespace NCoreUtils.Rest.Internal
         [Obsolete("Use DeleteAsync(id, force, cancellationToken) instead.")]
         Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
-#if NETSTANDARD2_0
-            ;
-#else
             => DeleteAsync<TData, TId>(id, false, cancellationToken);
-#endif
-
-
     }
 }

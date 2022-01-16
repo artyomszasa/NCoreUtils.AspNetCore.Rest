@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -39,16 +40,21 @@ namespace NCoreUtils.AspNetCore
             return builder.Add(AccessValidatorDescriptor.Create(factory));
         }
 
-        public static IRestOperationAccessConfigurationBuilder Add(this IRestOperationAccessConfigurationBuilder builder, Type type)
+        public static IRestOperationAccessConfigurationBuilder Add(
+            this IRestOperationAccessConfigurationBuilder builder,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             return builder.Add(AccessValidatorDescriptor.Create(type));
         }
 
-        public static IRestOperationAccessConfigurationBuilder Add<TAccessValidator>(this IRestOperationAccessConfigurationBuilder builder)
+        public static IRestOperationAccessConfigurationBuilder Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TAccessValidator>(
+            this IRestOperationAccessConfigurationBuilder builder)
             where TAccessValidator : IAccessValidator
             => builder.Add(AccessValidatorDescriptor.Create<TAccessValidator>());
 
-        public static IRestOperationAccessConfigurationBuilder Add<TAccessValidator>(this IRestOperationAccessConfigurationBuilder builder, TAccessValidator validator)
+        public static IRestOperationAccessConfigurationBuilder Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TAccessValidator>(
+            this IRestOperationAccessConfigurationBuilder builder,
+            TAccessValidator validator)
             where TAccessValidator : IAccessValidator
             => builder.Add(AccessValidatorDescriptor.Create(validator));
 
@@ -59,7 +65,7 @@ namespace NCoreUtils.AspNetCore
             => builder.Use((user, _) => new ValueTask<bool>(callback(user)));
 
         public static IRestOperationAccessConfigurationBuilder AllowAuthenticated(this IRestOperationAccessConfigurationBuilder builder)
-            => builder.Use((user, _) => new ValueTask<bool>(user.Identity.IsAuthenticated));
+            => builder.Use((user, _) => new ValueTask<bool>(user.Identity is not null && user.Identity.IsAuthenticated));
 
         public static IRestOperationAccessConfigurationBuilder DenyAll(this IRestOperationAccessConfigurationBuilder builder)
             => builder.Use((_, __) => new ValueTask<bool>(false));

@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
-using NCoreUtils.Data;
+using NCoreUtils.Data.Protocol;
 
 namespace NCoreUtils.AspNetCore.Rest
 {
@@ -15,7 +16,7 @@ namespace NCoreUtils.AspNetCore.Rest
     /// requires NCoreUtils data protocol services.
     /// </para>
     /// </summary>
-    public class DefaultQueryOrderer<T> : DefaultQueryOrderer, IRestQueryOrderer<T>
+    public class DefaultQueryOrderer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : DefaultQueryOrderer, IRestQueryOrderer<T>
     {
         static readonly Regex mayBeExpressionRegex = new Regex("[=><.+*/-]", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
@@ -80,6 +81,7 @@ namespace NCoreUtils.AspNetCore.Rest
             return OrderBy(source, option.By, option.IsDescending);
         }
 
+        // [UnconditionalSuppressMessage("Trimming", "IL2087", Justification = "Ensured during registration.")]
         protected virtual IOrderedQueryable<T> ApplyFurtherOrder(IOrderedQueryable<T> source, OrderingOption option)
         {
             if (mayBeExpressionRegex.IsMatch(option.By))

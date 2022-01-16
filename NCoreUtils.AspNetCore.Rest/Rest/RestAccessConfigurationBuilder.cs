@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -158,9 +159,19 @@ namespace NCoreUtils.AspNetCore.Rest
                 query: BuildFromList(Query)
             );
 
-        public RestAccessConfigurationBuilder RestrictAll<TAccessValidator>()
+        private sealed class AccessValidationAdder<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TAccessValidator>
             where TAccessValidator : IAccessValidator
-            => this.ConfigureGlobal(b => b.Add<TAccessValidator>());
+        {
+            public static void Add(IRestOperationAccessConfigurationBuilder b) => b.Add<TAccessValidator>();
+
+            public static void Add<TOperation>(IRestOperationAccessConfigurationBuilder<TOperation> b)
+                where TOperation : RestOperation
+                => b.Add<TAccessValidator>();
+        }
+
+        public RestAccessConfigurationBuilder RestrictAll<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TAccessValidator>()
+            where TAccessValidator : IAccessValidator
+            => this.ConfigureGlobal(AccessValidationAdder<TAccessValidator>.Add);
 
         public RestAccessConfigurationBuilder RestrictAll(Func<ClaimsPrincipal, CancellationToken, ValueTask<bool>> callback)
             => this.ConfigureGlobal(b => b.Use(callback));
@@ -168,9 +179,9 @@ namespace NCoreUtils.AspNetCore.Rest
         public RestAccessConfigurationBuilder RestrictAll(Func<ClaimsPrincipal, bool> callback)
             => this.ConfigureGlobal(b => b.Use(callback));
 
-        public RestAccessConfigurationBuilder RestrictCreate<TAccessValidator>()
+        public RestAccessConfigurationBuilder RestrictCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TAccessValidator>()
             where TAccessValidator : IAccessValidator
-            => this.ConfigureCreate(b => b.Add<TAccessValidator>());
+            => this.ConfigureCreate(AccessValidationAdder<TAccessValidator>.Add);
 
         public RestAccessConfigurationBuilder RestrictCreate(Func<ClaimsPrincipal, CancellationToken, ValueTask<bool>> callback)
             => this.ConfigureCreate(b => b.Use(callback));
@@ -178,9 +189,9 @@ namespace NCoreUtils.AspNetCore.Rest
         public RestAccessConfigurationBuilder RestrictCreate(Func<ClaimsPrincipal, bool> callback)
             => this.ConfigureCreate(b => b.Use(callback));
 
-        public RestAccessConfigurationBuilder RestrictUpdate<TAccessValidator>()
+        public RestAccessConfigurationBuilder RestrictUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TAccessValidator>()
             where TAccessValidator : IAccessValidator
-            => this.ConfigureUpdate(b => b.Add<TAccessValidator>());
+            => this.ConfigureUpdate(AccessValidationAdder<TAccessValidator>.Add);
 
         public RestAccessConfigurationBuilder RestrictUpdate(Func<ClaimsPrincipal, CancellationToken, ValueTask<bool>> callback)
             => this.ConfigureUpdate(b => b.Use(callback));
@@ -188,9 +199,9 @@ namespace NCoreUtils.AspNetCore.Rest
         public RestAccessConfigurationBuilder RestrictUpdate(Func<ClaimsPrincipal, bool> callback)
             => this.ConfigureUpdate(b => b.Use(callback));
 
-        public RestAccessConfigurationBuilder RestrictDelete<TAccessValidator>()
+        public RestAccessConfigurationBuilder RestrictDelete<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TAccessValidator>()
             where TAccessValidator : IAccessValidator
-            => this.ConfigureDelete(b => b.Add<TAccessValidator>());
+            => this.ConfigureDelete(AccessValidationAdder<TAccessValidator>.Add);
 
         public RestAccessConfigurationBuilder RestrictDelete(Func<ClaimsPrincipal, CancellationToken, ValueTask<bool>> callback)
             => this.ConfigureDelete(b => b.Use(callback));

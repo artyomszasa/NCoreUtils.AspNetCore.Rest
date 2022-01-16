@@ -1,5 +1,7 @@
 using System;
+
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Net;
@@ -15,10 +17,14 @@ namespace NCoreUtils.Rest.Internal
 {
     public class HttpRestClient : IHttpRestClient
     {
-        private static readonly JsonSerializerOptions _defaultJsonOptions = new JsonSerializerOptions
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Only used to create default values of value types.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2077", Justification = "Only used to create default values of value types.")]
+        private static object CreateDefaultValue(Type type)
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
+            return (type.IsValueType ? Activator.CreateInstance(type) : null)!;
+        }
+
+
 
         protected IRestClientConfiguration Configuration { get; }
 
@@ -38,7 +44,8 @@ namespace NCoreUtils.Rest.Internal
             IRestTypeNameResolver nameResolver,
             ILogger<HttpRestClient> logger,
             ISerializerFactory? serializerFactory = default,
-            IHttpClientFactory? httpClientFactory = default)
+            IHttpClientFactory? httpClientFactory = default,
+            IRestClientJsonSerializerContext? restClientJsonSerializerContext = default)
         {
             if (serviceProvider is null)
             {
@@ -46,7 +53,11 @@ namespace NCoreUtils.Rest.Internal
             }
             Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             NameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
-            SerializerFactory = serializerFactory ?? ActivatorUtilities.CreateInstance<DefaultSerializerFactory>(serviceProvider);
+            SerializerFactory = serializerFactory ?? restClientJsonSerializerContext switch
+            {
+                null => throw new InvalidOperationException("Neither rest client serializer factory not json serializer context has been registered."),
+                { JsonSerializerContext: var context } => new DefaultSerializerFactory(context)
+            };
             QuerySerializer = serviceProvider.GetService<IRestQuerySerializer>() ?? RestQueryAsHeaderSerializer.Instance;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _httpClientFactory = httpClientFactory;
@@ -117,34 +128,27 @@ namespace NCoreUtils.Rest.Internal
             var requestUri = Configuration.GetCollectionEndpoint<T>(NameResolver);
             using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
             QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, offset, limit);
+            Logger.LogRestCollection(target, filter, sortBy, sortByDirection, fields, includes, offset, limit);
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
-            #if NETSTANDARD2_1
             await using var stream = await response.Content.ReadAsStreamAsync();
-            #else
-            using var stream = await response.Content.ReadAsStreamAsync();
-            #endif
             return await SerializerFactory.DeserializeAsync<List<T>>(stream, cancellationToken);
         }
 
-        public virtual async Task<TData> ItemAsync<TData, TId>(
+        public virtual async Task<TData?> ItemAsync<TData, TId>(
             TId id,
             CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
         {
-            var requestUri = Configuration.GetItemOrReductionEndpoint<TData>(NameResolver, Convert.ToString(id, CultureInfo.InvariantCulture));
+            var requestUri = Configuration.GetItemOrReductionEndpoint<TData>(NameResolver, Convert.ToString(id, CultureInfo.InvariantCulture)!);
             using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
             using var response = await SendAsync(request, cancellationToken);
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                return default!;
+                return default;
             }
             HandleErrors(response, requestUri);
-            #if NETSTANDARD2_1
             await using var stream = await response.Content.ReadAsStreamAsync();
-            #else
-            using var stream = await response.Content.ReadAsStreamAsync();
-            #endif
             return await SerializerFactory.DeserializeAsync<TData>(stream, cancellationToken);
         }
 
@@ -182,7 +186,7 @@ namespace NCoreUtils.Rest.Internal
             {
                 throw new InvalidOperationException($"Invalid id.");
             }
-            var requestUri = Configuration.GetItemOrReductionEndpoint<TData>(NameResolver, Convert.ToString(data.Id, CultureInfo.InvariantCulture));
+            var requestUri = Configuration.GetItemOrReductionEndpoint<TData>(NameResolver, Convert.ToString(data.Id, CultureInfo.InvariantCulture)!);
             using var request = new HttpRequestMessage(HttpMethod.Put, requestUri)
             {
                 Content = new SerializedContent<TData>(data, SerializerFactory.GetSerializer<TData>())
@@ -194,7 +198,7 @@ namespace NCoreUtils.Rest.Internal
         public virtual async Task DeleteAsync<TData, TId>(TId id, bool force, CancellationToken cancellationToken = default)
             where TData : IHasId<TId>
         {
-            var requestUri = Configuration.GetItemOrReductionEndpoint<TData>(NameResolver, Convert.ToString(id, CultureInfo.InvariantCulture));
+            var requestUri = Configuration.GetItemOrReductionEndpoint<TData>(NameResolver, Convert.ToString(id, CultureInfo.InvariantCulture)!);
             using var request = new HttpRequestMessage(HttpMethod.Delete, requestUri);
             if (force)
             {
@@ -203,13 +207,6 @@ namespace NCoreUtils.Rest.Internal
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
         }
-
-#if NETSTANDARD2_0
-        public Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
-            where TData : IHasId<TId>
-            => DeleteAsync<TData, TId>(id, false, cancellationToken);
-#endif
-
 
         public virtual async Task<object> ReductionAsync<T>(
             string reduction,
@@ -236,13 +233,9 @@ namespace NCoreUtils.Rest.Internal
             HandleErrors(response, requestUri);
             if (HttpStatusCode.NoContent == response.StatusCode)
             {
-                return resultType.IsValueType ? Activator.CreateInstance(resultType) : null!;
+                return CreateDefaultValue(resultType);
             }
-            #if NETSTANDARD2_1
             await using var stream = await response.Content.ReadAsStreamAsync();
-            #else
-            using var stream = await response.Content.ReadAsStreamAsync();
-            #endif
             return await SerializerFactory.DeserializeAsync(stream, resultType, cancellationToken);
         }
     }

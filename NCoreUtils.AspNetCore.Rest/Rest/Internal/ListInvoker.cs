@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -7,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using NCoreUtils.AspNetCore.Rest.Serialization;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal
 {
@@ -14,7 +16,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
     {
         internal static readonly AsyncQueryFilter _noFilter = (source, _) => new ValueTask<System.Linq.IQueryable>(source);
 
-        protected sealed class RestCollectionInvocation<T> : RestMethodInvocation<IReadOnlyList<T>>
+        protected sealed class RestCollectionInvocation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> : RestMethodInvocation<IReadOnlyList<T>>
         {
             readonly IRestListCollection<T> _invoker;
 
@@ -45,7 +47,10 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             }
         }
 
-        protected sealed class RestCollectionPartialInvocation<T, TPartial> : RestMethodInvocation<IReadOnlyList<TPartial>>
+        protected sealed class RestCollectionPartialInvocation<
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TPartial>
+            : RestMethodInvocation<IReadOnlyList<TPartial>>
         {
             readonly IRestListCollection<T> _invoker;
 
@@ -63,8 +68,14 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                 _args = new ArgumentCollection<RestQuery, AsyncQueryFilter, Expression<Func<T, TPartial>>>(query, filter, selector);
             }
 
-            public override async ValueTask<IReadOnlyList<TPartial>> InvokeAsync(CancellationToken cancellationToken = default)
-                => await _invoker.InvokePartialAsync(_args.Arg1, _args.Arg2, _args.Arg3, cancellationToken).ToListAsync(cancellationToken);
+            public override ValueTask<IReadOnlyList<TPartial>> InvokeAsync(CancellationToken cancellationToken = default)
+            {
+                var enumerable = _invoker.InvokePartialAsync(_args.Arg1, _args.Arg2, _args.Arg3, cancellationToken);
+                return ToList(enumerable);
+
+                async ValueTask<IReadOnlyList<TPartial>> ToList(IAsyncEnumerable<TPartial> enumerable)
+                    => await enumerable.ToListAsync(cancellationToken);
+            }
 
             public override RestMethodInvocation<IReadOnlyList<TPartial>> UpdateArguments(IReadOnlyList<object> arguments)
             {
@@ -76,16 +87,23 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             }
         }
 
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ListInvoker<>))]
         internal ListInvoker() { }
 
         public abstract ValueTask Invoke(HttpContext httpContext, CancellationToken cancellationToken);
     }
 
-    public sealed class ListInvoker<T> : ListInvoker
+    public sealed class ListInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : ListInvoker
     {
-        private static MethodInfo _gmDoInvokePartial = typeof(ListInvoker<T>).GetType()
-            .GetMethod(nameof(DoInvokePartial), BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException($"Unable to get method {nameof(DoInvokePartial)} for {nameof(ListInvoker<T>)}.");
+        private static MethodInfo _gmDoInvokePartial;
+
+        [UnconditionalSuppressMessage("Timming", "IL2075", Justification = "Preserved by dynamic dependency.")]
+        static ListInvoker()
+        {
+            _gmDoInvokePartial = typeof(ListInvoker<T>).GetType()
+                .GetMethod(nameof(DoInvokePartial), BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new InvalidOperationException($"Unable to get method {nameof(DoInvokePartial)} for {nameof(ListInvoker<T>)}.");
+        }
 
         readonly IServiceProvider _serviceProvider;
 
@@ -112,8 +130,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             _queryParser = queryParser ?? new DefaultRestQueryParser();
             _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
             _implementation = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestListCollection<T>>(serviceProvider);
-            // _serializer = serializer ?? ActivatorUtilities.CreateInstance<DefaultSerializer<IReadOnlyList<T>>>(serviceProvider);
-            _serializerFactory = serializerFactory ?? ActivatorUtilities.CreateInstance<DefaultSerializerFactory>(serviceProvider);
+            _serializerFactory = serializerFactory ?? JsonSerializerContextSerializerFactory.Create(serviceProvider);
         }
 
         private async ValueTask DoInvoke(
@@ -128,7 +145,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                 .SerializeAsync(new HttpResponseOutput(response), result, cancellationToken);
         }
 
-        private async Task DoInvokePartial<TPartial>(
+        private Task DoInvokePartial<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TPartial>(
             RestQuery restQuery,
             AsyncQueryFilter filter,
             Expression<Func<T, TPartial>> selector,
@@ -136,11 +153,18 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             CancellationToken cancellationToken)
         {
             var invocation = new RestCollectionPartialInvocation<T, TPartial>(_implementation, restQuery, filter, selector);
-            var result = await _methodInvoker.InvokeAsync(invocation, cancellationToken);
-            await _serializerFactory.GetSerializer<IReadOnlyList<TPartial>>()
-                .SerializeAsync(new HttpResponseOutput(response), result, cancellationToken);
+            return DoInvokeAndSerialize(invocation);
+
+            async Task DoInvokeAndSerialize(RestMethodInvocation<IReadOnlyList<TPartial>> invocation)
+            {
+                var result = await _methodInvoker.InvokeAsync(invocation, cancellationToken);
+                await _serializerFactory.GetSerializer<IReadOnlyList<TPartial>>()
+                    .SerializeAsync(new HttpResponseOutput(response), result, cancellationToken);
+            }
         }
 
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Dynamically emitted members cannot be trimmed.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "Dynamically emitted members cannot be trimmed.")]
         public override async ValueTask Invoke(HttpContext context, CancellationToken cancellationToken)
         {
             var accessValidator = _accessConfiguration.Query.CreateValidator(_serviceProvider, out var disposeValidator);

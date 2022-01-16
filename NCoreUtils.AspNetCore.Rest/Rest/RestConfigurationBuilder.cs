@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace NCoreUtils.AspNetCore.Rest
 {
@@ -28,29 +29,29 @@ namespace NCoreUtils.AspNetCore.Rest
             return this;
         }
 
-        public RestConfigurationBuilder AddEntity(Type type, CaseInsensitive name)
+        public RestConfigurationBuilder AddEntity([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type, CaseInsensitive name)
         {
             EntitiesConfiguration.Add(type, name);
             return this;
         }
 
-        public RestConfigurationBuilder AddEntity(Type type)
+        public RestConfigurationBuilder AddEntity([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
             EntitiesConfiguration.Add(type);
             return this;
         }
 
-        public RestConfigurationBuilder AddEntity<T>(CaseInsensitive name)
+        public RestConfigurationBuilder AddEntity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(CaseInsensitive name)
             => AddEntity(typeof(T), name);
 
-        public RestConfigurationBuilder AddEntity<T>()
+        public RestConfigurationBuilder AddEntity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
             => AddEntity(typeof(T));
 
-        public RestConfigurationBuilder AddEntityRange(params Type[] types)
-        {
-            EntitiesConfiguration.AddRange(types);
-            return this;
-        }
+        // public RestConfigurationBuilder AddEntityRange(params Type[] types)
+        // {
+        //     EntitiesConfiguration.AddRange(types);
+        //     return this;
+        // }
 
         public RestConfiguration Build()
             => new RestConfiguration(

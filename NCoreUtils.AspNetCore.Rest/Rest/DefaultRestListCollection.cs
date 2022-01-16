@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -14,7 +15,7 @@ namespace NCoreUtils.AspNetCore.Rest
     /// Provides default implementation for REST LIST method.
     /// </summary>
     /// <typeparam name="T">Type of the collection elements.</typeparam>
-    public class DefaultRestListCollection<T> : IRestListCollection<T>
+    public class DefaultRestListCollection<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : IRestListCollection<T>
     {
         protected IDataRepository<T> Repository { get; }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,7 +13,7 @@ namespace NCoreUtils.AspNetCore.Rest
     /// </summary>
     /// <typeparam name="TData">Type of the target object.</typeparam>
     /// <typeparam name="TId">Type of the Id property of the target object.</typeparam>
-    public class DefaultRestItem<TData, TId>
+    public class DefaultRestItem<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId>
         : IRestItem<TData, TId>, IBoxedInvoke<TId, AsyncQueryFilter, TData>
         where TData : IHasId<TId>
     {

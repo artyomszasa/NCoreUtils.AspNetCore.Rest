@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using NCoreUtils.AspNetCore.Rest.Serialization;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal
 {
@@ -45,7 +47,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         public abstract ValueTask Invoke(HttpContext httpContext, string reduction, CancellationToken cancellationToken);
     }
 
-    public sealed class ReductionInvoker<T> : ReductionInvoker
+    public sealed class ReductionInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : ReductionInvoker
         where T : class
     {
         readonly IServiceProvider _serviceProvider;
@@ -73,7 +75,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             _queryParser = queryParser ?? new DefaultRestQueryParser();
             _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
             _implementation = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestReduction<T>>(serviceProvider);
-            _serializerFactory = serializerFactory ?? ActivatorUtilities.CreateInstance<DefaultSerializerFactory>(serviceProvider);
+            _serializerFactory = serializerFactory ?? JsonSerializerContextSerializerFactory.Create(serviceProvider);
         }
 
         public override async ValueTask Invoke(HttpContext httpContext, string reduction, CancellationToken cancellationToken)

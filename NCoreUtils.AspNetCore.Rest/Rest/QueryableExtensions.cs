@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -24,20 +25,26 @@ namespace NCoreUtils.AspNetCore.Rest
 
         static readonly ConcurrentDictionary<Type, LambdaExpression> _idSelectorCache = new ConcurrentDictionary<Type, LambdaExpression>();
 
-        static readonly Func<Type, LambdaExpression> _idSelectorFactory = type =>
+        static readonly Func<Type, LambdaExpression> _idSelectorFactory = IdSelectorFactory;
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Method preserved by caller.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "Method preserved by caller.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Method preserved by caller.")]
+        private static LambdaExpression IdSelectorFactory(Type type)
         {
             if (NCoreUtils.Data.IdUtils.TryGetIdType(type, out var idType))
             {
                 return (LambdaExpression)_gmCreateIdSelector.MakeGenericMethod(type, idType).Invoke(null, new object[0])!;
             }
             throw new InvalidOperationException($"Invalid entity type {type}.");
-        };
+        }
 
-        static Expression<Func<TData, TId>> CreateIdSelector<TData, TId>()
+        private static Expression<Func<TData, TId>> CreateIdSelector<TData, TId>()
             where TData : IHasId<TId>
             => LinqExtensions.ReplaceExplicitProperties<Func<TData, TId>>(e => e.Id);
 
-        static LambdaExpression GetOrCreateIdSelector(Type type)
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(QueryableExtensions))]
+        private static LambdaExpression GetOrCreateIdSelector(Type type)
             => _idSelectorCache.GetOrAdd(type, _idSelectorFactory);
 
         internal static IQueryable<T> Apply<T>(this IQueryable<T> source, IRestQueryFilter<T> filter, RestQuery restQuery)
@@ -49,6 +56,8 @@ namespace NCoreUtils.AspNetCore.Rest
         internal static async ValueTask<IQueryable<T>> ApplyAsync<T>(this IQueryable<T> source, AsyncQueryFilter filter, CancellationToken cancellationToken)
             => (IQueryable<T>)await filter(source, cancellationToken);
 
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ValueBox<>))]
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Only known types are passed.")]
         public static Expression BoxConstant<T>(T value)
         {
             var box = new ValueBox<T>(value);

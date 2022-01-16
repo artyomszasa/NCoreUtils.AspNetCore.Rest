@@ -104,7 +104,12 @@ namespace NCoreUtils.Rest
             int offset = 0,
             int? limit = null)
         {
-            var uri = request.RequestUri.AbsoluteUri;
+            var requestUri = request.RequestUri;
+            if (requestUri is null)
+            {
+                throw new ArgumentException("Uri member must be initialized.", nameof(request));
+            }
+            var uri = requestUri.AbsoluteUri;
             var newUriSize = uri.Length;
             string? targetString = default;
             if (!string.IsNullOrEmpty(target))
