@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
@@ -8,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NCoreUtils.AspNetCore.Rest.Serialization;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal
@@ -95,12 +97,14 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
 
     public sealed class ListInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T> : ListInvoker
     {
-        private static MethodInfo _gmDoInvokePartial;
+        private static readonly string Type = typeof(T).Name;
+
+        private static readonly MethodInfo _gmDoInvokePartial;
 
         [UnconditionalSuppressMessage("Timming", "IL2075", Justification = "Preserved by dynamic dependency.")]
         static ListInvoker()
         {
-            _gmDoInvokePartial = typeof(ListInvoker<T>).GetType()
+            _gmDoInvokePartial = typeof(ListInvoker<T>)
                 .GetMethod(nameof(DoInvokePartial), BindingFlags.NonPublic | BindingFlags.Instance)
                 ?? throw new InvalidOperationException($"Unable to get method {nameof(DoInvokePartial)} for {nameof(ListInvoker<T>)}.");
         }
@@ -117,9 +121,12 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
 
         readonly ISerializerFactory _serializerFactory;
 
+        readonly ILogger _logger;
+
         public ListInvoker(
             IServiceProvider serviceProvider,
             RestAccessConfiguration accessConfiguration,
+            ILogger<ListInvoker> logger,
             IRestQueryParser? queryParser = null,
             IRestMethodInvoker? methodInvoker = null,
             IRestListCollection<T>? implementation = null,
@@ -127,22 +134,44 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         {
             _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
             _accessConfiguration = accessConfiguration ?? throw new ArgumentNullException(nameof(accessConfiguration));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _queryParser = queryParser ?? new DefaultRestQueryParser();
             _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
             _implementation = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestListCollection<T>>(serviceProvider);
             _serializerFactory = serializerFactory ?? JsonSerializerContextSerializerFactory.Create(serviceProvider);
         }
 
+        private sealed class ConfigurableBufferOutput : IConfigurableOutput<System.IO.Stream>
+        {
+            public long? ContentLength { get; private set; }
+
+            public string? ContentType { get; private set; }
+
+            public System.IO.MemoryStream? Buffer { get; private set; }
+
+            public ValueTask<System.IO.Stream> InitializeAsync(OutputInfo info, CancellationToken cancellationToken)
+            {
+                ContentLength = info.Length;
+                ContentType = info.ContentType;
+                return new ValueTask<System.IO.Stream>(Buffer ??= new());
+            }
+        }
+
         private async ValueTask DoInvoke(
+            Stopwatch stopwatch,
             RestQuery restQuery,
             AsyncQueryFilter filter,
             HttpResponse response,
             CancellationToken cancellationToken)
         {
             var invocation = new RestCollectionInvocation<T>(_implementation, restQuery, filter);
-            var result = await _methodInvoker.InvokeAsync(invocation, cancellationToken);
-            await _serializerFactory.GetSerializer<IReadOnlyList<T>>()
-                .SerializeAsync(new HttpResponseOutput(response), result, cancellationToken);
+            var result = await _methodInvoker.InvokeAsync(invocation, cancellationToken)
+                .ConfigureAwait(false);
+            _logger.LogTrace("[{Type}] REST query execution done ({Elapsed}ms).", Type, stopwatch.ElapsedMilliseconds);
+            var serializer = _serializerFactory.GetSerializer<IReadOnlyList<T>>();
+            await serializer.SerializeAsync(new HttpResponseOutput(response), result, cancellationToken)
+                .ConfigureAwait(false);
+            _logger.LogTrace("[{Type}] REST query serialization done ({Elapsed}ms).", Type, stopwatch.ElapsedMilliseconds);
         }
 
         private Task DoInvokePartial<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TPartial>(
@@ -167,10 +196,14 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         [UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "Dynamically emitted members cannot be trimmed.")]
         public override async ValueTask Invoke(HttpContext context, CancellationToken cancellationToken)
         {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
             var accessValidator = _accessConfiguration.Query.CreateValidator(_serviceProvider, out var disposeValidator);
             try
             {
-                if (!await accessValidator.ValidateAsync(context.User, cancellationToken))
+                var accessAllowed = await accessValidator.ValidateAsync(context.User, cancellationToken);
+                _logger.LogTrace("[{Type}] Access validation ({AccessAllowed}) done ({Elapsed}ms).", Type, accessAllowed, stopwatch.ElapsedMilliseconds);
+                if (!accessAllowed)
                 {
                     throw new UnauthorizedException();
                 }
@@ -178,9 +211,10 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                     ? (source, ctoken) => queryAccessValidator.FilterQueryAsync(source, context.User, ctoken)
                     : ListInvoker._noFilter;
                 using var restQuery = await _queryParser.ParseAsync(context.Request, cancellationToken);
+                _logger.LogTrace("[{Type}] REST query parsing done ({Elapsed}ms).", Type, stopwatch.ElapsedMilliseconds);
                 if (!restQuery.Fields.HasValue || restQuery.Fields.Value.Count == 0)
                 {
-                    await DoInvoke(restQuery, filter, context.Response, cancellationToken);
+                    await DoInvoke(stopwatch, restQuery, filter, context.Response, cancellationToken);
                 }
                 else
                 {

@@ -9,6 +9,7 @@ namespace NCoreUtils.AspNetCore.Rest.QueryParsers
         public static void SplitCommaSeparatedStrings(ReadOnlySpan<char> input, ArrayPoolList<string> output)
         {
             var inString = false;
+            var parenDepth = 0;
             var lastChar = '\0';
             var startIndex = 0;
             var i = 0;
@@ -18,6 +19,12 @@ namespace NCoreUtils.AspNetCore.Rest.QueryParsers
                 var ch = input[i];
                 switch (ch)
                 {
+                    case '(' when !inString:
+                        ++parenDepth;
+                        break;
+                    case ')' when !inString:
+                        --parenDepth;
+                        break;
                     case '"':
                         if (lastChar != '\\')
                         {
@@ -25,7 +32,7 @@ namespace NCoreUtils.AspNetCore.Rest.QueryParsers
                         }
                         break;
                     case ',':
-                        if (!inString)
+                        if (0 == parenDepth && !inString)
                         {
                             output.Add(input.Slice(startIndex, i - startIndex).ToString());
                             startIndex = i + 1;

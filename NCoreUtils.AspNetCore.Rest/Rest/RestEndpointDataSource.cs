@@ -57,6 +57,46 @@ namespace NCoreUtils.AspNetCore.Rest
                 _ => false
             };
 
+        private static void HandleExeptionDuringExecution(HttpResponse response, ILogger logger, Exception exn)
+        {
+            if (StatusCodeResponse.TryExtract(exn, out var ecode))
+            {
+                var statusCode = ecode.StatusCode;
+                if (response.HasStarted)
+                {
+                    logger.LogError(
+                        exn,
+                        "Expected error occured during endpoint execution (status code = {Code}) but response has been already stared.",
+                        statusCode
+                    );
+                }
+                else
+                {
+                    logger.LogDebug(
+                        exn,
+                        "Expected error occured during endpoint execution (status code = {Code}).",
+                        statusCode
+                    );
+                    response.StatusCode = statusCode;
+                    response.Headers.Add("X-Message", Uri.EscapeDataString(exn.Message));
+                }
+            }
+            else
+            {
+                var statusCode = exn is InvalidOperationException ? 400 : 500;
+                if (response.HasStarted)
+                {
+                    logger.LogError(exn, "Error occured during endpoint execution and response has been already started.");
+                }
+                else
+                {
+                    logger.LogError(exn, "Error occured during endpoint execution.");
+                    response.StatusCode = statusCode;
+                    response.Headers.Add("X-Message", Uri.EscapeDataString(exn.Message));
+                }
+            }
+        }
+
         private readonly List<Action<EndpointBuilder>> _conventions = new List<Action<EndpointBuilder>>();
 
         private readonly object _sync = new object();
@@ -130,19 +170,7 @@ namespace NCoreUtils.AspNetCore.Rest
                             accessor.Error = ExceptionDispatchInfo.Capture(exn);
                         }
                         var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
-                        int statusCode;
-                        if (StatusCodeResponse.TryExtract(exn, out var ecode))
-                        {
-                            statusCode = ecode.StatusCode;
-                            logger.LogDebug(exn, "Expected error occured during endpoint execution.");
-                        }
-                        else
-                        {
-                            statusCode = exn is InvalidOperationException ? 400 : 500;
-                            logger.LogError(exn, "Error occured during endpoint execution.");
-                        }
-                        httpContext.Response.StatusCode = statusCode;
-                        httpContext.Response.Headers.Add("X-Message", Uri.EscapeDataString(exn.Message));
+                        HandleExeptionDuringExecution(httpContext.Response, logger, exn);
                     }
                 });
             Func<Func<HttpContext, Type, object, Task>, RequestDelegate> restItemMethod = implementation =>
@@ -164,20 +192,13 @@ namespace NCoreUtils.AspNetCore.Rest
                     }
                     catch (Exception exn)
                     {
+                        var errorAccessor = httpContext.RequestServices.GetService<IRestErrorAccessor>();
+                        if (!(errorAccessor is null) && errorAccessor is ServiceCollectionRestExtensions.RestErrorAccessor accessor)
+                        {
+                            accessor.Error = ExceptionDispatchInfo.Capture(exn);
+                        }
                         var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
-                        int statusCode;
-                        if (StatusCodeResponse.TryExtract(exn, out var ecode))
-                        {
-                            statusCode = ecode.StatusCode;
-                            logger.LogDebug(exn, "Expected error occured during endpoint execution.");
-                        }
-                        else
-                        {
-                            statusCode = exn is InvalidOperationException ? 400 : 500;
-                            logger.LogError(exn, "Error occured during endpoint execution.");
-                        }
-                        httpContext.Response.StatusCode = statusCode;
-                        httpContext.Response.Headers.Add("X-Message", exn.Message);
+                        HandleExeptionDuringExecution(httpContext.Response, logger, exn);
                     }
                 });
             var accessConfiguration = _configuration.AccessConfiguration;

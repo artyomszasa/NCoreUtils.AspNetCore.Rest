@@ -30,31 +30,37 @@ namespace NCoreUtils.AspNetCore.Rest
             }
 
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ListInvoker<>))]
             public static Task InvokeList(Type entityType, HttpContext httpContext, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeList(httpContext, accessConfiguration);
 
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ItemInvoker<,>))]
             public static Task InvokeItem(Type entityType, HttpContext httpContext, object id, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeItem(httpContext, id, accessConfiguration);
 
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateInvoker<,>))]
             public static Task InvokeCreate(Type entityType, HttpContext httpContext, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeCreate(httpContext, accessConfiguration);
 
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(UpdateInvoker<,>))]
             public static Task InvokeUpdate(Type entityType, HttpContext httpContext, object id, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeUpdate(httpContext, id, accessConfiguration);
 
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(DeleteInvoker<,>))]
             public static Task InvokeDelete(Type entityType, HttpContext httpContext, object id, bool force, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeDelete(httpContext, id, force, accessConfiguration);
 
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
+            [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ReductionInvoker<>))]
             public static Task InvokeReduction(Type entityType, HttpContext httpContext, string reduction, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeReduction(httpContext, reduction, accessConfiguration);
