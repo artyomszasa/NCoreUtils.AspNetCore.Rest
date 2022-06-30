@@ -4,9 +4,8 @@
     <RootNamespace>NCoreUtils.AspNetCore.Rest</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.Data.Abstractions" Version="6.0.0-beta00" />
+    <PackageReference Include="NCoreUtils.Data.Abstractions" Version="6.0.0-rc00" />
     <PackageReference Include="NCoreUtils.Extensions.Collections" Version="2.0.0" />
-    <PackageReference Include="NCoreUtils.Extensions.Memory" Version="2.0.0" />
     <PackageReference Include="System.Collections.Immutable" Version="6.0.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">

@@ -18,7 +18,8 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
     {
         internal static readonly AsyncQueryFilter _noFilter = (source, _) => new ValueTask<System.Linq.IQueryable>(source);
 
-        protected sealed class RestCollectionInvocation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> : RestMethodInvocation<IReadOnlyList<T>>
+        protected sealed class RestCollectionInvocation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>
+            : RestMethodEnumerableInvocation<T>
         {
             readonly IRestListCollection<T> _invoker;
 
@@ -36,10 +37,10 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                 _args = new ArgumentCollection<RestQuery, AsyncQueryFilter>(query, filter);
             }
 
-            public override async ValueTask<IReadOnlyList<T>> InvokeAsync(CancellationToken cancellationToken = default)
-                => await _invoker.InvokeAsync(_args.Arg1, _args.Arg2, cancellationToken).ToListAsync(cancellationToken);
+            public override IAsyncEnumerable<T> InvokeAsync(CancellationToken cancellationToken)
+                => _invoker.InvokeAsync(_args.Arg1, _args.Arg2, cancellationToken);
 
-            public override RestMethodInvocation<IReadOnlyList<T>> UpdateArguments(IReadOnlyList<object> arguments)
+            public override RestMethodEnumerableInvocation<T> UpdateArguments(IReadOnlyList<object> arguments)
             {
                 if (arguments.Count != 2)
                 {
@@ -165,13 +166,10 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             CancellationToken cancellationToken)
         {
             var invocation = new RestCollectionInvocation<T>(_implementation, restQuery, filter);
-            var result = await _methodInvoker.InvokeAsync(invocation, cancellationToken)
-                .ConfigureAwait(false);
-            _logger.LogTrace("[{Type}] REST query execution done ({Elapsed}ms).", Type, stopwatch.ElapsedMilliseconds);
-            var serializer = _serializerFactory.GetSerializer<IReadOnlyList<T>>();
+            var result = _methodInvoker.InvokeAsync(invocation, cancellationToken);
+            var serializer = _serializerFactory.GetSerializer<IAsyncEnumerable<T>>();
             await serializer.SerializeAsync(new HttpResponseOutput(response), result, cancellationToken)
                 .ConfigureAwait(false);
-            _logger.LogTrace("[{Type}] REST query serialization done ({Elapsed}ms).", Type, stopwatch.ElapsedMilliseconds);
         }
 
         private Task DoInvokePartial<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TPartial>(

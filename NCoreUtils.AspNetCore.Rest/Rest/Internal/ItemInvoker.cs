@@ -12,7 +12,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
 {
     public abstract class ItemInvoker
     {
-        protected sealed class RestItemInvocation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId> : RestMethodInvocation<TData>
+        protected sealed class RestItemInvocation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.Interfaces)] TData, TId> : RestMethodInvocation<TData>
             where TData : IHasId<TId>
         {
             private readonly IRestItem<TData, TId> _invoker;
@@ -49,7 +49,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         public abstract ValueTask Invoke(HttpContext httpContext, object id, CancellationToken cancellationToken);
     }
 
-    public sealed class ItemInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId> : ItemInvoker
+    public sealed class ItemInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.Interfaces)] TData, TId> : ItemInvoker
         where TData : class, IHasId<TId>
     {
         readonly IServiceProvider _serviceProvider;

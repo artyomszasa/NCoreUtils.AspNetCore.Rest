@@ -42,6 +42,11 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             }
         }
 
+        [UnconditionalSuppressMessage("Trimming", "IL2068", Justification = "Used internally to suppress unrelevant warning.")]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        protected static Type SuppressWarnings(Type type)
+            => type;
+
         internal ReductionInvoker() { }
 
         public abstract ValueTask Invoke(HttpContext httpContext, string reduction, CancellationToken cancellationToken);
@@ -101,6 +106,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                 await _serializerFactory.SerializeAsync(
                     new HttpResponseOutput(httpContext.Response),
                     result,
+                    SuppressWarnings(result.GetType()),
                     cancellationToken);
             }
             finally

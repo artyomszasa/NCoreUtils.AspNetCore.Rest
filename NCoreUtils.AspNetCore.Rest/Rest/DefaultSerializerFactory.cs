@@ -58,10 +58,16 @@ namespace NCoreUtils.AspNetCore.Rest
             CancellationToken cancellationToken)
             => GetSerializer<T>().SerializeAsync(configurableStream, item, cancellationToken);
 
-        public virtual ISerializer<T> GetSerializer<T>()
+        [UnconditionalSuppressMessage("Trimming", "IL2046")]
+        public virtual ISerializer<T> GetSerializer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>()
             => ServiceProvider.GetService<ISerializer<T>>() ?? ActivatorUtilities.CreateInstance<DefaultSerializer<T>>(ServiceProvider);
 
-        public ValueTask SerializeAsync(IConfigurableOutput<Stream> configurableStream, object item, Type type, CancellationToken cancellationToken = default)
+        [UnconditionalSuppressMessage("Trimming", "IL2046")]
+        public ValueTask SerializeAsync(
+            IConfigurableOutput<Stream> configurableStream,
+            object item,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type type,
+            CancellationToken cancellationToken = default)
             => Invoker.Serialize(this, configurableStream, item, type, cancellationToken);
     }
 }

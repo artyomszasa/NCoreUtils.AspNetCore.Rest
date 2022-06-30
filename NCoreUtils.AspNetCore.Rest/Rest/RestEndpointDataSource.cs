@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.ExceptionServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -57,15 +58,48 @@ namespace NCoreUtils.AspNetCore.Rest
                 _ => false
             };
 
-        private static void HandleExeptionDuringExecution(HttpResponse response, ILogger logger, Exception exn)
+        private static async ValueTask HandleExceptionDuringExecution(
+            IServiceProvider serviceProvider,
+            HttpResponse response,
+            ILogger logger,
+            ExceptionDispatchInfo error,
+            CancellationToken cancellationToken)
         {
-            if (StatusCodeResponse.TryExtract(exn, out var ecode))
+            foreach (var handler in serviceProvider.GetServices<IRestExceptionHandler>())
+            {
+                RestExceptionHandlerResult res;
+                try
+                {
+                    res = await handler.HandleAsync(serviceProvider, response, logger, error, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    res = RestExceptionHandlerResult.Unhandled;
+                }
+                catch (Exception exn)
+                {
+                    logger.LogWarning(exn, "Exception handler {HandlerType} thown an exception.", handler.GetType());
+                    res = RestExceptionHandlerResult.Unhandled;
+                }
+                switch (res)
+                {
+                    case { State: RestExceptionHandlerResult.States.Handled }:
+                        return; // stop processing
+                    case { State: RestExceptionHandlerResult.States.Pass }:
+                        error.Throw();
+                        return; // never happens
+                    default:
+                        /* noop */
+                        break;
+                }
+            }
+            if (StatusCodeResponse.TryExtract(error.SourceException, out var ecode))
             {
                 var statusCode = ecode.StatusCode;
                 if (response.HasStarted)
                 {
                     logger.LogError(
-                        exn,
+                        error.SourceException,
                         "Expected error occured during endpoint execution (status code = {Code}) but response has been already stared.",
                         statusCode
                     );
@@ -73,26 +107,26 @@ namespace NCoreUtils.AspNetCore.Rest
                 else
                 {
                     logger.LogDebug(
-                        exn,
+                        error.SourceException,
                         "Expected error occured during endpoint execution (status code = {Code}).",
                         statusCode
                     );
                     response.StatusCode = statusCode;
-                    response.Headers.Add("X-Message", Uri.EscapeDataString(exn.Message));
+                    response.Headers.Add("X-Message", Uri.EscapeDataString(error.SourceException.Message));
                 }
             }
             else
             {
-                var statusCode = exn is InvalidOperationException ? 400 : 500;
+                var statusCode = error.SourceException is InvalidOperationException ? 400 : 500;
                 if (response.HasStarted)
                 {
-                    logger.LogError(exn, "Error occured during endpoint execution and response has been already started.");
+                    logger.LogError(error.SourceException, "Error occured during endpoint execution and response has been already started.");
                 }
                 else
                 {
-                    logger.LogError(exn, "Error occured during endpoint execution.");
+                    logger.LogError(error.SourceException, "Error occured during endpoint execution.");
                     response.StatusCode = statusCode;
-                    response.Headers.Add("X-Message", Uri.EscapeDataString(exn.Message));
+                    response.Headers.Add("X-Message", Uri.EscapeDataString(error.SourceException.Message));
                 }
             }
         }
@@ -164,13 +198,14 @@ namespace NCoreUtils.AspNetCore.Rest
                     }
                     catch (Exception exn)
                     {
+                        var error = ExceptionDispatchInfo.Capture(exn);
                         var errorAccessor = httpContext.RequestServices.GetService<IRestErrorAccessor>();
                         if (!(errorAccessor is null) && errorAccessor is ServiceCollectionRestExtensions.RestErrorAccessor accessor)
                         {
-                            accessor.Error = ExceptionDispatchInfo.Capture(exn);
+                            accessor.Error = error;
                         }
                         var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
-                        HandleExeptionDuringExecution(httpContext.Response, logger, exn);
+                        await HandleExceptionDuringExecution(httpContext.RequestServices, httpContext.Response, logger, error, httpContext.RequestAborted);
                     }
                 });
             Func<Func<HttpContext, Type, object, Task>, RequestDelegate> restItemMethod = implementation =>
@@ -192,13 +227,14 @@ namespace NCoreUtils.AspNetCore.Rest
                     }
                     catch (Exception exn)
                     {
+                        var error = ExceptionDispatchInfo.Capture(exn);
                         var errorAccessor = httpContext.RequestServices.GetService<IRestErrorAccessor>();
                         if (!(errorAccessor is null) && errorAccessor is ServiceCollectionRestExtensions.RestErrorAccessor accessor)
                         {
-                            accessor.Error = ExceptionDispatchInfo.Capture(exn);
+                            accessor.Error = error;
                         }
                         var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
-                        HandleExeptionDuringExecution(httpContext.Response, logger, exn);
+                        await HandleExceptionDuringExecution(httpContext.RequestServices, httpContext.Response, logger, error, httpContext.RequestAborted);
                     }
                 });
             var accessConfiguration = _configuration.AccessConfiguration;

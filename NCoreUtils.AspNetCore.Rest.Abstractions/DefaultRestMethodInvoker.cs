@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -39,5 +40,8 @@ namespace NCoreUtils.AspNetCore.Rest
             }
             return target.InvokeAsync(cancellationToken);
         }
+
+        public IAsyncEnumerable<T> InvokeAsync<T>(RestMethodEnumerableInvocation<T> target, CancellationToken cancellationToken)
+            => target.InvokeAsync(cancellationToken);
     }
 }

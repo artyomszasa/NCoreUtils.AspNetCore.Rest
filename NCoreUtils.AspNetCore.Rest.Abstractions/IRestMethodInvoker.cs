@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,5 +27,7 @@ namespace NCoreUtils.AspNetCore.Rest
         /// <param name="target">Packed invocation data.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         ValueTask InvokeAsync(ViodRestMethodInvocation target, CancellationToken cancellationToken);
+
+        IAsyncEnumerable<T> InvokeAsync<T>(RestMethodEnumerableInvocation<T> target, CancellationToken cancellationToken);
     }
 }

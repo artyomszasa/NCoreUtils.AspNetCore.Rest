@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,12 +20,16 @@ namespace NCoreUtils.Rest.Internal
     {
         [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Only used to create default values of value types.")]
         [UnconditionalSuppressMessage("Trimming", "IL2077", Justification = "Only used to create default values of value types.")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static object CreateDefaultValue(Type type)
         {
             return (type.IsValueType ? Activator.CreateInstance(type) : null)!;
         }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [UnconditionalSuppressMessage("Trimming", "IL2091", Justification = "Only called with non-asyncenumerable generic parameters.")]
+        private ISerializer<T> GetNonAsyncEnumerableSerializer<T>()
+            => SerializerFactory.GetSerializer<T>();
 
         protected IRestClientConfiguration Configuration { get; }
 
@@ -114,7 +119,7 @@ namespace NCoreUtils.Rest.Internal
         protected virtual HttpClient CreateClient()
             => _httpClientFactory?.CreateClient(Configuration.HttpClient) ?? new HttpClient();
 
-        public virtual async Task<IReadOnlyList<T>> ListCollectionAsync<T>(
+        public virtual async IAsyncEnumerable<T> ListCollectionAsync<T>(
             string? target = default,
             string? filter = default,
             string? sortBy = default,
@@ -123,7 +128,7 @@ namespace NCoreUtils.Rest.Internal
             IReadOnlyList<string>? includes = default,
             int offset = 0,
             int? limit = default,
-            CancellationToken cancellationToken = default)
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var requestUri = Configuration.GetCollectionEndpoint<T>(NameResolver);
             using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
@@ -132,7 +137,10 @@ namespace NCoreUtils.Rest.Internal
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
             await using var stream = await response.Content.ReadAsStreamAsync();
-            return await SerializerFactory.DeserializeAsync<List<T>>(stream, cancellationToken);
+            await foreach (var item in await SerializerFactory.DeserializeAsync<IAsyncEnumerable<T>>(stream, cancellationToken))
+            {
+                yield return item;
+            }
         }
 
         public virtual async Task<TData?> ItemAsync<TData, TId>(
@@ -149,7 +157,7 @@ namespace NCoreUtils.Rest.Internal
             }
             HandleErrors(response, requestUri);
             await using var stream = await response.Content.ReadAsStreamAsync();
-            return await SerializerFactory.DeserializeAsync<TData>(stream, cancellationToken);
+            return await SerializerFactory.DeserializeNonAsyncEnumerableAsync<TData>(stream, cancellationToken);
         }
 
         public virtual async Task<TId> CreateAsync<TData, TId>(
@@ -160,7 +168,7 @@ namespace NCoreUtils.Rest.Internal
             var requestUri = Configuration.GetCollectionEndpoint<TData>(NameResolver);
             using var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
             {
-                Content = new SerializedContent<TData>(data, SerializerFactory.GetSerializer<TData>())
+                Content = new SerializedContent<TData>(data, GetNonAsyncEnumerableSerializer<TData>())
             };
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
@@ -189,7 +197,7 @@ namespace NCoreUtils.Rest.Internal
             var requestUri = Configuration.GetItemOrReductionEndpoint<TData>(NameResolver, Convert.ToString(data.Id, CultureInfo.InvariantCulture)!);
             using var request = new HttpRequestMessage(HttpMethod.Put, requestUri)
             {
-                Content = new SerializedContent<TData>(data, SerializerFactory.GetSerializer<TData>())
+                Content = new SerializedContent<TData>(data, GetNonAsyncEnumerableSerializer<TData>())
             };
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);

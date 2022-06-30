@@ -12,16 +12,12 @@
   <ItemGroup>
     <PackageReference Include="NCoreUtils.AspNetCore.ResponseErrors.Abstractions" Version="6.0.0" />
     <PackageReference Include="NCoreUtils.CaseInsensitive" Version="2.0.0" />
-    <PackageReference Include="NCoreUtils.Data.Protocol.Abstractions" Version="6.0.0" />
+    <PackageReference Include="NCoreUtils.Data.Protocol.Abstractions" Version="6.0.0.4" />
     <PackageReference Include="NCoreUtils.Extensions.AsyncEnumerable" Version="2.0.0" />
     <PackageReference Include="NCoreUtils.Linq.Abstractions" Version="6.0.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
-    <PackageReference Include="System.Linq.Async" Version="5.1.0" />
-  </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'net6.0' ">
-    <PackageReference Include="System.Linq.Async" Version="4.1.1" />
     <PackageReference Include="System.Text.Json" Version="6.0.0" />
   </ItemGroup>
 </Project>

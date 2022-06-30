@@ -9,7 +9,7 @@ namespace NCoreUtils.Rest.Internal
 {
     public interface IHttpRestClient
     {
-        Task<IReadOnlyList<T>> ListCollectionAsync<T>(
+        IAsyncEnumerable<T> ListCollectionAsync<T>(
             string? target = default,
             string? filter = default,
             string? sortBy = default,

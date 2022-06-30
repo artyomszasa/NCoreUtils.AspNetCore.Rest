@@ -13,12 +13,12 @@ namespace NCoreUtils.AspNetCore.Rest
 
         public abstract IReadOnlyList<object> Arguments { get; }
 
-        public abstract Type ReturnType { get; }
+        // public abstract Type ReturnType { get; }
     }
 
     public abstract class ViodRestMethodInvocation : RestMethodInvocation
     {
-        public override Type ReturnType => typeof(void);
+        // public override Type ReturnType => typeof(void);
 
         public abstract ValueTask InvokeAsync(CancellationToken cancellationToken = default);
 
@@ -27,10 +27,17 @@ namespace NCoreUtils.AspNetCore.Rest
 
     public abstract class RestMethodInvocation<T> : RestMethodInvocation
     {
-        public override Type ReturnType => typeof(T);
+        // public override Type ReturnType => typeof(T);
 
         public abstract ValueTask<T> InvokeAsync(CancellationToken cancellationToken = default);
 
         public abstract RestMethodInvocation<T> UpdateArguments(IReadOnlyList<object> arguments);
+    }
+
+    public abstract class RestMethodEnumerableInvocation<T> : RestMethodInvocation
+    {
+        public abstract IAsyncEnumerable<T> InvokeAsync(CancellationToken cancellationToken = default);
+
+        public abstract RestMethodEnumerableInvocation<T> UpdateArguments(IReadOnlyList<object> arguments);
     }
 }

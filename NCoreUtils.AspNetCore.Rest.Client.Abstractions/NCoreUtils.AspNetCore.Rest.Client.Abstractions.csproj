@@ -4,7 +4,7 @@
     <RootNamespace>NCoreUtils.Rest</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.Data.Abstractions" Version="6.0.0-beta00" />
+    <PackageReference Include="NCoreUtils.Data.Abstractions" Version="6.0.0-rc00" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
     <Compile Remove="CodeAnalysis\**" />

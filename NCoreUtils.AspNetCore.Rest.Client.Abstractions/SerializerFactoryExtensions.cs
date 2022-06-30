@@ -23,7 +23,7 @@ namespace NCoreUtils.Rest
                 CancellationToken cancellationToken = default);
         }
 
-        private sealed class Invoker<T> : Invoker
+        private sealed class Invoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T> : Invoker
         {
             public override async ValueTask<object> DeserializeAsync(
                 ISerializerFactory factory,
@@ -41,10 +41,16 @@ namespace NCoreUtils.Rest
 
         private static ConcurrentDictionary<Type, Invoker> _cache = new ConcurrentDictionary<Type, Invoker>();
 
-        private static Func<Type, Invoker> _factory = CreateInvoker;
+        private static readonly Func<Type, Invoker> _factory;
+
+        [UnconditionalSuppressMessage("Trimming", "IL2111")]
+        static SerializerFactoryExtensions()
+        {
+            _factory = CreateInvoker;
+        }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Method preserved by caller.")]
-        private static Invoker CreateInvoker(Type type)
+        private static Invoker CreateInvoker([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type type)
             => (Invoker)Activator.CreateInstance(typeof(Invoker<>).MakeGenericType(type), true)!;
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<>))]
@@ -66,13 +72,20 @@ namespace NCoreUtils.Rest
             => _cache.GetOrAdd(inputType, _factory)
                 .SerializeAsync(factory, stream, value, cancellationToken);
 
-        public static ValueTask<T> DeserializeAsync<T>(
+        public static ValueTask<T> DeserializeAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(
             this ISerializerFactory factory,
             Stream stream,
             CancellationToken cancellationToken = default)
             => factory.GetSerializer<T>().DeserializeAsync(stream, cancellationToken);
 
-        public static ValueTask SerializeAsync<T>(
+        [UnconditionalSuppressMessage("Trimming", "IL2091", Justification = "Only called with non-asyncenumerable generic parameters.")]
+        public static ValueTask<T> DeserializeNonAsyncEnumerableAsync<T>(
+            this ISerializerFactory factory,
+            Stream stream,
+            CancellationToken cancellationToken = default)
+            => factory.DeserializeAsync<T>(stream, cancellationToken);
+
+        public static ValueTask SerializeAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(
             this ISerializerFactory factory,
             Stream stream,
             T value,

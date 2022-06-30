@@ -42,21 +42,17 @@ namespace NCoreUtils.Rest.Internal
             IReadOnlyList<string>? includes = default,
             int offset = 0,
             int? limit = default)
-            => new DelayedAsyncEnumerable<T>(async cancellationToken =>
-            {
-                var results = await _client.ListCollectionAsync<T>(
-                    target: target,
-                    filter: filter?.ToString(),
-                    sortBy: sortBy?.ToString(),
-                    sortByDirection: isDescending ? "desc" : "asc",
-                    fields: fields,
-                    includes: includes,
-                    offset: offset,
-                    limit: limit == 0 ? (int?)default : limit,
-                    cancellationToken: cancellationToken
-                );
-                return results.ToAsyncEnumerable();
-            });
+            => new DelayedAsyncEnumerable<T>(cancellationToken => new(_client.ListCollectionAsync<T>(
+                target: target,
+                filter: filter?.ToString(),
+                sortBy: sortBy?.ToString(),
+                sortByDirection: isDescending ? "desc" : "asc",
+                fields: fields,
+                includes: includes,
+                offset: offset,
+                limit: limit == 0 ? (int?)default : limit,
+                cancellationToken: cancellationToken
+            )));
 
         public async Task<TResult> ExecuteReductionAsync<TSource, TResult>(
             string target,
