@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <Version>6.0.0-rc00</Version>
+    <Version>6.0.0-rc02</Version>
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
     <IsTrimmable>true</IsTrimmable>

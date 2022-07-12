@@ -152,11 +152,11 @@ namespace NCoreUtils.Rest.Internal.L
                 size += (items - 1) * 2;
             }
             ++values;
-            size += GetStringifiedSize(Offset);
+            size += 3 + nameof(Offset).Length + GetStringifiedSize(Offset);
             if (Limit.HasValue)
             {
                 ++values;
-                size += GetStringifiedSize(Limit.Value);
+                size += 3 + nameof(Limit).Length + GetStringifiedSize(Limit.Value);
             }
             return size + ((values - 1) * 2);
         }
