@@ -35,10 +35,15 @@ namespace NCoreUtils.AspNetCore.Rest
             }
         }
 
-        private static readonly Func<Type, Type> _idTypeFactory = GetIdType;
+        private static readonly Func<Type, Type> _idTypeFactory;
 
-        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Exception is thrown if type is not preserved properly.")]
-        private static Type GetIdType(Type entityType)
+        [UnconditionalSuppressMessage("Trimming", "IL2111", Justification = "Handled by the invoker of the _idTypeFactory.")]
+        static RestEndpointDataSource()
+        {
+            _idTypeFactory = GetIdType;
+        }
+
+        private static Type GetIdType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type entityType)
         {
             if (NCoreUtils.Data.IdUtils.TryGetIdType(entityType, out var idType))
             {
@@ -78,17 +83,20 @@ namespace NCoreUtils.AspNetCore.Rest
                 }
                 catch (Exception exn)
                 {
-                    logger.LogWarning(exn, "Exception handler {HandlerType} thown an exception.", handler.GetType());
+                    LogExceptionHandlerThrownException(logger, exn, handler.GetType());
                     res = RestExceptionHandlerResult.Unhandled;
                 }
                 switch (res)
                 {
                     case { State: RestExceptionHandlerResult.States.Handled }:
+                        LogExceptionHasBeenHandledBy(logger, handler.GetType());
                         return; // stop processing
                     case { State: RestExceptionHandlerResult.States.Pass }:
+                        LogExceptionHasBeenPassedBy(logger, handler.GetType());
                         error.Throw();
                         return; // never happens
                     default:
+                        LogExceptionUnhandledBy(logger, handler.GetType());
                         /* noop */
                         break;
                 }
@@ -98,19 +106,11 @@ namespace NCoreUtils.AspNetCore.Rest
                 var statusCode = ecode.StatusCode;
                 if (response.HasStarted)
                 {
-                    logger.LogError(
-                        error.SourceException,
-                        "Expected error occured during endpoint execution (status code = {Code}) but response has been already stared.",
-                        statusCode
-                    );
+                    LogExpectedErrorOccuredWhenResponseHasBeenStarted(logger, error.SourceException, statusCode);
                 }
                 else
                 {
-                    logger.LogDebug(
-                        error.SourceException,
-                        "Expected error occured during endpoint execution (status code = {Code}).",
-                        statusCode
-                    );
+                    LogExpectedErrorOccured(logger, error.SourceException, statusCode);
                     response.StatusCode = statusCode;
                     response.Headers.Add("X-Message", Uri.EscapeDataString(error.SourceException.Message));
                 }
@@ -120,11 +120,11 @@ namespace NCoreUtils.AspNetCore.Rest
                 var statusCode = error.SourceException is InvalidOperationException ? 400 : 500;
                 if (response.HasStarted)
                 {
-                    logger.LogError(error.SourceException, "Error occured during endpoint execution and response has been already started.");
+                    LogErrorOccuredWhenResponseHasBeenStarted(logger, error.SourceException);
                 }
                 else
                 {
-                    logger.LogError(error.SourceException, "Error occured during endpoint execution.");
+                    LogErrorOccured(logger, error.SourceException);
                     response.StatusCode = statusCode;
                     response.Headers.Add("X-Message", Uri.EscapeDataString(error.SourceException.Message));
                 }
@@ -200,7 +200,7 @@ namespace NCoreUtils.AspNetCore.Rest
                     {
                         var error = ExceptionDispatchInfo.Capture(exn);
                         var errorAccessor = httpContext.RequestServices.GetService<IRestErrorAccessor>();
-                        if (!(errorAccessor is null) && errorAccessor is ServiceCollectionRestExtensions.RestErrorAccessor accessor)
+                        if (errorAccessor is not null && errorAccessor is ServiceCollectionRestExtensions.RestErrorAccessor accessor)
                         {
                             accessor.Error = error;
                         }
