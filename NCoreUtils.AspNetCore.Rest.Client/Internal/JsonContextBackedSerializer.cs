@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace NCoreUtils.Rest.Internal;
 
+[Obsolete("For .NET7 or newer Typed Serializer should be used instead.")]
 public sealed class JsonContextBackedSerializer<T> : ISerializer<IAsyncEnumerable<T>>
 {
     private JsonSerializerOptions Options { get; }
@@ -26,4 +27,10 @@ public sealed class JsonContextBackedSerializer<T> : ISerializer<IAsyncEnumerabl
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Item converter backed by JsonSerializerContext.")]
     public ValueTask SerializeAsync(Stream stream, IAsyncEnumerable<T> value, CancellationToken cancellationToken = default)
         => new(JsonSerializer.SerializeAsync(stream, value, Options, cancellationToken));
+
+#if NET7_0_OR_GREATER
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Item converter backed by JsonSerializerContext.")]
+    public IAsyncEnumerable<IAsyncEnumerable<T>> DeserializeAsyncEnumerable(Stream stream, CancellationToken cancellationToken = default)
+        => throw new InvalidOperationException("Should never happen.");
+#endif
 }

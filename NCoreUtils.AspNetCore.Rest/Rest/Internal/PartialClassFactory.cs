@@ -93,6 +93,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             return property;
         }
 
+        [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "Only public properties are used.")]
         private static Type EmitPartial(
             TypeBuilder typeBuilder,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type sourceType,
@@ -137,6 +138,8 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Dynamically emitted members cannot be trimmed.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2073", Justification = "Dynamically emitted members cannot be trimmed.")]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private static Type DoCreatePartialClass(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type sourceType,
             IReadOnlyList<string> fieldSelector)

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using Microsoft.Extensions.Logging;
 
 namespace NCoreUtils.Rest.Internal;
 
@@ -21,22 +23,35 @@ public class DefaultSerializerFactory : ISerializerFactory
         return false;
     }
 
-    private JsonSerializerOptions? AsyncEnumerableSerializerOptions { get; set; }
+    public ILogger Logger { get; }
 
     public JsonSerializerContext JsonSerializerContext { get; }
 
     public virtual string ContentType { get; } = "application/json; charset=utf-8";
 
-    public DefaultSerializerFactory(JsonSerializerContext jsonSerializerContext)
-        => JsonSerializerContext = jsonSerializerContext ?? throw new ArgumentNullException(nameof(jsonSerializerContext));
+    public DefaultSerializerFactory(ILogger<DefaultSerializerFactory> logger, JsonSerializerContext jsonSerializerContext)
+    {
+        Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        JsonSerializerContext = jsonSerializerContext ?? throw new ArgumentNullException(nameof(jsonSerializerContext));
+    }
 
-    public ISerializer<T> GetSerializer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>() => IsAsyncEnumerable(typeof(T), out var elementType)
-        ? (ISerializer<T>)Activator.CreateInstance(
-            typeof(JsonContextBackedSerializer<>).MakeGenericType(elementType),
-            new object[]
-            {
-                AsyncEnumerableSerializerOptions ??= new() { Converters = { new JsonContextBackedConverterFactory(JsonSerializerContext) } }
-            }
-        )!
-        : new DefaultSerializer<T>(ContentType, JsonSerializerContext);
+#pragma warning disable CS0618
+    private ISerializer<T> CreateFallbackAsyncEnumerableSerializer<T>(Type elementType) => (ISerializer<T>)Activator.CreateInstance(
+        typeof(JsonContextBackedSerializer<>).MakeGenericType(elementType),
+        new object[]
+        {
+            new JsonSerializerOptions() { Converters = { new JsonContextBackedConverterFactory(JsonSerializerContext) } }
+        }
+    )!;
+#pragma warning restore CS0618
+
+
+    public ISerializer<T> GetSerializer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>()
+        => JsonSerializerContext.GetTypeInfo(typeof(T)) switch
+        {
+            null when IsAsyncEnumerable(typeof(T), out var elementType) => CreateFallbackAsyncEnumerableSerializer<T>(elementType),
+            null => throw new ArgumentException($"Registered json serializer context does not contain type info for {typeof(T)}."),
+            JsonTypeInfo<T> jsonTypeInfo => new TypedSerializer<T>(ContentType, jsonTypeInfo),
+            _ => throw new ArgumentException($"Registered json serializer context returned invalid type info for {typeof(T)}.")
+        };
 }

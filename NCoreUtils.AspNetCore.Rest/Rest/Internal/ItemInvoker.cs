@@ -87,7 +87,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                     throw new UnauthorizedException();
                 }
                 var filter = null != accessValidator && accessValidator is IQueryAccessValidator queryAccessValidator
-                    ? (source, ctoken) => queryAccessValidator.FilterQueryAsync(source, httpContext.User, ctoken)
+                    ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, httpContext.User, ctoken))
                     : ListInvoker._noFilter;
                 var invocation = new RestItemInvocation<TData, TId>(_implementation, (TId)id, filter);
                 var result = await _methodInvoker.InvokeAsync(invocation, cancellationToken);

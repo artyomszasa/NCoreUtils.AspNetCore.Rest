@@ -49,6 +49,8 @@ namespace NCoreUtils.AspNetCore.Rest
                 };
         }
 
+        private const DynamicallyAccessedMemberTypes AllProps = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties;
+
         static readonly ConcurrentDictionary<(Type dataType, Type keyType), Applier> _applierCache = new ConcurrentDictionary<(Type dataType, Type keyType), Applier>();
 
         static readonly ConcurrentDictionary<(Type dataType, string memberName), PropertyInfo> _memberCache = new ConcurrentDictionary<(Type dataType, string memberName), PropertyInfo>();
@@ -92,7 +94,7 @@ namespace NCoreUtils.AspNetCore.Rest
             throw new InvalidOperationException($"Invalid selector: ${lambda}.");
         }
 
-        protected static LambdaExpression CreateMemberSelector<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TData>(string memberName)
+        protected static LambdaExpression CreateMemberSelector<[DynamicallyAccessedMembers(AllProps)] TData>(string memberName)
             => _memberCache.GetOrAdd((typeof(TData), memberName), _memberResolver).CreateSelector();
 
         protected static IOrderedQueryable<TData> OrderBy<TData>(IQueryable<TData> source, LambdaExpression lambda, bool isDescending)
@@ -116,14 +118,14 @@ namespace NCoreUtils.AspNetCore.Rest
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected static IOrderedQueryable<TData> OrderBy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TData>(IQueryable<TData> source, string memberName, bool isDescending)
+        protected static IOrderedQueryable<TData> OrderBy<[DynamicallyAccessedMembers(AllProps)] TData>(IQueryable<TData> source, string memberName, bool isDescending)
             => OrderBy(source, CreateMemberSelector<TData>(memberName), isDescending);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected static IOrderedQueryable<TData> ThenBy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TData>(IOrderedQueryable<TData> source, string memberName, bool isDescending)
+        protected static IOrderedQueryable<TData> ThenBy<[DynamicallyAccessedMembers(AllProps)] TData>(IOrderedQueryable<TData> source, string memberName, bool isDescending)
             => ThenBy(source, CreateMemberSelector<TData>(memberName), isDescending);
 
-        protected static IOrderedQueryable<TData> OrderByDefaultProperty<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TData>(
+        protected static IOrderedQueryable<TData> OrderByDefaultProperty<[DynamicallyAccessedMembers(AllProps)] TData>(
             IQueryable<TData> source,
             IServiceProvider serviceProvider)
         {

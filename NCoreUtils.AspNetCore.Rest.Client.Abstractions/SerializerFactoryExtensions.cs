@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
@@ -77,6 +78,14 @@ namespace NCoreUtils.Rest
             Stream stream,
             CancellationToken cancellationToken = default)
             => factory.GetSerializer<T>().DeserializeAsync(stream, cancellationToken);
+
+#if NET7_0_OR_GREATER
+        public static IAsyncEnumerable<T> DeserializeAsyncEnumerable<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(
+            this ISerializerFactory factory,
+            Stream stream,
+            CancellationToken cancellationToken = default)
+            => factory.GetSerializer<T>().DeserializeAsyncEnumerable(stream, cancellationToken);
+#endif
 
         [UnconditionalSuppressMessage("Trimming", "IL2091", Justification = "Only called with non-asyncenumerable generic parameters.")]
         public static ValueTask<T> DeserializeNonAsyncEnumerableAsync<T>(

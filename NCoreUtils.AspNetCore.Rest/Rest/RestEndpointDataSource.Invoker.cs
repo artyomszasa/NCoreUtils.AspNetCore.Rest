@@ -15,12 +15,18 @@ namespace NCoreUtils.AspNetCore.Rest
         {
             private static readonly ConcurrentDictionary<Type, Invoker> _invokerCache = new ConcurrentDictionary<Type, Invoker>();
 
-            private static readonly Func<Type, Invoker> _invokerFactory = CreateInvoker;
+            private static readonly Func<Type, Invoker> _invokerFactory;
+
+            [UnconditionalSuppressMessage("Trimming", "IL2111", Justification = "Should be preserved at registration.")]
+            static Invoker()
+            {
+                _invokerFactory = CreateInvoker;
+            }
 
             [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Preserved by caller.")]
             [UnconditionalSuppressMessage("Trimming", "IL2055", Justification = "Preserved by caller.")]
             [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Preserved during registration.")]
-            private static Invoker CreateInvoker(Type entityType)
+            private static Invoker CreateInvoker([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type entityType)
             {
                 if (NCoreUtils.Data.IdUtils.TryGetIdType(entityType, out var idType))
                 {
@@ -29,36 +35,42 @@ namespace NCoreUtils.AspNetCore.Rest
                 throw new InvalidOperationException($"{entityType} does not implement IHasId interface.");
             }
 
+            [UnconditionalSuppressMessage("Trimming", "IL2111", Justification = "Should be preserved at registration.")]
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ListInvoker<>))]
             public static Task InvokeList(Type entityType, HttpContext httpContext, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeList(httpContext, accessConfiguration);
 
+            [UnconditionalSuppressMessage("Trimming", "IL2111", Justification = "Should be preserved at registration.")]
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ItemInvoker<,>))]
             public static Task InvokeItem(Type entityType, HttpContext httpContext, object id, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeItem(httpContext, id, accessConfiguration);
 
+            [UnconditionalSuppressMessage("Trimming", "IL2111", Justification = "Should be preserved at registration.")]
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(CreateInvoker<,>))]
             public static Task InvokeCreate(Type entityType, HttpContext httpContext, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeCreate(httpContext, accessConfiguration);
 
+            [UnconditionalSuppressMessage("Trimming", "IL2111", Justification = "Should be preserved at registration.")]
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(UpdateInvoker<,>))]
             public static Task InvokeUpdate(Type entityType, HttpContext httpContext, object id, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeUpdate(httpContext, id, accessConfiguration);
 
+            [UnconditionalSuppressMessage("Trimming", "IL2111", Justification = "Should be preserved at registration.")]
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(DeleteInvoker<,>))]
             public static Task InvokeDelete(Type entityType, HttpContext httpContext, object id, bool force, RestAccessConfiguration accessConfiguration)
                 => _invokerCache.GetOrAdd(entityType, _invokerFactory)
                     .InvokeDelete(httpContext, id, force, accessConfiguration);
 
+            [UnconditionalSuppressMessage("Trimming", "IL2111", Justification = "Should be preserved at registration.")]
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Invoker<,>))]
             [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ReductionInvoker<>))]
             public static Task InvokeReduction(Type entityType, HttpContext httpContext, string reduction, RestAccessConfiguration accessConfiguration)

@@ -61,7 +61,10 @@ namespace NCoreUtils.Rest.Internal
             SerializerFactory = serializerFactory ?? restClientJsonSerializerContext switch
             {
                 null => throw new InvalidOperationException("Neither rest client serializer factory not json serializer context has been registered."),
-                { JsonSerializerContext: var context } => new DefaultSerializerFactory(context)
+                { JsonSerializerContext: var context } => new DefaultSerializerFactory(
+                    logger: serviceProvider.GetRequiredService<ILogger<DefaultSerializerFactory>>(),
+                    jsonSerializerContext: context
+                )
             };
             QuerySerializer = serviceProvider.GetService<IRestQuerySerializer>() ?? RestQueryAsHeaderSerializer.Instance;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -119,6 +122,7 @@ namespace NCoreUtils.Rest.Internal
         protected virtual HttpClient CreateClient()
             => _httpClientFactory?.CreateClient(Configuration.HttpClient) ?? new HttpClient();
 
+        [UnconditionalSuppressMessage("Trimming", "IL2091", Justification = "For compatibility reasons ISerializable argument must preserve interfaces, this is not the case here.")]
         public virtual async IAsyncEnumerable<T> ListCollectionAsync<T>(
             string? target = default,
             string? filter = default,
@@ -137,10 +141,17 @@ namespace NCoreUtils.Rest.Internal
             using var response = await SendAsync(request, cancellationToken);
             HandleErrors(response, requestUri);
             await using var stream = await response.Content.ReadAsStreamAsync();
+#if NET7_0_OR_GREATER
+            await foreach (var item in SerializerFactory.DeserializeAsyncEnumerable<T>(stream, cancellationToken).ConfigureAwait(false))
+            {
+                yield return item;
+            }
+#else
             await foreach (var item in await SerializerFactory.DeserializeAsync<IAsyncEnumerable<T>>(stream, cancellationToken))
             {
                 yield return item;
             }
+#endif
         }
 
         public virtual async Task<TData?> ItemAsync<TData, TId>(

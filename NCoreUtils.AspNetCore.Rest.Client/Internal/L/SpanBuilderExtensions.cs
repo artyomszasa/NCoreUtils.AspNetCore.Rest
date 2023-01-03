@@ -4,7 +4,7 @@ namespace NCoreUtils.Rest.Internal.L
 {
     internal static class SpanBuilderExtensions
     {
-        public static bool TryAppendProperty(this ref SpanBuilder builder, ref bool first, string propertyName, int value)
+        public static bool TryAppendProperty(this ref SpanBuilder builder, scoped ref bool first, string propertyName, int value)
         {
             if (first)
             {
@@ -19,7 +19,7 @@ namespace NCoreUtils.Rest.Internal.L
                 && builder.TryAppend(value);
         }
 
-        public static bool TryAppendProperty(this ref SpanBuilder builder, ref bool first, string propertyName, int? value)
+        public static bool TryAppendProperty(this ref SpanBuilder builder, scoped ref bool first, string propertyName, int? value)
         {
             if (!value.HasValue)
             {
@@ -38,7 +38,7 @@ namespace NCoreUtils.Rest.Internal.L
                 && builder.TryAppend(value.Value);
         }
 
-        public static bool TryAppendProperty(this ref SpanBuilder builder, ref bool first, string propertyName, string? value)
+        public static bool TryAppendProperty(this ref SpanBuilder builder, scoped ref bool first, string propertyName, string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -57,7 +57,7 @@ namespace NCoreUtils.Rest.Internal.L
                 && builder.TryAppend(value!);
         }
 
-        public static bool TryAppendProperty(this ref SpanBuilder builder, ref bool first, string propertyName, IReadOnlyList<string>? value)
+        public static bool TryAppendProperty(this ref SpanBuilder builder, scoped ref bool first, string propertyName, IReadOnlyList<string>? value)
         {
             if (value is null || value.Count == 0)
             {

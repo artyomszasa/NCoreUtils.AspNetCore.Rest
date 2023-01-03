@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6.0;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>net7.0;net6.0;netcoreapp3.1</TargetFrameworks>
     <RootNamespace>NCoreUtils.AspNetCore</RootNamespace>
   </PropertyGroup>
     <ItemGroup>
@@ -13,11 +13,11 @@
     <PackageReference Include="NCoreUtils.AspNetCore.ResponseErrors.Abstractions" Version="6.0.0" />
     <PackageReference Include="NCoreUtils.CaseInsensitive" Version="2.0.0" />
     <PackageReference Include="NCoreUtils.Data.Protocol.Abstractions" Version="6.0.0.4" />
-    <PackageReference Include="NCoreUtils.Extensions.AsyncEnumerable" Version="2.0.0" />
+    <PackageReference Include="NCoreUtils.Extensions.AsyncEnumerable" Version="3.0.0" />
     <PackageReference Include="NCoreUtils.Linq.Abstractions" Version="6.0.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' != 'net6.0' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
     <PackageReference Include="System.Text.Json" Version="6.0.0" />
   </ItemGroup>
 </Project>

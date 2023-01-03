@@ -53,7 +53,8 @@ namespace NCoreUtils.AspNetCore.Rest
                 // apply filters
                 .Apply(QueryFilter, restQuery)
                 // apply access limitations
-                .ApplyAsync(accessValidator, cancellationToken);
+                .ApplyAsync(accessValidator, cancellationToken)
+                .ConfigureAwait(false);
             var orderedQuery = query.Apply(QueryOrderer, restQuery);
             return reduction switch
             {

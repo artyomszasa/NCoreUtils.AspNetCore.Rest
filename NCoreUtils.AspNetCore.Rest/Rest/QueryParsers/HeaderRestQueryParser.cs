@@ -9,6 +9,15 @@ namespace NCoreUtils.AspNetCore.Rest.QueryParsers
 {
     public class HeaderRestQueryParser : IRestQueryParser
     {
+        private static string? UriUnescapeSafe(string? input)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return default;
+            }
+            return Uri.UnescapeDataString(input);
+        }
+
         public ValueTask<RestQuery> ParseAsync(HttpRequest httpRequest, CancellationToken cancellationToken)
         {
             var headers = httpRequest.Headers;
@@ -25,12 +34,12 @@ namespace NCoreUtils.AspNetCore.Rest.QueryParsers
                     ? (int?)ivalue
                     : default(int?);
             // filter
-            var filter = headers.TryGetValue("X-Filter", out values) && values.Count > 0 ? Uri.UnescapeDataString(values[0]) : null;
+            var filter = headers.TryGetValue("X-Filter", out values) && values.Count > 0 ? UriUnescapeSafe(values[0]) : null;
             // sort by
             using var sortBy = new ArrayPoolList<string>(4);
             if (headers.TryGetValue("X-Sort-By", out values) && values.Count > 0)
             {
-                RestQueryParserHelpers.SplitCommaSeparatedStrings(Uri.UnescapeDataString(values[0]).AsSpan(), sortBy);
+                RestQueryParserHelpers.SplitCommaSeparatedStrings(UriUnescapeSafe(values[0]).AsSpan(), sortBy);
             }
             // sort by direction
             using var sortByDirections = new ArrayPoolList<RestSortByDirection>(4);

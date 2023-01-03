@@ -18,6 +18,9 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
     {
         internal static readonly AsyncQueryFilter _noFilter = (source, _) => new ValueTask<System.Linq.IQueryable>(source);
 
+        private static async ValueTask<IReadOnlyList<TPartial>> ToList<TPartial>(IAsyncEnumerable<TPartial> enumerable, CancellationToken cancellationToken)
+            => await enumerable.ToListAsync(cancellationToken);
+
         protected sealed class RestCollectionInvocation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>
             : RestMethodEnumerableInvocation<T>
         {
@@ -71,13 +74,12 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                 _args = new ArgumentCollection<RestQuery, AsyncQueryFilter, Expression<Func<T, TPartial>>>(query, filter, selector);
             }
 
+
+
             public override ValueTask<IReadOnlyList<TPartial>> InvokeAsync(CancellationToken cancellationToken = default)
             {
                 var enumerable = _invoker.InvokePartialAsync(_args.Arg1, _args.Arg2, _args.Arg3, cancellationToken);
-                return ToList(enumerable);
-
-                async ValueTask<IReadOnlyList<TPartial>> ToList(IAsyncEnumerable<TPartial> enumerable)
-                    => await enumerable.ToListAsync(cancellationToken);
+                return ToList<TPartial>(enumerable, cancellationToken);
             }
 
             public override RestMethodInvocation<IReadOnlyList<TPartial>> UpdateArguments(IReadOnlyList<object> arguments)
@@ -172,6 +174,16 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                 .ConfigureAwait(false);
         }
 
+        private async Task DoInvokeAndSerialize<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TPartial>(
+            RestMethodInvocation<IReadOnlyList<TPartial>> invocation,
+            HttpResponse response,
+            CancellationToken cancellationToken)
+        {
+            var result = await _methodInvoker.InvokeAsync(invocation, cancellationToken);
+            await _serializerFactory.GetSerializer<IReadOnlyList<TPartial>>()
+                .SerializeAsync(new HttpResponseOutput(response), result, cancellationToken);
+        }
+
         private Task DoInvokePartial<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TPartial>(
             RestQuery restQuery,
             AsyncQueryFilter filter,
@@ -180,14 +192,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             CancellationToken cancellationToken)
         {
             var invocation = new RestCollectionPartialInvocation<T, TPartial>(_implementation, restQuery, filter, selector);
-            return DoInvokeAndSerialize(invocation);
-
-            async Task DoInvokeAndSerialize(RestMethodInvocation<IReadOnlyList<TPartial>> invocation)
-            {
-                var result = await _methodInvoker.InvokeAsync(invocation, cancellationToken);
-                await _serializerFactory.GetSerializer<IReadOnlyList<TPartial>>()
-                    .SerializeAsync(new HttpResponseOutput(response), result, cancellationToken);
-            }
+            return DoInvokeAndSerialize(invocation, response, cancellationToken);
         }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Dynamically emitted members cannot be trimmed.")]
@@ -206,7 +211,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
                     throw new UnauthorizedException();
                 }
                 var filter = null != accessValidator && accessValidator is IQueryAccessValidator queryAccessValidator
-                    ? (source, ctoken) => queryAccessValidator.FilterQueryAsync(source, context.User, ctoken)
+                    ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, context.User, ctoken))
                     : ListInvoker._noFilter;
                 using var restQuery = await _queryParser.ParseAsync(context.Request, cancellationToken);
                 _logger.LogTrace("[{Type}] REST query parsing done ({Elapsed}ms).", Type, stopwatch.ElapsedMilliseconds);

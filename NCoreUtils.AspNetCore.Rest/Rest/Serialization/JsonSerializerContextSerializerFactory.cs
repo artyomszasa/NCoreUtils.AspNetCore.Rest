@@ -3,9 +3,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NCoreUtils.AspNetCore.Rest.Internal;
 using NCoreUtils.AspNetCore.Rest.Serialization.Internal;
 
@@ -73,16 +77,24 @@ public class JsonSerializerContextSerializerFactory : ISerializerFactory
     internal static JsonSerializerContextSerializerFactory Create(IServiceProvider serviceProvider)
         => new JsonSerializerContextSerializerFactory(serviceProvider, serviceProvider.GetOptionalService<IRestJsonSerializerContext>());
 
-    private JsonSerializerOptions? AsyncEnumerableSerializerOptions { get; set; }
-
     public IRestJsonSerializerContext? RestJsonSerializerContext { get; }
 
     public IServiceProvider ServiceProvider { get; }
 
-    public JsonSerializerContextSerializerFactory(IServiceProvider serviceProvider, IRestJsonSerializerContext? restJsonSerializerContext = default)
+    public JsonSerializerContextSerializerFactory(
+        IServiceProvider serviceProvider,
+        IRestJsonSerializerContext? restJsonSerializerContext = default)
     {
         RestJsonSerializerContext = restJsonSerializerContext;
         ServiceProvider = serviceProvider;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private T LogWarning<T>(T result)
+    {
+        ServiceProvider.GetRequiredService<ILogger<JsonSerializerContextSerializerFactory>>()
+            .LogWarning("Using fallback async enumerable serialization, for .NET 7 or greater IAsyncEnumerable<...> types should be added to the context.");
+        return result;
     }
 
     public ISerializer<T> GetSerializer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>()
@@ -90,10 +102,18 @@ public class JsonSerializerContextSerializerFactory : ISerializerFactory
         {
             null => RestJsonSerializerContext switch
             {
-                null => throw new InvalidOperationException($"No REST json serializer context has been registered and no explicit serializer implementation has been provided."),
-                { JsonSerializerContext: var context } => IsAsyncEnumerable(typeof(T), out var elementType)
-                    ? new JsonContextBackedSerializer<T>(AsyncEnumerableSerializerOptions ??= new() { Converters = { new JsonContextBackedConverterFactory(context) } })
-                    : new JsonSerializerContextSerializer<T>(context)
+                null => throw new InvalidOperationException("No REST json serializer context has been registered and no explicit serializer implementation has been provided."),
+                // { JsonSerializerContext: var context } => IsAsyncEnumerable(typeof(T), out var elementType)
+                //     ? new JsonContextBackedSerializer<T>(AsyncEnumerableSerializerOptions ??= new() { Converters = { new JsonContextBackedConverterFactory(context) } })
+                //     : new JsonSerializerContextSerializer<T>(context)
+                { JsonSerializerContext: var context } => context.GetTypeInfo(typeof(T)) switch
+                {
+                    null when IsAsyncEnumerable(typeof(T), out var elementType)
+                        => LogWarning(new JsonContextBackedSerializer<T>(new() { Converters = { new JsonContextBackedConverterFactory(context) } })),
+                    null => throw new InvalidOperationException($"Registered json serialier context return not json info for {typeof(T)}."),
+                    JsonTypeInfo<T> jsonTypeInfo => new TypedJsonSerializer<T>(jsonTypeInfo),
+                    _ => throw new ArgumentException($"Registered json serialier context returned invalid type info for {typeof(T)}.")
+                }
             },
             var serializer => serializer
         };

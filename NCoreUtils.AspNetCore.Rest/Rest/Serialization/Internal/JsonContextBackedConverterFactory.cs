@@ -18,6 +18,7 @@ public class JsonContextBackedConverterFactory : JsonConverterFactory
     public override bool CanConvert(Type typeToConvert)
         => Context.GetTypeInfo(typeToConvert) is not null;
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Compatibility only.")]
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(JsonContextBackedConverter<>))]
     public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         => Context.GetTypeInfo(typeToConvert) switch

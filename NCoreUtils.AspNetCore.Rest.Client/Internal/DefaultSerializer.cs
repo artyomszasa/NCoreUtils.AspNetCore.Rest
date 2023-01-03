@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -37,5 +39,12 @@ namespace NCoreUtils.Rest.Internal
 
         public ValueTask SerializeAsync(Stream stream, T value, CancellationToken cancellationToken = default)
             => new ValueTask(JsonSerializer.SerializeAsync<T>(stream, value, JsonTypeInfo, cancellationToken));
+
+        #if NET7_0_OR_GREATER
+            public IAsyncEnumerable<T> DeserializeAsyncEnumerable(Stream stream, CancellationToken cancellationToken = default)
+                => JsonSerializer.DeserializeAsyncEnumerable(stream, JsonTypeInfo, cancellationToken)
+                    .Where(item => item is not null)!;
+        #endif
+
     }
 }
