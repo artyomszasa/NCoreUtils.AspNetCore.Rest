@@ -2,16 +2,17 @@
   <PropertyGroup>
     <TargetFrameworks>net7.0;net6.0;netstandard2.1</TargetFrameworks>
     <RootNamespace>NCoreUtils.Rest</RootNamespace>
+    <Version>7.0.0-rc00</Version>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.AspNetCore.Rest.Client.Abstractions\NCoreUtils.AspNetCore.Rest.Client.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="NCoreUtils.Data.Protocol.Linq" Version="6.0.0.4" />
+    <PackageReference Include="NCoreUtils.Data.Protocol.Client.Common" Version="$(NCoreUtilsProtocolVersion)" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="$(FxNugetVersion)" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(FxNugetVersion)" />
     <PackageReference Include="NCoreUtils.Extensions.AsyncEnumerable" Version="3.0.0" />
-    <PackageReference Include="NCoreUtils.Extensions.Memory" Version="3.0.0.5" />
+    <PackageReference Include="NCoreUtils.Extensions.Memory" Version="7.0.0" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.1' ">

@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>net7.0;net6.0;netstandard2.1</TargetFrameworks>
     <RootNamespace>NCoreUtils.Rest</RootNamespace>
+    <Version>7.0.0-rc00</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NCoreUtils.Data.Abstractions" Version="6.0.0-rc00" />

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,7 +35,7 @@ namespace NCoreUtils.Rest.Internal
         public RestQueryExecutor(IHttpRestClient client)
             => _client = client ?? throw new ArgumentNullException(nameof(client));
 
-        public IAsyncEnumerable<T> ExecuteEnumerationAsync<T>(
+        public IAsyncEnumerable<T> ExecuteEnumerationAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
             string target,
             Node? filter = null,
             Node? sortBy = null,
@@ -55,7 +56,7 @@ namespace NCoreUtils.Rest.Internal
                 cancellationToken: cancellationToken
             )));
 
-        public async Task<TResult> ExecuteReductionAsync<TSource, TResult>(
+        public async Task<TResult> ExecuteReductionAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TSource, TResult>(
             string target,
             string reduction,
             Node? filter = null,

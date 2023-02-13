@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,7 +9,7 @@ namespace NCoreUtils.Rest
 {
     public interface IRestClient
     {
-        IQueryable<T> Collection<T>();
+        IQueryable<T> Collection<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>();
 
         Task<TData?> ItemAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
             where TData : IHasId<TId>;

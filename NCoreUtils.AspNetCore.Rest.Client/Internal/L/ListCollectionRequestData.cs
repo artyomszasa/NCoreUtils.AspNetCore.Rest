@@ -5,7 +5,7 @@ using NCoreUtils.Memory;
 
 namespace NCoreUtils.Rest.Internal.L
 {
-    public struct ListCollectionRequestData : IEmplaceable<ListCollectionRequestData>
+    public struct ListCollectionRequestData : ISpanExactEmplaceable
     {
         private const string LogPrefix = "Executing COLLECTION method ";
 
@@ -14,7 +14,7 @@ namespace NCoreUtils.Rest.Internal.L
         public static Func<ListCollectionRequestData, Exception?, string> LogFormatter { get; }
             = (data, _) =>
             {
-                var size = data.GetStringifiedSize();
+                var size = data.GetEmplaceBufferSize();
                 size += LogPrefix.Length + 1;
                 if (size > MaxStackAllocSize)
                 {
@@ -103,7 +103,7 @@ namespace NCoreUtils.Rest.Internal.L
             Limit = limit;
         }
 
-        public int GetStringifiedSize()
+        public int GetEmplaceBufferSize()
         {
             var size = 2;
             var values = 0;
@@ -163,7 +163,7 @@ namespace NCoreUtils.Rest.Internal.L
 
         public int Emplace(Span<char> span)
         {
-            var size = GetStringifiedSize();
+            var size = GetEmplaceBufferSize();
             if (size > span.Length || !TryEmplace(span, out var used))
             {
                 throw new InsufficientBufferSizeException(in span, size);
@@ -194,24 +194,21 @@ namespace NCoreUtils.Rest.Internal.L
         }
 
         public override string ToString()
+            => this.ToStringUsingArrayPool();
+
+        public string ToString(string? format, System.IFormatProvider? formatProvider)
+            => ToString();
+
+#if !NET6_0_OR_GREATER
+
+        bool ISpanEmplaceable.TryGetEmplaceBufferSize(out int minimumBufferSize)
         {
-            var size = GetStringifiedSize();
-            if (size > MaxStackAllocSize)
-            {
-                var buffer = ArrayPool<char>.Shared.Rent(size);
-                try
-                {
-                    TryEmplace(buffer.AsSpan(), out var used);
-                    return new string(buffer, 0, used);
-                }
-                finally
-                {
-                    ArrayPool<char>.Shared.Return(buffer);
-                }
-            }
-            Span<char> stackBuffer = stackalloc char[size];
-            TryEmplace(stackBuffer, out var stackUsed);
-            return stackBuffer.Slice(0, stackUsed).ToString();
+            minimumBufferSize = GetEmplaceBufferSize();
+            return true;
         }
+
+        bool ISpanEmplaceable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider)
+            => TryEmplace(destination, out charsWritten);
+#endif
     }
 }

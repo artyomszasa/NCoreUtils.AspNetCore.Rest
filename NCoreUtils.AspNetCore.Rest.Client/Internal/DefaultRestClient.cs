@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,19 +11,25 @@ namespace NCoreUtils.Rest.Internal
 {
     public class DefaultRestClient : IRestClient
     {
+        protected IDataUtils DataUtils { get; }
+
         protected ExpressionParser ExpressionParser { get; }
 
         protected IHttpRestClient HttpRestClient { get; }
 
-        public DefaultRestClient(ExpressionParser expressionParser, IHttpRestClient httpRestClient)
+        public DefaultRestClient(
+            IDataUtils dataUtils,
+            ExpressionParser expressionParser,
+            IHttpRestClient httpRestClient)
         {
+            DataUtils = dataUtils ?? throw new ArgumentNullException(nameof(dataUtils));
             ExpressionParser = expressionParser ?? throw new ArgumentNullException(nameof(expressionParser));
             HttpRestClient = httpRestClient ?? throw new ArgumentNullException(nameof(httpRestClient));
         }
 
-        public virtual IQueryable<T> Collection<T>()
+        public virtual IQueryable<T> Collection<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
             => DirectQuery.Create<T>(
-                new QueryProvider(ExpressionParser, new RestQueryExecutor(HttpRestClient))
+                new QueryProvider(DataUtils, ExpressionParser, new RestQueryExecutor(HttpRestClient))
             );
 
         public virtual Task<TId> CreateAsync<TData, TId>(TData data, CancellationToken cancellationToken = default)
