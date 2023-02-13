@@ -173,7 +173,7 @@ namespace NCoreUtils.AspNetCore.Rest
                             logger.LogError(exn, "Error occured during endpoint execution.");
                         }
                         httpContext.Response.StatusCode = statusCode;
-                        httpContext.Response.Headers.Add("X-Message", exn.Message);
+                        httpContext.Response.Headers.Add("X-Message", Uri.EscapeDataString(exn.Message));
                     }
                 });
             var accessConfiguration = _configuration.AccessConfiguration;
