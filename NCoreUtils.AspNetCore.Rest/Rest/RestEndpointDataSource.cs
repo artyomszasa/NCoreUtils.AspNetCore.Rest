@@ -160,6 +160,11 @@ namespace NCoreUtils.AspNetCore.Rest
                     }
                     catch (Exception exn)
                     {
+                        var errorAccessor = httpContext.RequestServices.GetService<IRestErrorAccessor>();
+                        if (!(errorAccessor is null) && errorAccessor is ServiceCollectionRestExtensions.RestErrorAccessor accessor)
+                        {
+                            accessor.Error = ExceptionDispatchInfo.Capture(exn);
+                        }
                         var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
                         int statusCode;
                         if (StatusCodeResponse.TryExtract(exn, out var ecode))
