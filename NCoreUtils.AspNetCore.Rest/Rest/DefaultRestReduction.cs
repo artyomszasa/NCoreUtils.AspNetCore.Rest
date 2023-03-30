@@ -41,6 +41,8 @@ namespace NCoreUtils.AspNetCore.Rest
         protected virtual ValueTask<int> ExecuteCountAsync(IQueryable<T> queryable, CancellationToken cancellationToken = default)
             => new ValueTask<int>(queryable.CountAsync(cancellationToken)!);
 
+        protected virtual ValueTask<bool> ExecuteAnyAsync(IQueryable<T> queryable, CancellationToken cancellationToken = default)
+            => new ValueTask<bool>(queryable.AnyAsync(cancellationToken)!);
 
         public async ValueTask<object?> InvokeAsync(RestQuery restQuery, string reduction, AsyncQueryFilter accessValidator, CancellationToken cancellationToken)
         {
@@ -59,6 +61,7 @@ namespace NCoreUtils.AspNetCore.Rest
                 DefaultReductions.First => await ExecuteFirstOrDefaultAsync(orderedQuery, cancellationToken),
                 DefaultReductions.Single => await ExecuteSingleOrDefaultAsync(orderedQuery, cancellationToken),
                 DefaultReductions.Count => await ExecuteCountAsync(orderedQuery, cancellationToken),
+                DefaultReductions.Any => await ExecuteAnyAsync(orderedQuery, cancellationToken),
                 _ => throw new NotSupportedException($"Reduction {reduction} is not supported")
             };
         }

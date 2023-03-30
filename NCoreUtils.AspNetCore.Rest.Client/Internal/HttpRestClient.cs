@@ -227,6 +227,8 @@ namespace NCoreUtils.Rest.Internal
                 "first" => typeof(T),
                 "single" => typeof(T),
                 "count" => typeof(int),
+                "all" => typeof(bool),
+                "any" => typeof(bool),
                 _ => throw new NotSupportedException($"Not supported reduction: {reduction}.")
             };
             var requestUri = Configuration.GetItemOrReductionEndpoint<T>(NameResolver, reduction);

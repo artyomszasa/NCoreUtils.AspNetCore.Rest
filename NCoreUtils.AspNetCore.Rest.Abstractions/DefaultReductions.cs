@@ -10,11 +10,14 @@ namespace NCoreUtils.AspNetCore.Rest
 
         public const string Count = "count";
 
+        public const string Any = "any";
+
         public static ImmutableHashSet<string> Names = ImmutableHashSet.CreateRange(new []
         {
             First,
             Single,
-            Count
+            Count,
+            Any
         });
     }
 }
