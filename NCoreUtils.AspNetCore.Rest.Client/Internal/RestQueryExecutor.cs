@@ -16,7 +16,8 @@ namespace NCoreUtils.Rest.Internal
             { nameof(Queryable.Single), "single" },
             { nameof(Queryable.FirstOrDefault), "first" },
             { nameof(Queryable.SingleOrDefault), "single" },
-            { nameof(Queryable.Count), "count" }
+            { nameof(Queryable.Count), "count" },
+            { nameof(Queryable.Any), "any" }
         };
 
         private static HashSet<string> _throwIfNull = new HashSet<string>(new []

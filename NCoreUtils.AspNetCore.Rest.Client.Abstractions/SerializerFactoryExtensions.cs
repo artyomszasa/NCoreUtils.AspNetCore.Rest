@@ -48,6 +48,8 @@ namespace NCoreUtils.Rest
         static SerializerFactoryExtensions()
         {
             _factory = CreateInvoker;
+            _cache.TryAdd(typeof(bool), new Invoker<bool>());
+            _cache.TryAdd(typeof(int), new Invoker<int>());
         }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Method preserved by caller.")]

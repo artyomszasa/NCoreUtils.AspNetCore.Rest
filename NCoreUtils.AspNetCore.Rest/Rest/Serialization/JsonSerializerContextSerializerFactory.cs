@@ -27,6 +27,8 @@ public class JsonSerializerContextSerializerFactory : ISerializerFactory
         static Invoker()
         {
             _factory = DoCreate;
+            _cache.TryAdd(typeof(bool), new Invoker<bool>());
+            _cache.TryAdd(typeof(int), new Invoker<int>());
         }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Preserved by caller.")]
