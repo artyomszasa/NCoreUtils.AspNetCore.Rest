@@ -47,7 +47,8 @@ namespace NCoreUtils.AspNetCore.Rest
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal RestQuery(
+        [Obsolete("All arrays must be taken from Shared array pools!")]
+        public RestQuery(
             int? offset,
             int? count,
             string? filter,
@@ -139,7 +140,9 @@ namespace NCoreUtils.AspNetCore.Rest
             {
                 sortByDirections = default;
             }
+#pragma warning disable CS0618
             return new RestQuery(offset, count, filter, fields, sortBy, sortByDirections);
+#pragma warning restore CS0618
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -44,6 +44,7 @@ namespace NCoreUtils.AspNetCore.Rest.QueryParsers
             {
                 RestQueryParserHelpers.ParseSortByDirections(values[0].AsSpan(), sortByDirections);
             }
+#pragma warning disable CS0618
             // return rest query
             return new ValueTask<RestQuery>(new RestQuery(
                 offset,
@@ -53,6 +54,7 @@ namespace NCoreUtils.AspNetCore.Rest.QueryParsers
                 sortBy.Count == 0 ? default(ArraySegment<string>?) : sortBy.Disown(),
                 sortByDirections.Count == 0 ? default(ArraySegment<RestSortByDirection>?) : sortByDirections.Disown()
             ));
+#pragma warning restore CS0618
         }
     }
 }
