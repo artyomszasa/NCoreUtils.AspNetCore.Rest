@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>net7.0;net6.0;netstandard2.1</TargetFrameworks>
     <RootNamespace>NCoreUtils.Rest</RootNamespace>
-    <Version>7.0.0-rc00</Version>
+    <Version>7.0.0-rc01</Version>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.AspNetCore.Rest.Client.Abstractions\NCoreUtils.AspNetCore.Rest.Client.Abstractions.csproj" />
