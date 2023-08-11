@@ -29,7 +29,7 @@ public class AsyncEnumerableTests : IAsyncDisposable
             .AddSingleton<IHttpClientFactory>(new TestHttpClientFactory(TestHost))
             .AddRestClientServices()
             .AddDefaultRestClient("/", TestSerializerContext.Default)
-            .AddDataQueryClientServices()
+            .AddDataQueryServices(TestQueryContext.Singleton)
             .BuildServiceProvider(false);
 
         var restClient = serviceProvider.GetRequiredService<IRestClient>();

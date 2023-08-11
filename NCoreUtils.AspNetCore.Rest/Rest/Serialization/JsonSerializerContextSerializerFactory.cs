@@ -15,6 +15,7 @@ using NCoreUtils.AspNetCore.Rest.Serialization.Internal;
 
 namespace NCoreUtils.AspNetCore.Rest.Serialization;
 
+[Obsolete("Use JsonTypeInfoSerializerFactory instead.")]
 public class JsonSerializerContextSerializerFactory : ISerializerFactory
 {
     private abstract class Invoker

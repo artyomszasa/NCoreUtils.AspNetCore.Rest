@@ -5,5 +5,5 @@ using NCoreUtils.AspNetCore.Rest.Unit.Data;
 namespace NCoreUtils.AspNetCore.Rest.Unit;
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
-[JsonSerializable(typeof(TestData))]
+[JsonSerializable(typeof(IAsyncEnumerable<TestData>))]
 public partial class TestSerializerContext : JsonSerializerContext { }

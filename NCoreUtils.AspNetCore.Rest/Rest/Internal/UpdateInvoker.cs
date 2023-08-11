@@ -81,13 +81,10 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
 
         public override async ValueTask Invoke(HttpContext httpContext, object id, CancellationToken cancellationToken)
         {
-            var accessValidator = _accessConfiguration.Update.CreateValidator(_serviceProvider, out var disposeValidator);
+            var accessValidator = _accessConfiguration.Update.GetOrCreateValidator(_serviceProvider, out var disposeValidator);
             try
             {
-                if (!await accessValidator.ValidateAsync(httpContext.User, cancellationToken))
-                {
-                    throw new UnauthorizedException();
-                }
+                (await accessValidator.ValidateAsync(httpContext.User, cancellationToken)).ThrowOnFailure();
                 var data = await _deserializer.DeserializeAsync(httpContext.Request.Body, cancellationToken);
                 var invocation = new RestUpdateInvocation<TData, TId>(_implementation, (TId)id, data);
                 await _methodInvoker.InvokeAsync(invocation, cancellationToken);

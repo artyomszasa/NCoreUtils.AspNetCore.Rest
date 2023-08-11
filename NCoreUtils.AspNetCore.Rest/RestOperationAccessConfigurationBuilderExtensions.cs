@@ -9,6 +9,7 @@ using NCoreUtils.AspNetCore.Rest.Internal;
 
 namespace NCoreUtils.AspNetCore
 {
+    [Obsolete("Compatibility only.")]
     public static class RestOperationAccessConfigurationBuilderExtensions
     {
         sealed class GenericAccessValidator : IAccessValidator

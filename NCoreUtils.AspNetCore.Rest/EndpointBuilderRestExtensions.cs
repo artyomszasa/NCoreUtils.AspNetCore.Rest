@@ -16,6 +16,7 @@ namespace NCoreUtils.AspNetCore
             return dataSource;
         }
 
+        [Obsolete("Use MapRestEndpoints instead.")]
         public static IEndpointConventionBuilder MapRest(
             this IEndpointRouteBuilder builder,
             string prefix,
@@ -30,9 +31,29 @@ namespace NCoreUtils.AspNetCore
             return builder.MapRest(configurationBuilder.Build());
         }
 
+        [Obsolete("Use MapRestEndpoints instead.")]
         public static IEndpointConventionBuilder MapRest(
             this IEndpointRouteBuilder builder,
             Action<RestConfigurationBuilder> configure)
             => builder.MapRest(string.Empty, configure);
+
+        public static IEndpointConventionBuilder MapRestEndpoints(
+            this IEndpointRouteBuilder builder,
+            string prefix,
+            Action<RestEndpointsConfigurationBuilder> configure)
+        {
+            var configurationBuilder = new RestEndpointsConfigurationBuilder();
+            if (!string.IsNullOrEmpty(prefix))
+            {
+                configurationBuilder.WithPrefix(prefix);
+            }
+            configure?.Invoke(configurationBuilder);
+            return builder.MapRest(configurationBuilder.Build());
+        }
+
+        public static IEndpointConventionBuilder MapRestEndpoints(
+            this IEndpointRouteBuilder builder,
+            Action<RestEndpointsConfigurationBuilder> configure)
+            => builder.MapRestEndpoints(string.Empty, configure);
     }
 }

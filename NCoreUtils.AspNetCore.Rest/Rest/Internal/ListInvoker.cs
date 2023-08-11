@@ -141,7 +141,7 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             _queryParser = queryParser ?? new DefaultRestQueryParser();
             _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
             _implementation = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestListCollection<T>>(serviceProvider);
-            _serializerFactory = serializerFactory ?? JsonSerializerContextSerializerFactory.Create(serviceProvider);
+            _serializerFactory = serializerFactory ?? JsonTypeInfoSerializerFactory.Create(serviceProvider);
         }
 
         private sealed class ConfigurableBufferOutput : IConfigurableOutput<System.IO.Stream>
@@ -201,16 +201,13 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
-            var accessValidator = _accessConfiguration.Query.CreateValidator(_serviceProvider, out var disposeValidator);
+            var accessValidator = _accessConfiguration.Query.GetOrCreateValidator(_serviceProvider, out var disposeValidator);
             try
             {
-                var accessAllowed = await accessValidator.ValidateAsync(context.User, cancellationToken);
-                _logger.LogTrace("[{Type}] Access validation ({AccessAllowed}) done ({Elapsed}ms).", Type, accessAllowed, stopwatch.ElapsedMilliseconds);
-                if (!accessAllowed)
-                {
-                    throw new UnauthorizedException();
-                }
-                var filter = null != accessValidator && accessValidator is IQueryAccessValidator queryAccessValidator
+                var validationResult = await accessValidator.ValidateAsync(context.User, cancellationToken);
+                _logger.LogTrace("[{Type}] Access validation ({AccessAllowed}) done ({Elapsed}ms).", Type, validationResult.Success, stopwatch.ElapsedMilliseconds);
+                validationResult.ThrowOnFailure();
+                var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator
                     ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, context.User, ctoken))
                     : ListInvoker._noFilter;
                 using var restQuery = await _queryParser.ParseAsync(context.Request, cancellationToken);

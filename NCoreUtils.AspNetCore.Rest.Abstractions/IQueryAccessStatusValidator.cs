@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
@@ -9,8 +8,7 @@ namespace NCoreUtils.AspNetCore.Rest;
 /// <summary>
 /// Defines functionality to implement generic query level access limitation.
 /// </summary>
-[Obsolete("Use IQueryAccessStatusValidator instead.")]
-public interface IQueryAccessValidator : IAccessValidator
+public interface IQueryAccessStatusValidator : IAccessStatusValidator
 {
     /// <summary>
     /// Decorates specified queryable to return only accessible items.

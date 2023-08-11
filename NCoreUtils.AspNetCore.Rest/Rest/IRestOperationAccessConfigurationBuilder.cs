@@ -1,4 +1,3 @@
-using System;
 using NCoreUtils.AspNetCore.Rest.Internal;
 
 namespace NCoreUtils.AspNetCore.Rest

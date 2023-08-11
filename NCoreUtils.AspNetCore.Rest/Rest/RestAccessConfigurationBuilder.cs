@@ -10,6 +10,7 @@ using NCoreUtils.AspNetCore.Rest.Internal;
 
 namespace NCoreUtils.AspNetCore.Rest
 {
+    [Obsolete("Compatibility only.")]
     public class RestAccessConfigurationBuilder
     {
         sealed class GlobalAccessConfigurationBuilder : IRestOperationAccessConfigurationBuilder
@@ -61,7 +62,7 @@ namespace NCoreUtils.AspNetCore.Rest
                 var result = source;
                 foreach (var descriptor in _descriptors)
                 {
-                    if (descriptor.TryCreateQueryAccessValidator(_serviceProvider, out var mayRequireDisposal, out var queryAccessValidator))
+                    if (descriptor.TryGetOrCreateQueryAccessValidator(_serviceProvider, out var mayRequireDisposal, out var queryAccessValidator))
                     {
                         result = await queryAccessValidator.FilterQueryAsync(result, principal, cancellationToken);
                         if (mayRequireDisposal)
@@ -151,13 +152,12 @@ namespace NCoreUtils.AspNetCore.Rest
             return this;
         }
 
-        public RestAccessConfiguration Build()
-            => new RestAccessConfiguration(
-                create: BuildFromList(Create),
-                update: BuildFromList(Update),
-                delete: BuildFromList(Delete),
-                query: BuildFromList(Query)
-            );
+        public RestAccessConfiguration Build() => new(
+            create: BuildFromList(Create),
+            update: BuildFromList(Update),
+            delete: BuildFromList(Delete),
+            query: BuildFromList(Query)
+        );
 
         private sealed class AccessValidationAdder<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TAccessValidator>
             where TAccessValidator : IAccessValidator
@@ -171,7 +171,7 @@ namespace NCoreUtils.AspNetCore.Rest
 
         public RestAccessConfigurationBuilder RestrictAll<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TAccessValidator>()
             where TAccessValidator : IAccessValidator
-            => this.ConfigureGlobal(AccessValidationAdder<TAccessValidator>.Add);
+            => ConfigureGlobal(AccessValidationAdder<TAccessValidator>.Add);
 
         public RestAccessConfigurationBuilder RestrictAll(Func<ClaimsPrincipal, CancellationToken, ValueTask<bool>> callback)
             => this.ConfigureGlobal(b => b.Use(callback));

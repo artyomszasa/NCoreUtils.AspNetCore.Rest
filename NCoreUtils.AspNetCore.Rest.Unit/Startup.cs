@@ -21,7 +21,7 @@ public class Startup
             // HTTP CONTEXT
             .AddHttpContextAccessor()
             // JSON
-            .AddSingleton<IRestJsonSerializerContext>(new RestJsonSerializerContext(TestSerializerContext.Default))
+            .AddRestJsonTypeInfoResolver(TestSerializerContext.Default)
             // DATA
             .AddInMemoryDataRepositoryContext()
             .AddInMemoryDataRepository<TestData, int>(new List<TestData>
@@ -40,7 +40,7 @@ public class Startup
             .UseRouting()
             .UseEndpoints(endpoints =>
             {
-                endpoints.MapRest(config =>
+                endpoints.MapRestEndpoints(config =>
                 {
                     config.AddEntity<TestData>();
                 });

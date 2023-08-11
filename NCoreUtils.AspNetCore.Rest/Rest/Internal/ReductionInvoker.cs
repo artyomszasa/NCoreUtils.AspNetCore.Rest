@@ -80,19 +80,16 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             _queryParser = queryParser ?? new DefaultRestQueryParser();
             _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
             _implementation = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestReduction<T>>(serviceProvider);
-            _serializerFactory = serializerFactory ?? JsonSerializerContextSerializerFactory.Create(serviceProvider);
+            _serializerFactory = serializerFactory ?? JsonTypeInfoSerializerFactory.Create(serviceProvider);
         }
 
         public override async ValueTask Invoke(HttpContext httpContext, string reduction, CancellationToken cancellationToken)
         {
-            var accessValidator = _accessConfiguration.Query.CreateValidator(_serviceProvider, out var disposeValidator);
+            var accessValidator = _accessConfiguration.Query.GetOrCreateValidator(_serviceProvider, out var disposeValidator);
             try
             {
-                if (!await accessValidator.ValidateAsync(httpContext.User, cancellationToken))
-                {
-                    throw new UnauthorizedException();
-                }
-                var filter = null != accessValidator && accessValidator is IQueryAccessValidator queryAccessValidator
+                (await accessValidator.ValidateAsync(httpContext.User, cancellationToken)).ThrowOnFailure();
+                var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator
                     ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, httpContext.User, ctoken))
                     : ListInvoker._noFilter;
                 var restQuery = await _queryParser.ParseAsync(httpContext.Request, cancellationToken);

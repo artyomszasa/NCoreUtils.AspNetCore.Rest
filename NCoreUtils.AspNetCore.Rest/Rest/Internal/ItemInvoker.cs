@@ -73,20 +73,17 @@ namespace NCoreUtils.AspNetCore.Rest.Internal
             _accessConfiguration = accessConfiguration;
             _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
             _implementation = implmentation ?? ActivatorUtilities.CreateInstance<DefaultRestItem<TData, TId>>(serviceProvider);
-            _serializer = (serializerFactory ?? JsonSerializerContextSerializerFactory.Create(serviceProvider))
+            _serializer = (serializerFactory ?? JsonTypeInfoSerializerFactory.Create(serviceProvider))
                 .GetSerializer<TData>();
         }
 
         public override async ValueTask Invoke(HttpContext httpContext, object id, CancellationToken cancellationToken)
         {
-            var accessValidator = _accessConfiguration.Query.CreateValidator(_serviceProvider, out var disposeValidator);
+            var accessValidator = _accessConfiguration.Query.GetOrCreateValidator(_serviceProvider, out var disposeValidator);
             try
             {
-                if (!await accessValidator.ValidateAsync(httpContext.User, cancellationToken))
-                {
-                    throw new UnauthorizedException();
-                }
-                var filter = null != accessValidator && accessValidator is IQueryAccessValidator queryAccessValidator
+                (await accessValidator.ValidateAsync(httpContext.User, cancellationToken)).ThrowOnFailure();
+                var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator
                     ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, httpContext.User, ctoken))
                     : ListInvoker._noFilter;
                 var invocation = new RestItemInvocation<TData, TId>(_implementation, (TId)id, filter);
