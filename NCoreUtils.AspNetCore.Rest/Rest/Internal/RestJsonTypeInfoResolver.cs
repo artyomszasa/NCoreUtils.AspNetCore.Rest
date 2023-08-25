@@ -13,7 +13,7 @@ public class RestJsonTypeInfoResolver : IRestJsonTypeInfoResolver
     public RestJsonTypeInfoResolver(IJsonTypeInfoResolver resolver, JsonSerializerOptions? options = default)
     {
         Resolver = resolver;
-        DefaultOptions = options ?? new() { TypeInfoResolver = resolver };
+        DefaultOptions = options ?? new() { TypeInfoResolver = resolver, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     }
 
     public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)

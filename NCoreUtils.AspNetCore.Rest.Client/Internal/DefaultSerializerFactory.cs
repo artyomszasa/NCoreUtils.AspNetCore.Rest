@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace NCoreUtils.Rest.Internal;
 
+[Obsolete("Use DefaultJsonSerializerFactory instead.")]
 public class DefaultSerializerFactory : ISerializerFactory
 {
     private static bool IsAsyncEnumerable(

@@ -43,6 +43,7 @@ namespace NCoreUtils.Rest.Internal
 
         private readonly IHttpClientFactory? _httpClientFactory;
 
+#pragma warning disable CS0618
         public HttpRestClient(
             IServiceProvider serviceProvider,
             IRestClientConfiguration configuration,
@@ -50,6 +51,7 @@ namespace NCoreUtils.Rest.Internal
             ILogger<HttpRestClient> logger,
             ISerializerFactory? serializerFactory = default,
             IHttpClientFactory? httpClientFactory = default,
+            IRestClientJsonTypeInfoResolver? restClientJsonTypeInfoResolver = default,
             IRestClientJsonSerializerContext? restClientJsonSerializerContext = default)
         {
             if (serviceProvider is null)
@@ -58,18 +60,26 @@ namespace NCoreUtils.Rest.Internal
             }
             Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             NameResolver = nameResolver ?? throw new ArgumentNullException(nameof(nameResolver));
-            SerializerFactory = serializerFactory ?? restClientJsonSerializerContext switch
+            SerializerFactory = serializerFactory ?? restClientJsonTypeInfoResolver switch
             {
-                null => throw new InvalidOperationException("Neither rest client serializer factory not json serializer context has been registered."),
-                { JsonSerializerContext: var context } => new DefaultSerializerFactory(
-                    logger: serviceProvider.GetRequiredService<ILogger<DefaultSerializerFactory>>(),
-                    jsonSerializerContext: context
+                null => restClientJsonSerializerContext switch
+                {
+                    null => throw new InvalidOperationException("Neither rest client type info resolver nor serializer factory has been registered."),
+                    { JsonSerializerContext: var context } => new DefaultSerializerFactory(
+                        logger: serviceProvider.GetRequiredService<ILogger<DefaultSerializerFactory>>(),
+                        jsonSerializerContext: context
+                    )
+                },
+                var resolver => new DefaultJsonSerializerFactory(
+                    logger: serviceProvider.GetRequiredService<ILogger<DefaultJsonSerializerFactory>>(),
+                    resolver: resolver
                 )
             };
             QuerySerializer = serviceProvider.GetService<IRestQuerySerializer>() ?? RestQueryAsHeaderSerializer.Instance;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _httpClientFactory = httpClientFactory;
         }
+#pragma warning restore CS0618
 
         protected virtual void HandleErrors(HttpResponseMessage response, string requestUri)
         {
@@ -80,7 +90,7 @@ namespace NCoreUtils.Rest.Internal
             // check X-Message header
             if (response.StatusCode == HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.InternalServerError)
             {
-                if (!(response.Headers is null) && response.Headers.TryGetValues("X-Message", out var values))
+                if (response.Headers is not null && response.Headers.TryGetValues("X-Message", out var values))
                 {
                     var message = string.Join(" ", values.Select(Uri.UnescapeDataString));
                     throw new RestException(requestUri ?? string.Empty, message);

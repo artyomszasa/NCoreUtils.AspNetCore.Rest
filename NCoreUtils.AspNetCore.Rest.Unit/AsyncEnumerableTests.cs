@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +29,7 @@ public class AsyncEnumerableTests : IAsyncDisposable
             .AddLogging()
             .AddSingleton<IHttpClientFactory>(new TestHttpClientFactory(TestHost))
             .AddRestClientServices()
-            .AddDefaultRestClient("/", TestSerializerContext.Default)
+            .AddDefaultRestClient("/", (IJsonTypeInfoResolver)TestSerializerContext.Default)
             .AddDataQueryServices(TestQueryContext.Singleton)
             .BuildServiceProvider(false);
 

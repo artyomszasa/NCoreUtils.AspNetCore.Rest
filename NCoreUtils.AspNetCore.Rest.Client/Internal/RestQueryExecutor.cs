@@ -11,7 +11,7 @@ namespace NCoreUtils.Rest.Internal
 {
     public class RestQueryExecutor : IDataQueryExecutor
     {
-        private static readonly Dictionary<string, string> _reductionMap = new Dictionary<string, string>
+        private static readonly Dictionary<string, string> _reductionMap = new()
         {
             { nameof(Queryable.First), "first" },
             { nameof(Queryable.Single), "single" },
@@ -21,7 +21,7 @@ namespace NCoreUtils.Rest.Internal
             { nameof(Queryable.Any), "any" }
         };
 
-        private static HashSet<string> _throwIfNull = new HashSet<string>(new []
+        private static readonly HashSet<string> _throwIfNull = new(new []
         {
             nameof(Queryable.First),
             nameof(Queryable.Single)
