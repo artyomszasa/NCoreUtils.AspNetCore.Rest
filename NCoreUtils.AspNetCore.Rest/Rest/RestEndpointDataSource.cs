@@ -198,7 +198,16 @@ namespace NCoreUtils.AspNetCore.Rest
                         return Invoker.InvokeReduction(entityType, httpContext, arg, accessConfiguration);
                     }
                     var idType = idTypeCache.GetOrAdd(entityType, _idTypeFactory);
-                    return Invoker.InvokeItem(entityType, httpContext, Convert.ChangeType(arg, idType), accessConfiguration);
+                    object id;
+                    try
+                    {
+                        id = Convert.ChangeType(arg, idType);
+                    }
+                    catch (Exception exn)
+                    {
+                        throw new InvalidOperationException($"Unable to parse \"{arg}\" as {idType} (supported reductions: {string.Join(", ", DefaultReductions.Names)}).", exn);
+                    }
+                    return Invoker.InvokeItem(entityType, httpContext, id, accessConfiguration);
                 }
             );
             endpoints.Add(ApplyConventions(new RouteEndpointBuilder(itemRequestDelegate, itemRoutePattern, 100)
