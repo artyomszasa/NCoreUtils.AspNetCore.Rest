@@ -11,6 +11,8 @@ namespace NCoreUtils.Rest.Internal.L
 
         public const int MaxStackAllocSize = 2048;
 
+        private static SpanEmplaceableEmplacer<ListCollectionRequestData> ListCollectionRequestDataEmplacer { get; } = new();
+
         public static Func<ListCollectionRequestData, Exception?, string> LogFormatter { get; }
             = (data, _) =>
             {
@@ -31,13 +33,13 @@ namespace NCoreUtils.Rest.Internal.L
                 }
                 Span<char> stackBuffer = stackalloc char[size];
                 var stackUsed = DoEmplace(stackBuffer, in data);
-                return stackBuffer.Slice(0, stackUsed).ToString();
+                return stackBuffer[..stackUsed].ToString();
 
                 static int DoEmplace(Span<char> buffer, in ListCollectionRequestData data)
                 {
                     var builder = new SpanBuilder(buffer);
                     builder.Append(LogPrefix);
-                    builder.Append(data);
+                    builder.Append(data, ListCollectionRequestDataEmplacer);
                     builder.Append('.');
                     return builder.Length;
                 }
@@ -103,7 +105,7 @@ namespace NCoreUtils.Rest.Internal.L
             Limit = limit;
         }
 
-        public int GetEmplaceBufferSize()
+        public readonly int GetEmplaceBufferSize()
         {
             var size = 2;
             var values = 0;
@@ -161,7 +163,7 @@ namespace NCoreUtils.Rest.Internal.L
             return size + ((values - 1) * 2);
         }
 
-        public int Emplace(Span<char> span)
+        public readonly int Emplace(Span<char> span)
         {
             var size = GetEmplaceBufferSize();
             if (size > span.Length || !TryEmplace(span, out var used))
@@ -171,7 +173,7 @@ namespace NCoreUtils.Rest.Internal.L
             return used;
         }
 
-        public bool TryEmplace(Span<char> span, out int used)
+        public readonly bool TryEmplace(Span<char> span, out int used)
         {
             var builder = new SpanBuilder(span);
             var first = true;
@@ -193,10 +195,10 @@ namespace NCoreUtils.Rest.Internal.L
             return false;
         }
 
-        public override string ToString()
+        public override readonly string ToString()
             => this.ToStringUsingArrayPool();
 
-        public string ToString(string? format, System.IFormatProvider? formatProvider)
+        public readonly string ToString(string? format, System.IFormatProvider? formatProvider)
             => ToString();
 
 #if !NET6_0_OR_GREATER

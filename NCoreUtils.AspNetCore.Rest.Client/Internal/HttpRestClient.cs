@@ -39,6 +39,8 @@ namespace NCoreUtils.Rest.Internal
 
         protected IRestQuerySerializer QuerySerializer { get; }
 
+        protected IIdParser IdParser { get; }
+
         protected ILogger Logger;
 
         private readonly IHttpClientFactory? _httpClientFactory;
@@ -52,7 +54,8 @@ namespace NCoreUtils.Rest.Internal
             ISerializerFactory? serializerFactory = default,
             IHttpClientFactory? httpClientFactory = default,
             IRestClientJsonTypeInfoResolver? restClientJsonTypeInfoResolver = default,
-            IRestClientJsonSerializerContext? restClientJsonSerializerContext = default)
+            IRestClientJsonSerializerContext? restClientJsonSerializerContext = default,
+            IIdParser? idParser = default)
         {
             if (serviceProvider is null)
             {
@@ -77,6 +80,7 @@ namespace NCoreUtils.Rest.Internal
             };
             QuerySerializer = serviceProvider.GetService<IRestQuerySerializer>() ?? RestQueryAsHeaderSerializer.Instance;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            IdParser = idParser ?? DefaultIdParser.Singleton;
             _httpClientFactory = httpClientFactory;
         }
 #pragma warning restore CS0618
@@ -117,7 +121,7 @@ namespace NCoreUtils.Rest.Internal
                     {
                         ++index;
                     }
-                    return (TId)Convert.ChangeType(location.Substring(index), typeof(TId));
+                    return (TId)IdParser.ParseId(location[index..], typeof(TId));
                 }
             }
             throw new RestException(requestUri, $"REST CREATE returned invalid location: {location}.");

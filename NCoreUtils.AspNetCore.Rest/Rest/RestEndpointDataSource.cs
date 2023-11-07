@@ -137,6 +137,8 @@ namespace NCoreUtils.AspNetCore.Rest
 
         private readonly RestConfiguration _configuration;
 
+        private readonly IIdParser _idParser;
+
         private IReadOnlyList<Endpoint>? _endpoints;
 
         public override IReadOnlyList<Endpoint> Endpoints
@@ -157,9 +159,10 @@ namespace NCoreUtils.AspNetCore.Rest
             }
         }
 
-        public RestEndpointDataSource(RestConfiguration configuration)
+        public RestEndpointDataSource(RestConfiguration configuration, IIdParser? idParser = default)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _idParser = idParser ?? DefaultIdParser.Singleton;
         }
 
         private RouteEndpointBuilder ApplyConventions(RouteEndpointBuilder builder)
@@ -218,7 +221,8 @@ namespace NCoreUtils.AspNetCore.Rest
                         if (entityType is not null && entitiesConfiguration.TryResolveType(entityType, out var type))
                         {
                             var idType = idTypeCache.GetOrAdd(type, _idTypeFactory);
-                            await implementation(httpContext, type, Convert.ChangeType(httpContext.Request.RouteValues["id"], idType)!);
+                            var id = _idParser.ParseId(httpContext.Request.RouteValues["id"] as string, idType);
+                            await implementation(httpContext, type, id!);
                         }
                         else
                         {
@@ -259,7 +263,8 @@ namespace NCoreUtils.AspNetCore.Rest
                         return Invoker.InvokeReduction(entityType, httpContext, arg, accessConfiguration);
                     }
                     var idType = idTypeCache.GetOrAdd(entityType, _idTypeFactory);
-                    return Invoker.InvokeItem(entityType, httpContext, Convert.ChangeType(arg, idType)!, accessConfiguration);
+                    var id = _idParser.ParseId(arg, idType);
+                    return Invoker.InvokeItem(entityType, httpContext, id!, accessConfiguration);
                 }
             );
             endpoints.Add(ApplyConventions(new RouteEndpointBuilder(itemRequestDelegate, itemRoutePattern, 100)

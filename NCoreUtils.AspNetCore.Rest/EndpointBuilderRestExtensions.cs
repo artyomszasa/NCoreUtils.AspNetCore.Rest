@@ -11,7 +11,7 @@ namespace NCoreUtils.AspNetCore
             this IEndpointRouteBuilder builder,
             RestConfiguration configuration)
         {
-            var dataSource = new RestEndpointDataSource(configuration);
+            var dataSource = new RestEndpointDataSource(configuration, builder.ServiceProvider.GetOptionalService<IIdParser>());
             builder.DataSources.Add(dataSource);
             return dataSource;
         }
