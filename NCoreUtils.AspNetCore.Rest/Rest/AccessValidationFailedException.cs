@@ -1,10 +1,14 @@
 using System;
+#if !NET8_0_OR_GREATER
 using System.Runtime.Serialization;
+#endif
 using Microsoft.AspNetCore.Http;
 
 namespace NCoreUtils.AspNetCore.Rest;
 
+#if !NET8_0_OR_GREATER
 [Serializable]
+#endif
 public class AccessValidationFailedException : InvalidOperationException, IStatusCodeResponse
 {
     public const string DefaultMessage = "REST access validation has failed.";
@@ -13,9 +17,11 @@ public class AccessValidationFailedException : InvalidOperationException, IStatu
 
     public int StatusCode { get; }
 
+#if !NET8_0_OR_GREATER
     protected AccessValidationFailedException(SerializationInfo info, StreamingContext context)
         : base(info, context)
         => StatusCode = info.GetInt32(nameof(StatusCode));
+#endif
 
     public AccessValidationFailedException() : this(DefaultStatusCode) { /* noop */ }
 
@@ -55,9 +61,11 @@ public class AccessValidationFailedException : InvalidOperationException, IStatu
         : this(DefaultStatusCode, message ?? DefaultMessage, innerException)
     { /* noop */ }
 
+#if !NET8_0_OR_GREATER
     public override void GetObjectData(SerializationInfo info, StreamingContext context)
     {
         info.AddValue(nameof(StatusCode), StatusCode);
         base.GetObjectData(info, context);
     }
+#endif
 }

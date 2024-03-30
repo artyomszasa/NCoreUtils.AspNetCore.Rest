@@ -5,7 +5,6 @@ namespace NCoreUtils.AspNetCore.Rest;
 
 public partial class RestEndpointDataSource
 {
-#if NET6_0_OR_GREATER
 #pragma warning disable SYSLIB1006 // Multiple logging methods are using event id -1
     [LoggerMessage(
         Level = LogLevel.Debug,
@@ -47,37 +46,4 @@ public partial class RestEndpointDataSource
         Message = "Error occured during endpoint execution and response has been already started.")]
     public static partial void LogErrorOccuredWhenResponseHasBeenStarted(ILogger logger, Exception exn);
 #pragma warning restore SYSLIB1006
-#else
-    public static void LogExceptionHasBeenHandledBy(ILogger logger, Type HandlerType)
-        => logger.LogDebug("Exception has been handled by {HandlerType}.", HandlerType);
-
-    public static void LogExceptionHasBeenPassedBy(ILogger logger, Type HandlerType)
-        => logger.LogDebug("Exception has been passed by {HandlerType}.", HandlerType);
-
-    public static void LogExceptionUnhandledBy(ILogger logger, Type HandlerType)
-        => logger.LogDebug("{HandlerType} cannot handle the exception.", HandlerType);
-
-    public static void LogExceptionHandlerThrownException(ILogger logger, Exception exn, Type HandlerType)
-        => logger.LogWarning(exn, "Exception handler {HandlerType} thown an exception.", HandlerType);
-
-    public static void LogExpectedErrorOccured(ILogger logger, Exception exn, int Code)
-        => logger.LogDebug(
-            exn,
-            "Expected error occured during endpoint execution (status code = {Code}).",
-            Code
-        );
-
-    public static void LogExpectedErrorOccuredWhenResponseHasBeenStarted(ILogger logger, Exception exn, int Code)
-        => logger.LogError(
-            exn,
-            "Expected error occured during endpoint execution (status code = {Code}) but response has been already stared.",
-            Code
-        );
-
-    public static void LogErrorOccured(ILogger logger, Exception exn)
-        => logger.LogError(exn, "Error occured during endpoint execution.");
-
-    public static void LogErrorOccuredWhenResponseHasBeenStarted(ILogger logger, Exception exn)
-        => logger.LogError(exn, "Error occured during endpoint execution and response has been already started.");
-#endif
 }

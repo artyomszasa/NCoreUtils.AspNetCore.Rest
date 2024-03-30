@@ -1,34 +1,25 @@
 using NCoreUtils.AspNetCore.Rest.Internal;
 
-namespace NCoreUtils.AspNetCore.Rest
+namespace NCoreUtils.AspNetCore.Rest;
+
+public class RestAccessConfiguration(
+    AccessValidatorDescriptor create,
+    AccessValidatorDescriptor update,
+    AccessValidatorDescriptor delete,
+    AccessValidatorDescriptor query)
 {
-    public class RestAccessConfiguration
-    {
-        public static RestAccessConfiguration AllowAny { get; } = new RestAccessConfiguration(
-            default,
-            default,
-            default,
-            default
-        );
+    public static RestAccessConfiguration AllowAny { get; } = new RestAccessConfiguration(
+        default,
+        default,
+        default,
+        default
+    );
 
-        public AccessValidatorDescriptor Create { get; }
+    public AccessValidatorDescriptor Create { get; } = create;
 
-        public AccessValidatorDescriptor Update { get; }
+    public AccessValidatorDescriptor Update { get; } = update;
 
-        public AccessValidatorDescriptor Delete { get; }
+    public AccessValidatorDescriptor Delete { get; } = delete;
 
-        public AccessValidatorDescriptor Query { get; }
-
-        public RestAccessConfiguration(
-            AccessValidatorDescriptor create,
-            AccessValidatorDescriptor update,
-            AccessValidatorDescriptor delete,
-            AccessValidatorDescriptor query)
-        {
-            Create = create;
-            Update = update;
-            Delete = delete;
-            Query = query;
-        }
-    }
+    public AccessValidatorDescriptor Query { get; } = query;
 }

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -9,52 +8,37 @@ using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace NCoreUtils.Rest.Internal
+namespace NCoreUtils.Rest.Internal;
+
+public class DefaultSerializer<T>(string contentType, JsonSerializerContext jsonSerializerContext) : ISerializer<T>
 {
-    public class DefaultSerializer<T> : ISerializer<T>
+    public string ContentType { get; } = contentType;
+
+    public JsonSerializerContext JsonSerializerContext { get; } = jsonSerializerContext ?? throw new ArgumentNullException(nameof(jsonSerializerContext));
+
+    public JsonTypeInfo<T> JsonTypeInfo { get; } = jsonSerializerContext.GetTypeInfo(typeof(T)) switch
     {
-        public string ContentType { get; }
+        null => throw new ArgumentException($"Specified json serializer info does not contain type info for {typeof(T)}."),
+        JsonTypeInfo<T> jsonTypeInfo => jsonTypeInfo,
+        _ => throw new ArgumentException($"Specified json serializer info contains invalid type info for {typeof(T)}."),
+    };
 
-        public JsonSerializerContext JsonSerializerContext { get; }
+    public ValueTask<T> DeserializeAsync(Stream stream, CancellationToken cancellationToken = default)
+        => JsonSerializer.DeserializeAsync(stream, JsonTypeInfo, cancellationToken)!;
 
-        public JsonTypeInfo<T> JsonTypeInfo { get; }
+    public ValueTask SerializeAsync(Stream stream, T value, CancellationToken cancellationToken = default)
+        => new(JsonSerializer.SerializeAsync(stream, value, JsonTypeInfo, cancellationToken));
 
-        public DefaultSerializer(string contentType, JsonSerializerContext jsonSerializerContext)
+    public async IAsyncEnumerable<T> DeserializeAsyncEnumerable(
+        Stream stream,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        await foreach (var item in JsonSerializer.DeserializeAsyncEnumerable(stream, JsonTypeInfo, cancellationToken).ConfigureAwait(false))
         {
-            ContentType = contentType;
-            JsonSerializerContext = jsonSerializerContext ?? throw new ArgumentNullException(nameof(jsonSerializerContext));
-            switch (jsonSerializerContext.GetTypeInfo(typeof(T)))
+            if (item is not null)
             {
-                case null:
-                    throw new ArgumentException($"Specified json serializer info does not contain type info for {typeof(T)}.");
-                case JsonTypeInfo<T> jsonTypeInfo:
-                    JsonTypeInfo = jsonTypeInfo;
-                    break;
-                default:
-                    throw new ArgumentException($"Specified json serializer info contains invalid type info for {typeof(T)}.");
+                yield return item;
             }
         }
-
-        public ValueTask<T> DeserializeAsync(Stream stream, CancellationToken cancellationToken = default)
-            => JsonSerializer.DeserializeAsync<T>(stream, JsonTypeInfo, cancellationToken)!;
-
-        public ValueTask SerializeAsync(Stream stream, T value, CancellationToken cancellationToken = default)
-            => new ValueTask(JsonSerializer.SerializeAsync<T>(stream, value, JsonTypeInfo, cancellationToken));
-
-#if NET7_0_OR_GREATER
-        public async IAsyncEnumerable<T> DeserializeAsyncEnumerable(
-            Stream stream,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        {
-            await foreach (var item in JsonSerializer.DeserializeAsyncEnumerable(stream, JsonTypeInfo, cancellationToken).ConfigureAwait(false))
-            {
-                if (item is not null)
-                {
-                    yield return item;
-                }
-            }
-        }
-#endif
-
     }
 }

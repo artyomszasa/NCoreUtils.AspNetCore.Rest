@@ -7,14 +7,11 @@ using System.Threading.Tasks;
 
 namespace NCoreUtils.AspNetCore.Rest.Serialization.Internal;
 
-public sealed class JsonContextBackedSerializer<T> : ISerializer<T>
+[RequiresDynamicCode("Deprecated")]
+[Obsolete("Use JsonTypeInfo based alternatives instead.")]
+public sealed class JsonContextBackedSerializer<T>(JsonSerializerOptions options) : ISerializer<T>
 {
-    private JsonSerializerOptions Options { get; }
-
-    public JsonContextBackedSerializer(JsonSerializerOptions options)
-    {
-        Options = options ?? throw new ArgumentNullException(nameof(options));
-    }
+    private JsonSerializerOptions Options { get; } = options ?? throw new ArgumentNullException(nameof(options));
 
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Item converter backed by JsonSerializerContext.")]
     public async ValueTask SerializeAsync(IConfigurableOutput<Stream> configurableStream, T item, CancellationToken cancellationToken = default)

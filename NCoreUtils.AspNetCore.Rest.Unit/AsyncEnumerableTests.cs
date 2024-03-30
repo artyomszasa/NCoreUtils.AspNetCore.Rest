@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
@@ -28,13 +29,15 @@ public class AsyncEnumerableTests : IAsyncDisposable
         await using var serviceProvider = new ServiceCollection()
             .AddLogging()
             .AddSingleton<IHttpClientFactory>(new TestHttpClientFactory(TestHost))
-            .AddRestClientServices()
-            .AddDefaultRestClient("/", (IJsonTypeInfoResolver)TestSerializerContext.Default)
+            .AddCommonRestClientServices(TestSerializerContext.Default)
+            .AddRemoteRestType<TestData, int>("/")
+            // .AddRestClientServices()
+            // .AddDefaultRestClient("/", (IJsonTypeInfoResolver)TestSerializerContext.Default)
             .AddDataQueryServices(TestQueryContext.Singleton)
             .BuildServiceProvider(false);
 
-        var restClient = serviceProvider.GetRequiredService<IRestClient>();
-        var items = await restClient.Collection<TestData>().ToListAsync(default);
+        var restClient = serviceProvider.GetRequiredService<IRestClient<TestData, int>>();
+        var items = await restClient.ListCollectionAsync().ToListAsync(default);
         Assert.NotNull(items);
         Assert.Equal(3, items.Count);
     }

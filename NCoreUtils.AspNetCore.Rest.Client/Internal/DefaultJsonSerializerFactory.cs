@@ -1,25 +1,18 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Metadata;
 using Microsoft.Extensions.Logging;
 
 namespace NCoreUtils.Rest.Internal;
 
-public class DefaultJsonSerializerFactory : ISerializerFactory
+public class DefaultJsonSerializerFactory(ILogger<DefaultJsonSerializerFactory> logger, IRestClientJsonTypeInfoResolver resolver) : ISerializerFactory
 {
-    public ILogger Logger { get; }
+    public ILogger Logger { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
 
-    public IRestClientJsonTypeInfoResolver Resolver { get; }
+    public IRestClientJsonTypeInfoResolver Resolver { get; } = resolver ?? throw new ArgumentNullException(nameof(resolver));
 
     public virtual string ContentType { get; } = "application/json; charset=utf-8";
 
-    public DefaultJsonSerializerFactory(ILogger<DefaultJsonSerializerFactory> logger, IRestClientJsonTypeInfoResolver resolver)
-    {
-        Logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        Resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
-    }
-
-    public ISerializer<T> GetSerializer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>()
+    public ISerializer<T> GetSerializer<T>()
         => Resolver.GetTypeInfo(typeof(T)) switch
         {
             null => throw new ArgumentException($"Registered json type info resolver does not contain type info for {typeof(T)}."),

@@ -42,7 +42,7 @@ public class Startup
             {
                 endpoints.MapRestEndpoints(config =>
                 {
-                    config.AddEntity<TestData>();
+                    config.AddEntity<TestData, int>();
                 });
             });
     }

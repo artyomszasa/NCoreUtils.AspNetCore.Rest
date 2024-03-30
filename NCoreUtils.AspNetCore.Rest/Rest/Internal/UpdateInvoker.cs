@@ -8,94 +8,79 @@ using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.AspNetCore.Rest.Serialization;
 using NCoreUtils.Data;
 
-namespace NCoreUtils.AspNetCore.Rest.Internal
+namespace NCoreUtils.AspNetCore.Rest.Internal;
+
+public abstract class UpdateInvoker
 {
-    public abstract class UpdateInvoker
-    {
-        protected sealed class RestUpdateInvocation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId> : RestMethodInvocation<TData>
-            where TData : class, IHasId<TId>
-        {
-            readonly IRestUpdate<TData, TId> _invoker;
-
-            readonly ArgumentCollection<TId, TData> _args;
-
-            public override Type ItemType => typeof(TData);
-
-            public override object Instance => _invoker;
-
-            public override IReadOnlyList<object> Arguments => _args;
-
-            public RestUpdateInvocation(IRestUpdate<TData, TId> invoker, TId id, TData data)
-            {
-                _invoker = invoker ?? throw new ArgumentNullException(nameof(invoker));
-                _args = new ArgumentCollection<TId, TData>(
-                    id,
-                    data ?? throw new ArgumentNullException(nameof(data))
-                );
-            }
-
-            public override ValueTask<TData> InvokeAsync(CancellationToken cancellationToken = default)
-                => _invoker.InvokeAsync(_args.Arg1, _args.Arg2, cancellationToken);
-
-            public override RestMethodInvocation<TData> UpdateArguments(IReadOnlyList<object> arguments)
-            {
-                if (arguments.Count != 2)
-                {
-                    throw new InvalidOperationException("Invalid number of arguments.");
-                }
-                return new RestUpdateInvocation<TData, TId>(_invoker, (TId)arguments[0], (TData)arguments[1]);
-            }
-        }
-
-        internal UpdateInvoker() { }
-
-        public abstract ValueTask Invoke(HttpContext httpContext, object id, CancellationToken cancellationToken);
-    }
-
-    public sealed class UpdateInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId> : UpdateInvoker
+    protected sealed class RestUpdateInvocation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId>(
+        IRestUpdate<TData, TId> invoker,
+        IRestUpdateContext<TData, TId> context)
+        : RestMethodInvocation<TData>
         where TData : class, IHasId<TId>
     {
-        readonly IServiceProvider _serviceProvider;
+        private IRestUpdate<TData, TId> Invoker { get; } = invoker ?? throw new ArgumentNullException(nameof(invoker));
 
-        readonly RestAccessConfiguration _accessConfiguration;
+        private readonly ArgumentCollection<IRestUpdateContext<TData, TId>> Args = ArgumentCollection.Create(context);
 
-        readonly IRestMethodInvoker _methodInvoker;
+        public override Type ItemType => typeof(TData);
 
-        readonly IRestUpdate<TData, TId> _implementation;
+        public override object Instance => Invoker;
 
-        readonly IDeserializer<TData> _deserializer;
+        public override IReadOnlyList<object> Arguments => Args;
 
-        public UpdateInvoker(
-            IServiceProvider serviceProvider,
-            RestAccessConfiguration accessConfiguration,
-            IRestMethodInvoker? methodInvoker = default,
-            IRestUpdate<TData, TId>? implementation = default,
-            IDeserializer<TData>? deserializer = default)
+        public override ValueTask<TData> InvokeAsync(CancellationToken cancellationToken = default)
+            => Invoker.InvokeAsync(Args.Arg, cancellationToken);
+
+        public override RestMethodInvocation<TData> UpdateArguments(IReadOnlyList<object> arguments)
         {
-            _serviceProvider = serviceProvider;
-            _accessConfiguration = accessConfiguration;
-            _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
-            _implementation = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestUpdate<TData, TId>>(serviceProvider);
-            _deserializer = serviceProvider.GetOrCreateDeserializer<TData>();
-        }
-
-        public override async ValueTask Invoke(HttpContext httpContext, object id, CancellationToken cancellationToken)
-        {
-            var accessValidator = _accessConfiguration.Update.GetOrCreateValidator(_serviceProvider, out var disposeValidator);
-            try
+            if (arguments.Count != 1)
             {
-                (await accessValidator.ValidateAsync(httpContext.User, cancellationToken)).ThrowOnFailure();
-                var data = await _deserializer.DeserializeAsync(httpContext.Request.Body, cancellationToken);
-                var invocation = new RestUpdateInvocation<TData, TId>(_implementation, (TId)id, data);
-                await _methodInvoker.InvokeAsync(invocation, cancellationToken);
-                httpContext.Response.StatusCode = 204;
+                throw new InvalidOperationException("Invalid number of arguments.");
             }
-            finally
+            return new RestUpdateInvocation<TData, TId>(Invoker, (IRestUpdateContext<TData, TId>)arguments[0]);
+        }
+    }
+
+    internal UpdateInvoker() { }
+
+    public abstract ValueTask Invoke(HttpContext httpContext, IRestContextMetadata metadata, object id, CancellationToken cancellationToken);
+}
+
+public sealed class UpdateInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId>(
+    IServiceProvider serviceProvider,
+    RestAccessConfiguration accessConfiguration,
+    IRestMethodInvoker? methodInvoker = default,
+    IRestUpdate<TData, TId>? implementation = default,
+    IDeserializer<TData>? deserializer = default) : UpdateInvoker
+    where TData : class, IHasId<TId>
+{
+    private IServiceProvider ServiceProvider { get; } = serviceProvider;
+
+    private RestAccessConfiguration AccessConfiguration { get; } = accessConfiguration;
+
+    private IRestMethodInvoker MethodInvoker { get; } = methodInvoker ?? DefaultRestMethodInvoker.Instance;
+
+    private IRestUpdate<TData, TId> Implementation { get; } = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestUpdate<TData, TId>>(serviceProvider);
+
+    private IDeserializer<TData> Deserializer { get; } = deserializer ?? serviceProvider.GetOrCreateDeserializer<TData>();
+
+    public override async ValueTask Invoke(HttpContext httpContext, IRestContextMetadata metadata, object id, CancellationToken cancellationToken)
+    {
+        var accessValidator = AccessConfiguration.Update.GetOrCreateValidator(ServiceProvider, out var disposeValidator);
+        try
+        {
+            (await accessValidator.ValidateAsync(httpContext.User, cancellationToken)).ThrowOnFailure();
+            var data = await Deserializer.DeserializeAsync(httpContext.Request.Body, cancellationToken);
+            var context = RestContext.Update((TId)id, data, metadata);
+            var invocation = new RestUpdateInvocation<TData, TId>(Implementation, context);
+            await MethodInvoker.InvokeAsync(invocation, cancellationToken);
+            httpContext.Response.StatusCode = 204;
+        }
+        finally
+        {
+            if (disposeValidator)
             {
-                if (disposeValidator)
-                {
-                    (accessValidator as IDisposable)?.Dispose();
-                }
+                (accessValidator as IDisposable)?.Dispose();
             }
         }
     }

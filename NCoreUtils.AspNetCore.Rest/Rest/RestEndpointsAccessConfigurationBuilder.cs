@@ -10,28 +10,25 @@ using NCoreUtils.AspNetCore.Rest.Internal;
 
 namespace NCoreUtils.AspNetCore.Rest;
 
-    public interface IRestEndpointOperationAccessConfigurationBuilder
-    {
-        IRestEndpointOperationAccessConfigurationBuilder Add(AccessValidatorDescriptor descriptor);
-    }
+public interface IRestEndpointOperationAccessConfigurationBuilder
+{
+    IRestEndpointOperationAccessConfigurationBuilder Add(AccessValidatorDescriptor descriptor);
+}
 
-    public interface IRestEndpointOperationAccessConfigurationBuilder<TOperation> : IRestEndpointOperationAccessConfigurationBuilder
-        where TOperation : RestOperation
-    {
-        new IRestEndpointOperationAccessConfigurationBuilder<TOperation> Add(AccessValidatorDescriptor descriptor);
+public interface IRestEndpointOperationAccessConfigurationBuilder<TOperation> : IRestEndpointOperationAccessConfigurationBuilder
+    where TOperation : RestOperation
+{
+    new IRestEndpointOperationAccessConfigurationBuilder<TOperation> Add(AccessValidatorDescriptor descriptor);
 
-        IRestEndpointOperationAccessConfigurationBuilder IRestEndpointOperationAccessConfigurationBuilder.Add(AccessValidatorDescriptor descriptor)
-            => Add(descriptor);
-    }
+    IRestEndpointOperationAccessConfigurationBuilder IRestEndpointOperationAccessConfigurationBuilder.Add(AccessValidatorDescriptor descriptor)
+        => Add(descriptor);
+}
 
 public class RestEndpointsAccessConfigurationBuilder
 {
-    private sealed class GlobalAccessConfigurationBuilder : IRestEndpointOperationAccessConfigurationBuilder
+    private sealed class GlobalAccessConfigurationBuilder(RestEndpointsAccessConfigurationBuilder target) : IRestEndpointOperationAccessConfigurationBuilder
     {
-        readonly RestEndpointsAccessConfigurationBuilder _target;
-
-        public GlobalAccessConfigurationBuilder(RestEndpointsAccessConfigurationBuilder target)
-            => _target = target;
+        readonly RestEndpointsAccessConfigurationBuilder _target = target;
 
         public IRestEndpointOperationAccessConfigurationBuilder Add(AccessValidatorDescriptor descriptor)
         {
@@ -127,13 +124,13 @@ public class RestEndpointsAccessConfigurationBuilder
         }
     }
 
-    public List<AccessValidatorDescriptor> Create { get; } = new List<AccessValidatorDescriptor>();
+    public List<AccessValidatorDescriptor> Create { get; } = [];
 
-    public List<AccessValidatorDescriptor> Update { get; } = new List<AccessValidatorDescriptor>();
+    public List<AccessValidatorDescriptor> Update { get; } = [];
 
-    public List<AccessValidatorDescriptor> Delete { get; } = new List<AccessValidatorDescriptor>();
+    public List<AccessValidatorDescriptor> Delete { get; } = [];
 
-    public List<AccessValidatorDescriptor> Query { get; } = new List<AccessValidatorDescriptor>();
+    public List<AccessValidatorDescriptor> Query { get; } = [];
 
     public RestEndpointsAccessConfigurationBuilder ConfigureGlobal(Action<IRestEndpointOperationAccessConfigurationBuilder> configure)
     {

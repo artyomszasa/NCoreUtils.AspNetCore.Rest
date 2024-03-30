@@ -1,25 +1,24 @@
-namespace NCoreUtils.AspNetCore.Rest
+namespace NCoreUtils.AspNetCore.Rest;
+
+public abstract class RestOperation
 {
-    public abstract class RestOperation
+    public sealed class Create : RestOperation
     {
-        public sealed class Create : RestOperation
-        {
-            Create() { }
-        }
+        private Create() { }
+    }
 
-        public sealed class Update : RestOperation
-        {
-            Update() { }
-        }
+    public sealed class Update : RestOperation
+    {
+        private Update() { }
+    }
 
-        public sealed class Delete : RestOperation
-        {
-            Delete() { }
-        }
+    public sealed class Delete : RestOperation
+    {
+        private Delete() { }
+    }
 
-        public sealed class Query : RestOperation
-        {
-            Query() { }
-        }
+    public sealed class Query : RestOperation
+    {
+        private Query() { }
     }
 }

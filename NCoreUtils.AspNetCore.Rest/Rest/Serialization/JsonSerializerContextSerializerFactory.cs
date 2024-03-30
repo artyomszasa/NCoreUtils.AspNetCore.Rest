@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,8 +15,10 @@ using NCoreUtils.AspNetCore.Rest.Serialization.Internal;
 namespace NCoreUtils.AspNetCore.Rest.Serialization;
 
 [Obsolete("Use JsonTypeInfoSerializerFactory instead.")]
+[RequiresDynamicCode("Deprecated.")]
 public class JsonSerializerContextSerializerFactory : ISerializerFactory
 {
+    [RequiresDynamicCode("Deprecated.")]
     private abstract class Invoker
     {
         private static readonly ConcurrentDictionary<Type, Invoker> _cache = new ConcurrentDictionary<Type, Invoker>();

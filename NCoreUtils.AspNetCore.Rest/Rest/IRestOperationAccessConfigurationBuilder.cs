@@ -1,13 +1,12 @@
 using NCoreUtils.AspNetCore.Rest.Internal;
 
-namespace NCoreUtils.AspNetCore.Rest
-{
-    public interface IRestOperationAccessConfigurationBuilder
-    {
-        IRestOperationAccessConfigurationBuilder Add(AccessValidatorDescriptor factory);
-    }
+namespace NCoreUtils.AspNetCore.Rest;
 
-    public interface IRestOperationAccessConfigurationBuilder<TOperation> : IRestOperationAccessConfigurationBuilder
-        where TOperation : RestOperation
-    { }
+public interface IRestOperationAccessConfigurationBuilder
+{
+    IRestOperationAccessConfigurationBuilder Add(AccessValidatorDescriptor factory);
 }
+
+public interface IRestOperationAccessConfigurationBuilder<TOperation> : IRestOperationAccessConfigurationBuilder
+    where TOperation : RestOperation
+{ }

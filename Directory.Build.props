@@ -1,13 +1,15 @@
 <Project>
   <PropertyGroup>
-    <Version>7.0.0-beta01</Version>
-    <LangVersion>11.0</LangVersion>
+    <Version>8.0.0-rc00</Version>
+    <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
-    <IsTrimmable>true</IsTrimmable>
-    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <IsTrimmable Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">true</IsTrimmable>
+    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">true</IsAotCompatible>
     <FxNugetVersion Condition=" '$(TargetFramework)' == 'net6.0' ">6.0.0</FxNugetVersion>
     <FxNugetVersion Condition=" '$(TargetFramework)' == 'net7.0' ">7.0.0</FxNugetVersion>
-    <FxNugetVersion Condition=" '$(TargetFramework)' != 'net6.0' And '$(TargetFramework)' != 'net7.0' ">3.1.16</FxNugetVersion>
-    <NCoreUtilsProtocolVersion>7.0.0-rc08</NCoreUtilsProtocolVersion>
+    <FxNugetVersion Condition=" '$(TargetFramework)' == 'net8.0' ">8.0.0</FxNugetVersion>
+    <FxNugetVersion Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">3.1.16</FxNugetVersion>
+    <NCoreUtilsProtocolVersion>8.0.0-rc00</NCoreUtilsProtocolVersion>
+    <NCoreUtilsDataVersion>8.0.0-rc01</NCoreUtilsDataVersion>
   </PropertyGroup>
 </Project>

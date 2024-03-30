@@ -12,23 +12,17 @@ namespace NCoreUtils.AspNetCore;
 
 public static class RestEndpointOperationAccessConfigurationBuilderExtensions
 {
-    private sealed class GenericAccessValidator : IAccessStatusValidator
+    private sealed class GenericAccessValidator(Func<ClaimsPrincipal, CancellationToken, ValueTask<AccessStatusValidatorResult>> callback) : IAccessStatusValidator
     {
-        readonly Func<ClaimsPrincipal, CancellationToken, ValueTask<AccessStatusValidatorResult>> _callback;
-
-        public GenericAccessValidator(Func<ClaimsPrincipal, CancellationToken, ValueTask<AccessStatusValidatorResult>> callback)
-            => _callback = callback ?? throw new ArgumentNullException(nameof(callback));
+        readonly Func<ClaimsPrincipal, CancellationToken, ValueTask<AccessStatusValidatorResult>> _callback = callback ?? throw new ArgumentNullException(nameof(callback));
 
         public ValueTask<AccessStatusValidatorResult> ValidateAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)
             => _callback(principal, cancellationToken);
     }
 
-    sealed class GenericQueryAccessValidator : IQueryAccessStatusValidator
+    sealed class GenericQueryAccessValidator(Func<IQueryable, ClaimsPrincipal, CancellationToken, ValueTask<IQueryable>> callback) : IQueryAccessStatusValidator
     {
-        readonly Func<IQueryable, ClaimsPrincipal, CancellationToken, ValueTask<IQueryable>> _callback;
-
-        public GenericQueryAccessValidator(Func<IQueryable, ClaimsPrincipal, CancellationToken, ValueTask<IQueryable>> callback)
-            => _callback = callback ?? throw new ArgumentNullException(nameof(callback));
+        readonly Func<IQueryable, ClaimsPrincipal, CancellationToken, ValueTask<IQueryable>> _callback = callback ?? throw new ArgumentNullException(nameof(callback));
 
         public ValueTask<IQueryable> FilterQueryAsync(IQueryable source, ClaimsPrincipal principal, CancellationToken cancellationToken)
             => _callback(source, principal, cancellationToken);

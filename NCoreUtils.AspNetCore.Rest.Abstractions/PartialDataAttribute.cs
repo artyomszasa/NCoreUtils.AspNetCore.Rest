@@ -1,19 +1,13 @@
 using System;
 using System.Collections.Generic;
 
-namespace NCoreUtils.AspNetCore.Rest
+namespace NCoreUtils.AspNetCore.Rest;
+
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+[Obsolete("Customize JsonTypeInfoResolver instead.")]
+public class PartialDataAttribute(Type sourceType, string[] fieldsSelector) : Attribute
 {
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
-    public class PartialDataAttribute : Attribute
-    {
-        public Type SourceType { get; }
+    public Type SourceType { get; } = sourceType;
 
-        public IReadOnlyList<string> FieldsSelector { get; }
-
-        public PartialDataAttribute(Type sourceType, string[] fieldsSelector)
-        {
-            SourceType = sourceType;
-            FieldsSelector = fieldsSelector;
-        }
-    }
+    public IReadOnlyList<string> FieldsSelector { get; } = fieldsSelector;
 }

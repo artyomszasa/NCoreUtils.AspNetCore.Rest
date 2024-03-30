@@ -10,12 +10,9 @@ namespace NCoreUtils.AspNetCore.Rest.Internal;
 #pragma warning disable CS0618
 public abstract class QueryValidatorAdapter : IQueryAccessStatusValidator, IQueryAccessValidator
 {
-    private sealed class AdaptedQueryValidator : QueryValidatorAdapter
+    private sealed class AdaptedQueryValidator(IQueryAccessValidator source) : QueryValidatorAdapter
     {
-        private IQueryAccessValidator Source { get; }
-
-        public AdaptedQueryValidator(IQueryAccessValidator source)
-            => Source = source;
+        private IQueryAccessValidator Source { get; } = source;
 
         public override ValueTask<bool> ValidateAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)
             => Source.ValidateAsync(principal, cancellationToken);

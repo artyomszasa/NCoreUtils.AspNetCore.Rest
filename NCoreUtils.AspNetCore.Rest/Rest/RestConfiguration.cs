@@ -1,20 +1,12 @@
 using System;
 
-namespace NCoreUtils.AspNetCore.Rest
+namespace NCoreUtils.AspNetCore.Rest;
+
+public class RestConfiguration(string prefix, RestAccessConfiguration accessConfiguration, RestEntitiesConfiguration entitiesConfiguration)
 {
-    public class RestConfiguration
-    {
-        public string Prefix { get; }
+    public string Prefix { get; } = prefix ?? throw new ArgumentNullException(nameof(prefix));
 
-        public RestAccessConfiguration AccessConfiguration { get; }
+    public RestAccessConfiguration AccessConfiguration { get; } = accessConfiguration ?? throw new ArgumentNullException(nameof(accessConfiguration));
 
-        public RestEntitiesConfiguration EntitiesConfiguration { get; }
-
-        public RestConfiguration(string prefix, RestAccessConfiguration accessConfiguration, RestEntitiesConfiguration entitiesConfiguration)
-        {
-            Prefix = prefix ?? throw new ArgumentNullException(nameof(prefix));
-            AccessConfiguration = accessConfiguration ?? throw new ArgumentNullException(nameof(accessConfiguration));
-            EntitiesConfiguration = entitiesConfiguration ?? throw new ArgumentNullException(nameof(entitiesConfiguration));
-        }
-    }
+    public RestEntitiesConfiguration EntitiesConfiguration { get; } = entitiesConfiguration ?? throw new ArgumentNullException(nameof(entitiesConfiguration));
 }

@@ -1,23 +1,38 @@
+using System.Collections.Generic;
+
+#if !NET8_0_OR_GREATER
 using System.Collections.Immutable;
+#else
+using System.Collections.Frozen;
+#endif
 
-namespace NCoreUtils.AspNetCore.Rest
+namespace NCoreUtils.AspNetCore.Rest;
+
+public static class DefaultReductions
 {
-    public static class DefaultReductions
+    public const string First = "first";
+
+    public const string Single = "single";
+
+    public const string Count = "count";
+
+    public const string Any = "any";
+
+#if NET8_0_OR_GREATER
+    public static FrozenSet<string> Names { get; } = new HashSet<string>
     {
-        public const string First = "first";
-
-        public const string Single = "single";
-
-        public const string Count = "count";
-
-        public const string Any = "any";
-
-        public static ImmutableHashSet<string> Names = ImmutableHashSet.CreateRange(new []
-        {
-            First,
-            Single,
-            Count,
-            Any
-        });
-    }
+        First,
+        Single,
+        Count,
+        Any
+    }.ToFrozenSet();
+#else
+    public static ImmutableHashSet<string> Names { get; } = ImmutableHashSet.CreateRange(new []
+    {
+        First,
+        Single,
+        Count,
+        Any
+    });
+#endif
 }

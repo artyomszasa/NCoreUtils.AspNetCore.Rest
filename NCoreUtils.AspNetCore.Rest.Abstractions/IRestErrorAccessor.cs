@@ -1,10 +1,8 @@
-using System;
 using System.Runtime.ExceptionServices;
 
-namespace NCoreUtils.AspNetCore.Rest
+namespace NCoreUtils.AspNetCore.Rest;
+
+public interface IRestErrorAccessor
 {
-    public interface IRestErrorAccessor
-    {
-        ExceptionDispatchInfo? Error { get; }
-    }
+    ExceptionDispatchInfo? Error { get; }
 }

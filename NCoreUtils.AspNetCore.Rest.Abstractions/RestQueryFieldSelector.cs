@@ -1,26 +1,22 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace NCoreUtils.AspNetCore.Rest
+namespace NCoreUtils.AspNetCore.Rest;
+
+[method: MethodImpl(MethodImplOptions.AggressiveInlining)]
+public readonly struct RestQueryFieldsSelector(IReadOnlyList<string>? includedFields)
 {
-    public struct RestQueryFieldsSelector
+    public static RestQueryFieldsSelector All
     {
-        public static RestQueryFieldsSelector All
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => default;
-        }
-
-        public IReadOnlyList<string>? IncludedFields { get; }
-
-        public bool IncludeAll
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => IncludedFields is null;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public RestQueryFieldsSelector(IReadOnlyList<string>? includedFields)
-            => IncludedFields = includedFields;
+        get => default;
+    }
+
+    public IReadOnlyList<string>? IncludedFields { get; } = includedFields;
+
+    public bool IncludeAll
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => IncludedFields is null;
     }
 }

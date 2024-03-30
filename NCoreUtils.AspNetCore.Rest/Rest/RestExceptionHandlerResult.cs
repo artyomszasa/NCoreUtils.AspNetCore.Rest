@@ -1,6 +1,6 @@
 namespace NCoreUtils.AspNetCore.Rest;
 
-public struct RestExceptionHandlerResult
+public readonly struct RestExceptionHandlerResult
 {
     internal enum States
     {

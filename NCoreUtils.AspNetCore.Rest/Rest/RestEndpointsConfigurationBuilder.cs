@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using NCoreUtils.Data;
 
 namespace NCoreUtils.AspNetCore.Rest;
 
@@ -29,15 +30,31 @@ public class RestEndpointsConfigurationBuilder
         return this;
     }
 
+    [Obsolete(RestEntitiesConfigurationBuilder.WarnEndpointInvoker)]
     public RestEndpointsConfigurationBuilder AddEntity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(CaseInsensitive name)
     {
         EntitiesConfiguration.Add<T>(name);
         return this;
     }
 
+    [Obsolete(RestEntitiesConfigurationBuilder.WarnEndpointInvoker)]
     public RestEndpointsConfigurationBuilder AddEntity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
     {
         EntitiesConfiguration.Add<T>();
+        return this;
+    }
+
+    public RestEndpointsConfigurationBuilder AddEntity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData, TId>(CaseInsensitive name)
+        where TData : class, IHasId<TId>
+    {
+        EntitiesConfiguration.Add<TData, TId>(name);
+        return this;
+    }
+
+    public RestEndpointsConfigurationBuilder AddEntity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData, TId>()
+        where TData : class, IHasId<TId>
+    {
+        EntitiesConfiguration.Add<TData, TId>();
         return this;
     }
 

@@ -7,12 +7,9 @@ using System.Threading.Tasks;
 
 namespace NCoreUtils.AspNetCore.Rest.Serialization;
 
-public class TypedJsonSerializer<T> : ISerializer<T>
+public class TypedJsonSerializer<T>(JsonTypeInfo<T> jsonTypeInfo) : ISerializer<T>
 {
-    public JsonTypeInfo<T> JsonTypeInfo { get; }
-
-    public TypedJsonSerializer(JsonTypeInfo<T> jsonTypeInfo)
-        => JsonTypeInfo = jsonTypeInfo ?? throw new ArgumentNullException(nameof(jsonTypeInfo));
+    public JsonTypeInfo<T> JsonTypeInfo { get; } = jsonTypeInfo ?? throw new ArgumentNullException(nameof(jsonTypeInfo));
 
     public async ValueTask SerializeAsync(IConfigurableOutput<Stream> configurableStream, T item, CancellationToken cancellationToken = default)
     {

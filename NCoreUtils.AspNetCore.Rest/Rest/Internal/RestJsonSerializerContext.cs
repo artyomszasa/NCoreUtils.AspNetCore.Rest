@@ -6,15 +6,12 @@ using System.Text.Json.Serialization.Metadata;
 namespace NCoreUtils.AspNetCore.Rest.Internal;
 
 [Obsolete("Use RestJsonTypeInfoResolver")]
-public class RestJsonSerializerContext : IRestJsonSerializerContext, IRestJsonTypeInfoResolver
+public class RestJsonSerializerContext(JsonSerializerContext jsonSerializerContext) : IRestJsonSerializerContext, IRestJsonTypeInfoResolver
 {
-    public JsonSerializerContext JsonSerializerContext { get; }
+    public JsonSerializerContext JsonSerializerContext { get; } = jsonSerializerContext
+            ?? throw new ArgumentNullException(nameof(jsonSerializerContext));
 
     public JsonSerializerOptions DefaultOptions => throw new NotImplementedException();
-
-    public RestJsonSerializerContext(JsonSerializerContext jsonSerializerContext)
-        => JsonSerializerContext = jsonSerializerContext
-            ?? throw new ArgumentNullException(nameof(jsonSerializerContext));
 
     public JsonTypeInfo? GetTypeInfo(Type type)
         => JsonSerializerContext.GetTypeInfo(type);

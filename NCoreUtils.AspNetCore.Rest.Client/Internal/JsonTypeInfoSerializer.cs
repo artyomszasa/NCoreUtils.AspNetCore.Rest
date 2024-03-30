@@ -9,17 +9,11 @@ using System.Threading.Tasks;
 
 namespace NCoreUtils.Rest.Internal;
 
-public class JsonTypeInfoSerializer<T> : ISerializer<T>
+public class JsonTypeInfoSerializer<T>(string contentType, JsonTypeInfo<T> jsonTypeInfo) : ISerializer<T>
 {
-    public string ContentType { get; }
+    public string ContentType { get; } = contentType;
 
-    public JsonTypeInfo<T> JsonTypeInfo { get; }
-
-    public JsonTypeInfoSerializer(string contentType, JsonTypeInfo<T> jsonTypeInfo)
-    {
-        ContentType = contentType;
-        JsonTypeInfo = jsonTypeInfo ?? throw new ArgumentNullException(nameof(jsonTypeInfo));
-    }
+    public JsonTypeInfo<T> JsonTypeInfo { get; } = jsonTypeInfo ?? throw new ArgumentNullException(nameof(jsonTypeInfo));
 
     public ValueTask<T> DeserializeAsync(Stream stream, CancellationToken cancellationToken = default)
             => JsonSerializer.DeserializeAsync(stream, JsonTypeInfo, cancellationToken)!;
@@ -27,7 +21,6 @@ public class JsonTypeInfoSerializer<T> : ISerializer<T>
     public ValueTask SerializeAsync(Stream stream, T value, CancellationToken cancellationToken = default)
         => new ValueTask(JsonSerializer.SerializeAsync(stream, value, JsonTypeInfo, cancellationToken));
 
-#if NET7_0_OR_GREATER
     public async IAsyncEnumerable<T> DeserializeAsyncEnumerable(
         Stream stream,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -40,5 +33,4 @@ public class JsonTypeInfoSerializer<T> : ISerializer<T>
             }
         }
     }
-#endif
 }

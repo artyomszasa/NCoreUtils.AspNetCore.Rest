@@ -7,86 +7,73 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.Data;
 
-namespace NCoreUtils.AspNetCore.Rest.Internal
+namespace NCoreUtils.AspNetCore.Rest.Internal;
+
+public abstract class DeleteInvoker
 {
-    public abstract class DeleteInvoker
-    {
-        protected sealed class RestDeleteInvocation<TData, TId> : ViodRestMethodInvocation
-            where TData : IHasId<TId>
-        {
-            private readonly IRestDelete<TData, TId> _invoker;
-
-            private readonly ArgumentCollection<TId, bool> _args;
-
-            public override Type ItemType => typeof(TData);
-
-            public override object Instance => _invoker;
-
-            public override IReadOnlyList<object> Arguments => _args;
-
-            public RestDeleteInvocation(IRestDelete<TData, TId> invoker, TId id, bool force)
-            {
-                _invoker = invoker;
-                _args = new ArgumentCollection<TId, bool>(id, force);
-            }
-
-            public override ValueTask InvokeAsync(CancellationToken cancellationToken = default)
-                => _invoker.InvokeAsync(_args.Arg1, _args.Arg2, cancellationToken);
-
-            public override ViodRestMethodInvocation UpdateArguments(IReadOnlyList<object> arguments)
-            {
-                if (arguments.Count != 2)
-                {
-                    throw new InvalidOperationException("Invalid number of arguments.");
-                }
-                return new RestDeleteInvocation<TData, TId>(_invoker, (TId)arguments[0], (bool)arguments[1]);
-            }
-        }
-
-        internal DeleteInvoker() { }
-
-        public abstract ValueTask Invoke(HttpContext httpContext, object id, bool force, CancellationToken cancellationToken);
-    }
-
-    public sealed class DeleteInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId> : DeleteInvoker
+    protected sealed class RestDeleteInvocation<TData, TId>(IRestDelete<TData, TId> invoker, IRestDeleteContext<TData, TId> context)
+        : ViodRestMethodInvocation
         where TData : IHasId<TId>
     {
-        readonly IServiceProvider _serviceProvider;
+        private readonly ArgumentCollection<IRestDeleteContext<TData, TId>> Args = ArgumentCollection.Create(context);
 
-        readonly RestAccessConfiguration _accessConfiguration;
+        private IRestDelete<TData, TId> Invoker { get; } = invoker;
 
-        readonly IRestMethodInvoker _methodInvoker;
+        public override Type ItemType => typeof(TData);
 
-        readonly IRestDelete<TData, TId> _implementation;
+        public override object Instance => Invoker;
 
-        public DeleteInvoker(
-            IServiceProvider serviceProvider,
-            RestAccessConfiguration accessConfiguration,
-            IRestMethodInvoker? methodInvoker = default,
-            IRestDelete<TData, TId>? implementation = default)
+        public override IReadOnlyList<object> Arguments => Args;
+
+        public override ValueTask InvokeAsync(CancellationToken cancellationToken = default)
+            => Invoker.InvokeAsync(Args.Arg, cancellationToken);
+
+        public override ViodRestMethodInvocation UpdateArguments(IReadOnlyList<object> arguments)
         {
-            _serviceProvider = serviceProvider;
-            _accessConfiguration = accessConfiguration;
-            _methodInvoker = methodInvoker ?? DefaultRestMethodInvoker.Instance;
-            _implementation = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestDelete<TData, TId>>(serviceProvider);
-        }
-
-        public override async ValueTask Invoke(HttpContext httpContext, object id, bool force, CancellationToken cancellationToken)
-        {
-            var accessValidator = _accessConfiguration.Delete.GetOrCreateValidator(_serviceProvider, out var disposeValidator);
-            try
+            if (arguments.Count != 1)
             {
-                (await accessValidator.ValidateAsync(httpContext.User, cancellationToken)).ThrowOnFailure();
-                var invocation = new RestDeleteInvocation<TData, TId>(_implementation, (TId)id, force);
-                await _methodInvoker.InvokeAsync(invocation, cancellationToken);
-                httpContext.Response.StatusCode = 200;
+                throw new InvalidOperationException("Invalid number of arguments.");
             }
-            finally
+            return new RestDeleteInvocation<TData, TId>(Invoker, (IRestDeleteContext<TData, TId>)arguments[0]);
+        }
+    }
+
+    internal DeleteInvoker() { }
+
+    public abstract ValueTask Invoke(HttpContext httpContext, IRestContextMetadata metadata, object id, bool force, CancellationToken cancellationToken);
+}
+
+public sealed class DeleteInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId>(
+    IServiceProvider serviceProvider,
+    RestAccessConfiguration accessConfiguration,
+    IRestMethodInvoker? methodInvoker = default,
+    IRestDelete<TData, TId>? implementation = default) : DeleteInvoker
+    where TData : IHasId<TId>
+{
+    private IServiceProvider ServiceProvider { get; } = serviceProvider;
+
+    private RestAccessConfiguration AccessConfiguration { get; } = accessConfiguration;
+
+    private IRestMethodInvoker MethodInvoker { get; } = methodInvoker ?? DefaultRestMethodInvoker.Instance;
+
+    private IRestDelete<TData, TId> Implementation { get; } = implementation ?? ActivatorUtilities.CreateInstance<DefaultRestDelete<TData, TId>>(serviceProvider);
+
+    public override async ValueTask Invoke(HttpContext httpContext, IRestContextMetadata metadata, object id, bool force, CancellationToken cancellationToken)
+    {
+        var accessValidator = AccessConfiguration.Delete.GetOrCreateValidator(ServiceProvider, out var disposeValidator);
+        try
+        {
+            (await accessValidator.ValidateAsync(httpContext.User, cancellationToken)).ThrowOnFailure();
+            var context = RestContext.Delete<TData, TId>((TId)id, force, metadata);
+            var invocation = new RestDeleteInvocation<TData, TId>(Implementation, context);
+            await MethodInvoker.InvokeAsync(invocation, cancellationToken);
+            httpContext.Response.StatusCode = 200;
+        }
+        finally
+        {
+            if (disposeValidator)
             {
-                if (disposeValidator)
-                {
-                    (accessValidator as IDisposable)?.Dispose();
-                }
+                (accessValidator as IDisposable)?.Dispose();
             }
         }
     }

@@ -4,11 +4,8 @@ using System.Text.Json.Serialization;
 namespace NCoreUtils.AspNetCore.Rest.Serialization;
 
 [Obsolete("Use JsonTypeInfoSerializer instead.")]
-public class JsonSerializerContextSerializer<T> : JsonTypeInfoSerializer<T>
+public class JsonSerializerContextSerializer<T>(JsonSerializerContext jsonSerializerContext)
+    : JsonTypeInfoSerializer<T>(jsonSerializerContext.GetJsonTypeInfoOrThrow<T>())
 {
-    public JsonSerializerContext JsonSerializerContext { get; }
-
-    public JsonSerializerContextSerializer(JsonSerializerContext jsonSerializerContext)
-        : base(jsonSerializerContext.GetJsonTypeInfoOrThrow<T>())
-        => JsonSerializerContext = jsonSerializerContext ?? throw new ArgumentNullException(nameof(jsonSerializerContext));
+    public JsonSerializerContext JsonSerializerContext { get; } = jsonSerializerContext ?? throw new ArgumentNullException(nameof(jsonSerializerContext));
 }

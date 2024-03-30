@@ -3,18 +3,15 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace NCoreUtils.Rest
+namespace NCoreUtils.Rest;
+
+public interface ISerializer<T>
 {
-    public interface ISerializer<T>
-    {
-        string? ContentType { get; }
+    string? ContentType { get; }
 
-        ValueTask<T> DeserializeAsync(Stream stream, CancellationToken cancellationToken = default);
+    ValueTask<T> DeserializeAsync(Stream stream, CancellationToken cancellationToken = default);
 
-#if NET7_0_OR_GREATER
-        IAsyncEnumerable<T> DeserializeAsyncEnumerable(Stream stream, CancellationToken cancellationToken = default);
-#endif
+    IAsyncEnumerable<T> DeserializeAsyncEnumerable(Stream stream, CancellationToken cancellationToken = default);
 
-        ValueTask SerializeAsync(Stream stream, T value, CancellationToken cancellationToken = default);
-    }
+    ValueTask SerializeAsync(Stream stream, T value, CancellationToken cancellationToken = default);
 }

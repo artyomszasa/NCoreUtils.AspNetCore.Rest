@@ -1,51 +1,67 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using NCoreUtils.AspNetCore.Rest.Internal;
 using NCoreUtils.AspNetCore.Rest.Serialization;
+using NCoreUtils.Data;
+
+#if NET8_0_OR_GREATER
+using System.Collections.Frozen;
+#else
+using System.Collections.Immutable;
+#endif
 
 namespace NCoreUtils.AspNetCore.Rest;
 
 public class RestEntitiesConfigurationBuilder
 {
-    readonly Dictionary<Type, string> _entityNames = new();
+    private const string WarnAll = "When using this method JsonTypeInfoSerializerFactory.RegisterSerializableType must be called manually and EndpointInvoker must be added manually!";
 
-    readonly Dictionary<CaseInsensitive, Type> _entityTypes = new();
+    public const string WarnEndpointInvoker = "When using this method EndpointInvoker must be added manually!";
+
+    private Dictionary<Type, string> EntityNames { get; } = [];
+
+    private Dictionary<CaseInsensitive, Type> EntityTypes { get; } = [];
+
+    public Dictionary<Type, EndpointInvoker> Invokers { get; } = [];
 
     private RestEntitiesConfigurationBuilder AddInternal(Type type, CaseInsensitive name)
     {
-        if (_entityNames.ContainsKey(type))
+        if (EntityNames.ContainsKey(type))
         {
             throw new InvalidOperationException($"{type} has already been registered.");
         }
-        if (_entityTypes.TryGetValue(name, out var xtype))
+        if (EntityTypes.TryGetValue(name, out var xtype))
         {
             throw new InvalidOperationException($"{xtype} has already been registered with name = {name}.");
         }
-        _entityNames.Add(type, name.ToLowerString());
-        _entityTypes.Add(name, type);
+        EntityNames.Add(type, name.ToLowerString());
+        EntityTypes.Add(name, type);
         return this;
     }
 
-    [Obsolete("When using this method JsonTypeInfoSerializerFactory.RegisterSerializableType must be called manually")]
+    [Obsolete(WarnAll)]
     public RestEntitiesConfigurationBuilder Add(Type type, CaseInsensitive name)
         => AddInternal(type, name);
 
-    [Obsolete("When using this method JsonTypeInfoSerializerFactory.RegisterSerializableType must be called manually")]
+    [Obsolete(WarnAll)]
     public RestEntitiesConfigurationBuilder Add(Type type)
         => AddInternal(type, type.Name.ToLowerInvariant());
 
+    [Obsolete(WarnEndpointInvoker)]
     public RestEntitiesConfigurationBuilder Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(CaseInsensitive name)
     {
         JsonTypeInfoSerializerFactory.RegisterSerializableType<T>();
         JsonTypeInfoSerializerFactory.RegisterSerializableType<IAsyncEnumerable<T>>();
+        DefaultQueryOrderer.RegisterDefaultKeySelectors<T>();
         return AddInternal(typeof(T), name);
     }
 
+    [Obsolete(WarnEndpointInvoker)]
     public RestEntitiesConfigurationBuilder Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>()
         => Add<T>(typeof(T).Name.ToLowerInvariant());
 
-    [Obsolete("When using this method JsonTypeInfoSerializerFactory.RegisterSerializableType must be called manually")]
+    [Obsolete(WarnAll)]
     public RestEntitiesConfigurationBuilder AddRange(params Type[] types)
     {
         foreach (var type in types)
@@ -55,8 +71,42 @@ public class RestEntitiesConfigurationBuilder
         return this;
     }
 
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(EndpointInvokerInt32<>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(EndpointInvokerString<>))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(EndpointInvokerGuid<>))]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Everything preserved manually.")]
+    public RestEntitiesConfigurationBuilder Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData, TId>(CaseInsensitive name)
+        where TData : class, IHasId<TId>
+    {
+        JsonTypeInfoSerializerFactory.RegisterSerializableType<TData>();
+        JsonTypeInfoSerializerFactory.RegisterSerializableType<IAsyncEnumerable<TData>>();
+        DefaultQueryOrderer.RegisterDefaultKeySelectors<TData>();
+        var invoker = typeof(TData) == typeof(int)
+            ? (EndpointInvoker<TData, TId>)Activator.CreateInstance(typeof(EndpointInvokerInt32<>).MakeGenericType(typeof(TData)))!
+            : typeof(TData) == typeof(string)
+                ? (EndpointInvoker<TData, TId>)Activator.CreateInstance(typeof(EndpointInvokerString<>).MakeGenericType(typeof(TData)))!
+                : typeof(TData) == typeof(Guid)
+                    ? (EndpointInvoker<TData, TId>)Activator.CreateInstance(typeof(EndpointInvokerGuid<>).MakeGenericType(typeof(TData)))!
+                    : new EndpointInvoker<TData, TId>();
+        Invokers.Add(typeof(TData), invoker);
+        return AddInternal(typeof(TData), name);
+    }
+
+    public RestEntitiesConfigurationBuilder Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData, TId>()
+        where TData : class, IHasId<TId>
+        => Add<TData, TId>(typeof(TData).Name.ToLowerInvariant());
+
+#if NET8_0_OR_GREATER
     public RestEntitiesConfiguration Build() => new(
-        _entityNames.ToImmutableDictionary(),
-        _entityTypes.ToImmutableDictionary()
+        EntityNames.ToFrozenDictionary(),
+        EntityTypes.ToFrozenDictionary(),
+        Invokers.ToFrozenDictionary()
     );
+#else
+    public RestEntitiesConfiguration Build() => new(
+        EntityNames.ToImmutableDictionary(),
+        EntityTypes.ToImmutableDictionary(),
+        Invokers.ToImmutableDictionary()
+    );
+#endif
 }

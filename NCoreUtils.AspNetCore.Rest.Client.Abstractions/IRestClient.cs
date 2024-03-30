@@ -1,31 +1,52 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using NCoreUtils.Data;
 
-namespace NCoreUtils.Rest
+namespace NCoreUtils.Rest;
+
+public interface IRestClient
 {
-    public interface IRestClient
-    {
-        IQueryable<T> Collection<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>();
+    Type DataType { get; }
 
-        Task<TData?> ItemAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
-            where TData : IHasId<TId>;
+    Type IdType { get; }
+}
 
-        Task<TId> CreateAsync<TData, TId>(TData data, CancellationToken cancellationToken = default)
-            where TData : IHasId<TId>;
+public interface IRestClient<TData> : IRestClient
+{
+    Type IRestClient.DataType => typeof(TData);
 
-        Task UpdateAsync<TData, TId>(TId id, TData data, CancellationToken cancellationToken = default)
-            where TData : IHasId<TId>;
+    IAsyncEnumerable<TData> ListCollectionAsync(
+        string? target = default,
+        string? filter = default,
+        string? sortBy = default,
+        string? sortByDirection = default,
+        IReadOnlyList<string>? fields = default,
+        IReadOnlyList<string>? includes = default,
+        int offset = 0,
+        int? limit = default,
+        CancellationToken cancellationToken = default
+    );
 
-        Task DeleteAsync<TData, TId>(TId id, bool force, CancellationToken cancellationToken = default)
-            where TData : IHasId<TId>;
+    Task<ReductionResult<TData>> ReductionAsync(
+        string reduction,
+        string? target = null,
+        string? filter = null,
+        string? sortBy = null,
+        string? sortByDirection = null,
+        int offset = 0,
+        int? limit = null,
+        CancellationToken cancellationToken = default
+    );
+}
 
-        [Obsolete("Use DeleteAsync(id, force, cancellationToken) instead.")]
-        Task DeleteAsync<TData, TId>(TId id, CancellationToken cancellationToken = default)
-            where TData : IHasId<TId>
-            => DeleteAsync<TData, TId>(id, false, cancellationToken);
-    }
+public interface IRestClient<TData, TId> : IRestClient<TData>
+{
+    Task<TData?> ItemAsync(TId id, CancellationToken cancellationToken = default);
+
+    Task<TId> CreateAsync(TData data, CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(TId id, TData data, CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(TId id, bool force, CancellationToken cancellationToken = default);
 }

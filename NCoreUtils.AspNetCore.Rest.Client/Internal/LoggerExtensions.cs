@@ -5,6 +5,7 @@ namespace NCoreUtils.Rest.Internal
 {
     public static class LoggerExtensions
     {
+        // FIXME: átírás generátorokra
         public static void LogRestCollection(
             this ILogger logger,
             string? target = default,

@@ -9,6 +9,7 @@ namespace NCoreUtils.AspNetCore.Rest
 {
     [Obsolete("JsonSerializerContext based seriialization is preferred.")]
     [RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")]
+    [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")]
     public class DefaultDeserializer<T> : IDeserializer<T>
     {
         readonly JsonSerializerOptions _jsonOptions;

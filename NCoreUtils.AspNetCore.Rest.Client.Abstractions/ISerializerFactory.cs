@@ -1,11 +1,8 @@
-using System.Diagnostics.CodeAnalysis;
+namespace NCoreUtils.Rest;
 
-namespace NCoreUtils.Rest
+public interface ISerializerFactory
 {
-    public interface ISerializerFactory
-    {
-        string? ContentType { get; }
+    string? ContentType { get; }
 
-        ISerializer<T> GetSerializer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>();
-    }
+    ISerializer<T> GetSerializer<T>();
 }

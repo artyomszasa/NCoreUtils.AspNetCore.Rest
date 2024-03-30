@@ -5,45 +5,45 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
 
-namespace NCoreUtils.AspNetCore.Rest
+namespace NCoreUtils.AspNetCore.Rest;
+
+/// <summary>
+/// Provides default implementation for REST DELETE method.
+/// </summary>
+/// <typeparam name="TData">Type of the target object.</typeparam>
+/// <typeparam name="TId">Type of the Id property of the target object.</typeparam>
+/// <remarks>
+/// Initializes new instance from the specified parameters.
+/// </remarks>
+/// <param name="repository">Repository to use.</param>
+/// <param name="logger">Logger to use.</param>
+public class DefaultRestDelete<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId>(
+    IDataRepository<TData, TId> repository,
+    ILogger<DefaultRestDelete<TData, TId>> logger)
+    : DefaultTransactedMethod<TData, TId>(repository)
+    , IRestDelete<TData, TId>
+    , IBoxedVoidInvoke<IRestDeleteContext<TData, TId>>
+    where TData : IHasId<TId>
 {
+    protected ILogger Logger { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
+
+    object IBoxedInvoke.Instance => this;
+
     /// <summary>
-    /// Provides default implementation for REST DELETE method.
+    /// Performes REST DELETE action for the predefined type.
     /// </summary>
-    /// <typeparam name="TData">Type of the target object.</typeparam>
-    /// <typeparam name="TId">Type of the Id property of the target object.</typeparam>
-    public class DefaultRestDelete<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId>
-        : DefaultTransactedMethod<TData, TId>, IRestDelete<TData, TId>, IBoxedVoidInvoke<TId, bool>
-        where TData : IHasId<TId>
+    /// <param name="context">Invocation context.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public virtual async ValueTask InvokeAsync(IRestDeleteContext<TData, TId> context, CancellationToken cancellationToken)
     {
-        protected ILogger Logger { get; }
-
-        object IBoxedInvoke.Instance => this;
-
-        /// <summary>
-        /// Initializes new instance from the specified parameters.
-        /// </summary>
-        /// <param name="repository">Repository to use.</param>
-        /// <param name="logger">Logger to use.</param>
-        public DefaultRestDelete(IDataRepository<TData, TId> repository, ILogger<DefaultRestDelete<TData, TId>> logger)
-            : base(repository)
-            => Logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-        /// <summary>
-        /// Performes REST DELETE action for the predefined type.
-        /// </summary>
-        /// <param name="id">Id of the object to delete.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        public virtual async ValueTask InvokeAsync(TId id, bool force, CancellationToken cancellationToken)
+        var id = context.Id;
+        var item = await Repository.LookupAsync(id, cancellationToken);
+        if (item is null)
         {
-            var item = await Repository.LookupAsync(id, cancellationToken);
-            if (item is null)
-            {
-                Logger.LogDebug("No entity of type {0} found for key = {1} (rest-delete).", typeof(TData), id);
-                throw new NotFoundException();
-            }
-            await Repository.RemoveAsync(item, force, cancellationToken: cancellationToken);
-            Logger.LogInformation("Successfully removed entity of type {0} with key = {1} (data-delete).", typeof(TData), id);
+            Logger.LogDebug("No entity of type {EntityType} found for key = {Key} (rest-delete).", typeof(TData), id);
+            throw new NotFoundException();
         }
+        await Repository.RemoveAsync(item, context.Force, cancellationToken: cancellationToken);
+        Logger.LogInformation("Successfully removed entity of type {EntityType} with key = {Key} (data-delete).", typeof(TData), id);
     }
 }

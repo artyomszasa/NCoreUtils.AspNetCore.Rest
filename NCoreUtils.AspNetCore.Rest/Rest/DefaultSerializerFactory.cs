@@ -10,8 +10,10 @@ namespace NCoreUtils.AspNetCore.Rest
 {
     [Obsolete("JsonSerializerContext based seriialization is preferred.")]
     [RequiresUnreferencedCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")]
+    [RequiresDynamicCode("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")]
     public class DefaultSerializerFactory : ISerializerFactory
     {
+        [RequiresDynamicCode("Deprecated")]
         private abstract class Invoker
         {
             private static readonly ConcurrentDictionary<Type, Invoker> _cache = new ConcurrentDictionary<Type, Invoker>();
@@ -58,11 +60,9 @@ namespace NCoreUtils.AspNetCore.Rest
             CancellationToken cancellationToken)
             => GetSerializer<T>().SerializeAsync(configurableStream, item, cancellationToken);
 
-        [UnconditionalSuppressMessage("Trimming", "IL2046")]
         public virtual ISerializer<T> GetSerializer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>()
             => ServiceProvider.GetService<ISerializer<T>>() ?? ActivatorUtilities.CreateInstance<DefaultSerializer<T>>(ServiceProvider);
 
-        [UnconditionalSuppressMessage("Trimming", "IL2046")]
         public ValueTask SerializeAsync(
             IConfigurableOutput<Stream> configurableStream,
             object item,
