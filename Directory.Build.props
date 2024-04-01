@@ -9,7 +9,7 @@
     <FxNugetVersion Condition=" '$(TargetFramework)' == 'net7.0' ">7.0.0</FxNugetVersion>
     <FxNugetVersion Condition=" '$(TargetFramework)' == 'net8.0' ">8.0.0</FxNugetVersion>
     <FxNugetVersion Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">3.1.16</FxNugetVersion>
-    <NCoreUtilsProtocolVersion>8.0.0-rc00</NCoreUtilsProtocolVersion>
+    <NCoreUtilsProtocolVersion>8.0.0-rc02</NCoreUtilsProtocolVersion>
     <NCoreUtilsDataVersion>8.0.0-rc01</NCoreUtilsDataVersion>
   </PropertyGroup>
 </Project>

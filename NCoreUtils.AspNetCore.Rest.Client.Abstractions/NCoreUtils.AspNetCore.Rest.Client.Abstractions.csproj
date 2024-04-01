@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NCoreUtils.Data.Abstractions" Version="$(NCoreUtilsDataVersion)" />
+    <PackageReference Include="NCoreUtils.Data.Protocol.Client.Abstractions" Version="$(NCoreUtilsProtocolVersion)" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
     <PackageReference Include="System.Text.Json" Version="7.0.0" />

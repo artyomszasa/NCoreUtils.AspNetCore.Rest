@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace NCoreUtils.Rest;
 
+/*
 public interface IReductionResultVisitor<TData, TResult>
 {
     TResult VisitNull();
@@ -20,19 +21,14 @@ public interface IReductionResultVisitor<TData, TResult>
 
 public readonly struct ReductionResult<T> : IEquatable<ReductionResult<T>>
 {
-    [StructLayout(LayoutKind.Explicit)]
     private readonly struct DataUnion
     {
-        [FieldOffset(0)]
         public readonly int Int32Value;
 
-        [FieldOffset(0)]
         public readonly long Int64Value;
 
-        [FieldOffset(0)]
         public readonly bool BooleanValue;
 
-        [FieldOffset(0)]
         public readonly T ItemValue;
 
 #pragma warning disable CS8618
@@ -194,3 +190,5 @@ public readonly struct ReductionResult<T> : IEquatable<ReductionResult<T>>
         _ => "<<invalid>>"
     };
 }
+
+*/

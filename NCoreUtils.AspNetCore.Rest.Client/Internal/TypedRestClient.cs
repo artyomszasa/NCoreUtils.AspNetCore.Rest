@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -10,6 +11,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
+using NCoreUtils.Data.Protocol;
+using NCoreUtils.Data.Protocol.Linq;
+using NCoreUtils.Data.Protocol.Reductions;
 
 namespace NCoreUtils.Rest.Internal;
 
@@ -29,11 +33,15 @@ public abstract class TypedRestClient(ILogger<TypedRestClient> logger)
     public abstract Type IdType { get; }
 }
 
-public abstract class TypedRestClient<TData>(ILogger<TypedRestClient<TData>> logger)
+public abstract class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData>(
+    ILogger<TypedRestClient<TData>> logger,
+    IProtocolQueryProvider protocolQueryProvider)
     : TypedRestClient(logger)
     , IRestClient<TData>
 {
     public override Type DataType => typeof(TData);
+
+    public virtual IQueryable<TData> CreateQueryable() => DirectQuery.Create<TData>(protocolQueryProvider);
 
     public abstract IAsyncEnumerable<TData> ListCollectionAsync(
         string? target = default,
@@ -47,7 +55,7 @@ public abstract class TypedRestClient<TData>(ILogger<TypedRestClient<TData>> log
         CancellationToken cancellationToken = default);
 
     public abstract Task<ReductionResult<TData>> ReductionAsync(
-        string reduction,
+        Reduction reduction,
         string? target = null,
         string? filter = null,
         string? sortBy = null,
@@ -57,8 +65,11 @@ public abstract class TypedRestClient<TData>(ILogger<TypedRestClient<TData>> log
         CancellationToken cancellationToken = default);
 }
 
-public class TypedRestClient<TData, TId>(ILogger<TypedRestClient<TData, TId>> logger, IRestClientContext<TData, TId> context)
-    : TypedRestClient<TData>(logger)
+public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData, TId>(
+    ILogger<TypedRestClient<TData, TId>> logger,
+    IRestClientContext<TData, TId> context,
+    IProtocolQueryProvider protocolQueryProvider)
+    : TypedRestClient<TData>(logger, protocolQueryProvider)
     , IRestClient<TData, TId>
     where TData : class, IHasId<TId>
     where TId : IEquatable<TId>
@@ -115,6 +126,7 @@ public class TypedRestClient<TData, TId>(ILogger<TypedRestClient<TData, TId>> lo
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var requestUri = Context.GetCollectionEndpoint();
+        Logger.LogRestCollectionUriResolved(typeof(TData), requestUri);
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
         Context.QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, offset, limit);
         Logger.LogRestCollection(target, filter, sortBy, sortByDirection, fields, includes, offset, limit);
@@ -197,7 +209,7 @@ public class TypedRestClient<TData, TId>(ILogger<TypedRestClient<TData, TId>> lo
     }
 
     public override async Task<ReductionResult<TData>> ReductionAsync(
-        string reduction,
+        Reduction reduction,
         string? target = null,
         string? filter = null,
         string? sortBy = null,
@@ -206,7 +218,8 @@ public class TypedRestClient<TData, TId>(ILogger<TypedRestClient<TData, TId>> lo
         int? limit = null,
         CancellationToken cancellationToken = default)
     {
-        var requestUri = Context.GetReductionEndpoint(reduction);
+        var requestUri = Context.GetReductionEndpoint(reduction.Name);
+        Logger.LogRestReductionUriResolved(typeof(TData), requestUri);
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
         Context.QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, offset, limit);
         using var response = await SendAsync(request, cancellationToken);
@@ -216,10 +229,10 @@ public class TypedRestClient<TData, TId>(ILogger<TypedRestClient<TData, TId>> lo
             return reduction switch
             {
                 null => throw new ArgumentNullException(nameof(reduction)),
-                "first" => default,
-                "single" => default,
-                "count" => ReductionResult<TData>.Int32(default),
-                "any" => ReductionResult<TData>.Boolean(default),
+                First or
+                Data.Protocol.Reductions.Single => ReductionResult<TData>.Item(default),
+                Count => ReductionResult<TData>.Int32(default),
+                Any => ReductionResult<TData>.Boolean(default),
                 _ => throw new NotSupportedException($"Not supported reduction: {reduction}.")
             };
         }
@@ -227,9 +240,9 @@ public class TypedRestClient<TData, TId>(ILogger<TypedRestClient<TData, TId>> lo
         return reduction switch
         {
             null => throw new ArgumentNullException(nameof(reduction)),
-            "first" or "single" => ReductionResult<TData>.Item(await Context.DeserializeItemAsync(stream, cancellationToken)),
-            "count" => ReductionResult<TData>.Int32(await JsonSerializer.DeserializeAsync(stream, ReductionResultSerializerContext.Default.Int32, cancellationToken)),
-            "any" => ReductionResult<TData>.Boolean(await JsonSerializer.DeserializeAsync(stream, ReductionResultSerializerContext.Default.Boolean, cancellationToken)),
+            First or Data.Protocol.Reductions.Single => ReductionResult<TData>.Item(await Context.DeserializeItemAsync(stream, cancellationToken)),
+            Count => ReductionResult<TData>.Int32(await JsonSerializer.DeserializeAsync(stream, ReductionResultSerializerContext.Default.Int32, cancellationToken)),
+            Any => ReductionResult<TData>.Boolean(await JsonSerializer.DeserializeAsync(stream, ReductionResultSerializerContext.Default.Boolean, cancellationToken)),
             _ => throw new NotSupportedException($"Not supported reduction: {reduction}.")
         };
     }

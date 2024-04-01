@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using NCoreUtils.Data;
 using NCoreUtils.Rest.Internal;
 
@@ -32,7 +33,7 @@ public static partial class ServiceCollectionRestClientExtensions
         protected string GetTypeEndpoint() => $"{Endpoint.TrimEnd('/')}/{GetTypeName()}";
     }
 
-    private sealed class RemoteRestTypeRegistration<TData, TId>(
+    private sealed class RemoteRestTypeRegistration<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData, TId>(
         string endpoint,
         string httpClientConfigurationName,
         IRestIdHandler<TId> idHandler,
@@ -47,7 +48,10 @@ public static partial class ServiceCollectionRestClientExtensions
             => new RestClientContextConfiguration<TData, TId>(GetTypeEndpoint(), HttpClientConfigurationName, IdHandler);
     }
 
-    private sealed record RestClientContextConfiguration<TData, TId>(string Endpoint, string HttpClientConfigurationName, IRestIdHandler<TId> IdHandler)
+    private sealed record RestClientContextConfiguration<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData, TId>(
+        string Endpoint,
+        string HttpClientConfigurationName,
+        IRestIdHandler<TId> IdHandler)
         : IRestClientContextConfiguration<TData, TId>
         where TData : class, IHasId<TId>
         where TId : IEquatable<TId>;

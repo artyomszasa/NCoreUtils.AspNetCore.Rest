@@ -3,14 +3,25 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using NCoreUtils.Data.Protocol;
 using NCoreUtils.Data.Protocol.Ast;
-using NCoreUtils.Data.Protocol.Linq;
 
 namespace NCoreUtils.Rest.Internal;
 
-public class TypedRestQueryExecutor(RestClientContextFactory clientContextFactory) : IRestDataQueryExecutor
+public class TypedRestQueryExecutor(IServiceProvider serviceProvider) : IRestDataQueryExecutor
 {
-    protected RestClientContextFactory ClientContextFactory { get; } = clientContextFactory ?? throw new ArgumentNullException(nameof(clientContextFactory));
+    private static TypedRestClient<T> CastRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(TypedRestClient client) => client switch
+    {
+        TypedRestClient<T> clientOfT => clientOfT,
+        _ => throw new InvalidOperationException($"Rest client configuration returned client of invalid type: TypedRestClient<{typeof(T)}> expected, TypeRestClient<{client.DataType}> returned.")
+    };
+
+    private RestClientContextFactory? _clientContextFactory;
+
+    private IServiceProvider ServiceProvider { get; } = serviceProvider;
+
+    protected RestClientContextFactory ClientContextFactory => _clientContextFactory ??= ServiceProvider.GetRequiredService<RestClientContextFactory>();
 
     public IAsyncEnumerable<T> ExecuteEnumerationAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
         string target,
@@ -22,7 +33,7 @@ public class TypedRestQueryExecutor(RestClientContextFactory clientContextFactor
         int offset = 0,
         int? limit = null)
     {
-        var client = (TypedRestClient<T>)ClientContextFactory.CreateClient(typeof(T));
+        var client = CastRestClient<T>(ClientContextFactory.CreateClient(typeof(T)));
         return new DelayedAsyncEnumerable<T>(cancellationToken => new(client.ListCollectionAsync(
             target: target,
             filter: filter?.ToString(),
@@ -38,7 +49,7 @@ public class TypedRestQueryExecutor(RestClientContextFactory clientContextFactor
 
     public async Task<TResult> ExecuteReductionAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TSource, TResult>(
         string target,
-        string reduction,
+        Reduction reduction,
         Node? filter = null,
         Node? sortBy = null,
         bool isDescending = false,
@@ -46,7 +57,7 @@ public class TypedRestQueryExecutor(RestClientContextFactory clientContextFactor
         int? limit = null,
         CancellationToken cancellationToken = default)
     {
-        var client = (TypedRestClient<TSource>)ClientContextFactory.CreateClient(typeof(TSource));
+        var client = CastRestClient<TSource>(ClientContextFactory.CreateClient(typeof(TSource)));
         var res = await client.ReductionAsync(
             reduction,
             target,
@@ -57,27 +68,8 @@ public class TypedRestQueryExecutor(RestClientContextFactory clientContextFactor
             limit,
             cancellationToken
         );
-        // FIXME: should use ReductionResult in Protocol (?)
-        if (typeof(TResult) == typeof(int))
-        {
-            return ReBox<TResult>(res.Int32Value);
-        }
-        if (typeof(TResult) == typeof(bool))
-        {
-            return ReBox<TResult>(res.BooleanValue);
-        }
-        if (typeof(TResult) == typeof(TSource))
-        {
-            return ReBox<TResult>(res.ItemValue!);
-        }
-        if (typeof(TResult) == typeof(long))
-        {
-            return ReBox<TResult>(res.Int64Value);
-        }
-        throw new NotSupportedException($"Reduction return type {typeof(TResult)} is not supported.");
+        return res.TryGetValue<TResult>(out var result)
+            ? result!
+            : throw new InvalidCastException($"{res} cannot be converted to {typeof(TResult)}");
     }
-
-    // TODO: find better solution not involving casing...
-    private static T ReBox<T>(object source)
-        => (T)source;
 }

@@ -159,6 +159,8 @@ public partial class DefaultQueryOrderer
 #endif
         RegisterKeySelector<TData, float>();
         RegisterKeySelector<TData, double>();
+        RegisterKeySelector<TData, DateOnly>();
+        RegisterKeySelector<TData, TimeOnly>();
         RegisterKeySelector<TData, DateTime>();
         RegisterKeySelector<TData, DateTimeOffset>();
     }

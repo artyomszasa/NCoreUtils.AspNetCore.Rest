@@ -1,7 +1,10 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
+using NCoreUtils.Data.Protocol.Linq;
+
 #if NET8_0_OR_GREATER
 using ConfigurationDictionary = System.Collections.Frozen.FrozenDictionary<
     System.Type,
@@ -16,41 +19,13 @@ using ConfigurationDictionary = System.Collections.Immutable.ImmutableDictionary
 
 namespace NCoreUtils.Rest.Internal;
 
-public interface IRestClientContextConfiguration
-{
-    string Endpoint { get; }
-
-    string HttpClientConfigurationName { get; }
-
-    TypedRestClient CreateClient(RestClientContextFactory factory);
-}
-
-public interface IRestClientContextConfiguration<TData, TId> : IRestClientContextConfiguration
-    where TData : class, IHasId<TId>
-    where TId : IEquatable<TId>
-{
-    IRestIdHandler<TId> IdHandler { get; }
-
-    TypedRestClient IRestClientContextConfiguration.CreateClient(RestClientContextFactory factory)
-        => new TypedRestClient<TData, TId>(
-            factory.LoggerFactory.CreateLogger<TypedRestClient<TData, TId>>(),
-            new RestClientContext<TData, TId>(
-                factory.HttpClientFactory,
-                factory.SerializerFactory.GetSerializer<TData>(),
-                factory.QuerySerializer,
-                IdHandler,
-                Endpoint,
-                HttpClientConfigurationName
-            )
-        );
-}
-
 public class RestClientContextFactory(
     ConfigurationDictionary configurations,
     ILoggerFactory loggerFactory,
     IHttpClientFactory httpClientFactory,
     IRestQuerySerializer querySerializer,
-    ISerializerFactory serializerFactory)
+    ISerializerFactory serializerFactory,
+    IProtocolQueryProvider protocolQueryProvider)
 {
     private ConfigurationDictionary Configurations { get; } = configurations ?? throw new ArgumentNullException(nameof(configurations));
 
@@ -61,6 +36,8 @@ public class RestClientContextFactory(
     public IRestQuerySerializer QuerySerializer { get; } = querySerializer ?? throw new ArgumentNullException(nameof(querySerializer));
 
     public ISerializerFactory SerializerFactory { get; } = serializerFactory ?? throw new ArgumentNullException(nameof(serializerFactory));
+
+    public IProtocolQueryProvider ProtocolQueryProvider { get; } = protocolQueryProvider ?? throw new ArgumentNullException(nameof(protocolQueryProvider));
 
     public TypedRestClient CreateClient(Type type)
         => Configurations.TryGetValue(type, out var configuration)

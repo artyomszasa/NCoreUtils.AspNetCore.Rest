@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using NCoreUtils.Data.Protocol;
 
 namespace NCoreUtils.Rest;
 
@@ -16,6 +18,8 @@ public interface IRestClient<TData> : IRestClient
 {
     Type IRestClient.DataType => typeof(TData);
 
+    IQueryable<TData> CreateQueryable();
+
     IAsyncEnumerable<TData> ListCollectionAsync(
         string? target = default,
         string? filter = default,
@@ -29,7 +33,7 @@ public interface IRestClient<TData> : IRestClient
     );
 
     Task<ReductionResult<TData>> ReductionAsync(
-        string reduction,
+        Reduction reduction,
         string? target = null,
         string? filter = null,
         string? sortBy = null,

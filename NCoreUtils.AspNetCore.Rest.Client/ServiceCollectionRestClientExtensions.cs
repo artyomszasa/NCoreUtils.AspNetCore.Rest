@@ -7,6 +7,10 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
 using NCoreUtils.Rest.Internal;
+using NCoreUtils.Data.Protocol.Linq;
+using System.Diagnostics.CodeAnalysis;
+
+
 
 #if NET8_0_OR_GREATER
 using System.Collections.Frozen;
@@ -55,11 +59,12 @@ public static partial class ServiceCollectionRestClientExtensions
                         logger: serviceProvider.GetRequiredService<ILogger<DefaultJsonSerializerFactory>>(),
                         resolver: serviceProvider.GetRequiredService<IRestClientJsonTypeInfoResolver>()
                     )
-            )
+            ),
+            protocolQueryProvider: serviceProvider.GetRequiredService<IProtocolQueryProvider>()
         );
     }
 
-    public static IServiceCollection AddRemoteRestType<TData, TId>(
+    public static IServiceCollection AddRemoteRestType<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData, TId>(
         this IServiceCollection services,
         string endpoint,
         string? httpClientConfigurationName = default,
@@ -87,8 +92,14 @@ public static partial class ServiceCollectionRestClientExtensions
         {
             services.TryAddSingleton(jsonTypeInfoResolver);
         }
-        services.TryAddSingleton(CreateRestClientContextFactory);
-        services.TryAddSingleton<IRestDataQueryExecutor, TypedRestQueryExecutor>();
+        services.TryAddScoped(CreateRestClientContextFactory);
+        services.TryAddScoped<IRestDataQueryExecutor, TypedRestQueryExecutor>();
+        // NOTE: NCoreUtils.Data.Protocol.Linq.QueryProvider (IProtocolQueryProvider) looks for IDataQueryExecutor so if no iverridden implementation has been registered, we register IRestDataQueryExecutor as IDataQueryExecutor as well.
+        services.TryAddScoped<IDataQueryExecutor>(serviceProvider =>
+        {
+            return serviceProvider.GetService<IRestDataQueryExecutor>()
+                ?? throw new InvalidOperationException("Neither IDataQueryExecutor nor IRestDataQueryExecutor has been registered. Consider adding one of them to the services.");
+        });
         return services;
     }
 

@@ -45,7 +45,7 @@ public interface IRestClientContext<TData, TId> : IRestClientContext
                 bufferSpan[offset++] = '/';
             }
             offset += StringifyId(id, bufferSpan[offset..]);
-            return new(bufferSpan[offset..]);
+            return new(bufferSpan[.. offset]);
         }
         finally
         {
@@ -68,7 +68,7 @@ public interface IRestClientContext<TData, TId> : IRestClientContext
             }
             reduction.CopyTo(bufferSpan[offset..]);
             offset += reduction.Length;
-            return new(bufferSpan[offset..]);
+            return new(bufferSpan[.. offset]);
         }
         finally
         {
