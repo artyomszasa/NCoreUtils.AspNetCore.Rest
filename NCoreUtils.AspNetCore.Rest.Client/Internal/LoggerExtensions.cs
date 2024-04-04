@@ -16,9 +16,12 @@ public static partial class LoggerExtensions
 
     }
 
-    // FIXME: átírás generátorokra
-    public static void LogRestCollection(
-        this ILogger logger,
+    [LoggerMessage(
+        EventId = EventIds.RestCollection,
+        EventName = nameof(EventIds.RestCollection),
+        Level = LogLevel.Debug,
+        Message = "Collection request:{target}, {filter}, {sortBy}, {sortByDirection}, {fields}, {includes}, {offset}, {limit}.")]
+    public static partial void LogRestCollection(this ILogger logger,
         string? target = default,
         string? filter = default,
         string? sortBy = default,
@@ -26,14 +29,7 @@ public static partial class LoggerExtensions
         IReadOnlyList<string>? fields = default,
         IReadOnlyList<string>? includes = default,
         int offset = 0,
-        int? limit = default)
-        => logger.Log(
-            LogLevel.Debug,
-            new EventId(EventIds.RestCollection, nameof(EventIds.RestCollection)),
-            new L.ListCollectionRequestData(target, filter, sortBy, sortByDirection, fields, includes, offset, limit),
-            default,
-            L.ListCollectionRequestData.LogFormatter
-        );
+        int? limit = default);
 
     [LoggerMessage(
         EventId = EventIds.RestCollectionUriResolved,
