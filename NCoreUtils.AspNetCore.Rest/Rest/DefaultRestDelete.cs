@@ -40,10 +40,12 @@ public class DefaultRestDelete<[DynamicallyAccessedMembers(DynamicallyAccessedMe
         var item = await Repository.LookupAsync(id, cancellationToken);
         if (item is null)
         {
+            // TODO: EventId = RestNoEntityFound
             Logger.LogDebug("No entity of type {EntityType} found for key = {Key} (rest-delete).", typeof(TData), id);
             throw new NotFoundException();
         }
         await Repository.RemoveAsync(item, context.Force, cancellationToken: cancellationToken);
+        // TODO: EventId = RestEntityRemovedSuccessfully
         Logger.LogInformation("Successfully removed entity of type {EntityType} with key = {Key} (data-delete).", typeof(TData), id);
     }
 }

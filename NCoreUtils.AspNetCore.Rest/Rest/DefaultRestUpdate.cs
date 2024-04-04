@@ -56,6 +56,7 @@ public class DefaultRestUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
             throw new NotFoundException();
         }
         var result = await Repository.PersistAsync(data, cancellationToken);
+        // TODO: EventId = RestEntityUpdatedSuccessfully
         Logger.LogInformation("Entity of type {EntityType} with key = {Key} has been updated (rest-update).", typeof(TData), id);
         return result;
     }

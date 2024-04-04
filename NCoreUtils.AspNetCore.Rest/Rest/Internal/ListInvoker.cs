@@ -93,12 +93,14 @@ public sealed class ListInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
         try
         {
             var validationResult = await accessValidator.ValidateAsync(context.User, cancellationToken);
+            // TODO: EventId = RestEntityAccessValidation
             Logger.LogTrace("[{Type}] Access validation ({AccessAllowed}).", Type, validationResult.Success);
             validationResult.ThrowOnFailure();
             var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator
                 ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, context.User, ctoken))
                 : _noFilter;
             using var restQuery = await QueryParser.ParseAsync(context.Request, cancellationToken);
+            // TODO: EventId = RestQueryParsingDone
             Logger.LogTrace("[{Type}] REST query parsing done.", Type);
             if (!restQuery.Fields.HasValue || restQuery.Fields.Value.Count == 0)
             {
