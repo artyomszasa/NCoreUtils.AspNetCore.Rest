@@ -93,6 +93,7 @@ public sealed class ListInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
         try
         {
             var validationResult = await accessValidator.ValidateAsync(context.User, cancellationToken);
+            //Logger.LogTrace("[{Type}] Access validation ({AccessAllowed}).", Type, validationResult.Success);
             Logger.LogRestEntityAccessValidation(Type, validationResult.Success);
             validationResult.ThrowOnFailure();
             var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator

@@ -17,6 +17,12 @@ internal static partial class LoggingExtensions
 
     public const int RestEntityUpdatedSuccessfully = 11204;
 
+    public const int RestEntityAccessValidation = 11205;
+
+    public const int RestQueryParsingDone = 11206;
+
+    public const int RestUsingFallbackAsyncEnumerableSerializer = 11207;
+
     [LoggerMessage(
         EventId = RestEntityAlreadyExists,
         EventName = nameof(RestEntityAlreadyExists),
@@ -44,8 +50,8 @@ internal static partial class LoggingExtensions
     [LoggerMessage(
             EventId = RestEntityRemovedSuccessfully,
             EventName = nameof(RestEntityRemovedSuccessfully),
-            Level = LogLevel.Information,
-            Message = "Entity of type {EntityType} has been created with key = {Key} (rest-create)."
+            Level = LogLevel.Debug,
+            Message = "Successfully removed entity of type {EntityType} with key = {Key} (data-delete)."
         )]
     public static partial void LogRestEntityRemovedSuccessfully(this ILogger logger, Type entityType, object? key);
 
@@ -56,5 +62,30 @@ internal static partial class LoggingExtensions
             Message = "Entity of type {EntityType} with key = {Key} has been updated (rest-update)."
         )]
     public static partial void LogRestEntityUpdatedSuccessfully(this ILogger logger, Type entityType, object? key);
+
+    [LoggerMessage(
+            EventId = RestEntityAccessValidation,
+            EventName = nameof(RestEntityAccessValidation),
+            Level = LogLevel.Trace,
+            Message = "[{Type}] Access validation ({AccessAllowed})."
+        )]
+    public static partial void LogRestEntityAccessValidation(this ILogger logger, object? type, bool accessAllowed);
+
+    [LoggerMessage(
+            EventId = RestQueryParsingDone,
+            EventName = nameof(RestQueryParsingDone),
+            Level = LogLevel.Trace,
+            Message = "[{Type}] REST query parsing done."
+        )]
+    public static partial void LogRestQueryParsingDone(this ILogger logger, object? type);
+
+    [LoggerMessage(
+            EventId = RestUsingFallbackAsyncEnumerableSerializer,
+            EventName = nameof(RestUsingFallbackAsyncEnumerableSerializer),
+            Level = LogLevel.Warning,
+            Message = "Using fallback async enumerable serialization, for .NET 7 or greater IAsyncEnumerable<...> types should be added to the context."
+        )]
+    public static partial void LogRestUsingFallbackAsyncEnumerableSerializer(this ILogger logger);
+
 
 }
