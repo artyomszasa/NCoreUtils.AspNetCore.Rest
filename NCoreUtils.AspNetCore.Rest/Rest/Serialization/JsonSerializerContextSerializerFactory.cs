@@ -97,8 +97,7 @@ public class JsonSerializerContextSerializerFactory : ISerializerFactory
     private T LogWarning<T>(T result)
     {
         ServiceProvider.GetRequiredService<ILogger<JsonSerializerContextSerializerFactory>>()
-            // TODO: EventId = RestUsingFallbackAsyncEnumerableSerializer
-            .LogWarning("Using fallback async enumerable serialization, for .NET 7 or greater IAsyncEnumerable<...> types should be added to the context.");
+            .LogRestUsingFallbackAsyncEnumerableSerializer();
         return result;
     }
 
