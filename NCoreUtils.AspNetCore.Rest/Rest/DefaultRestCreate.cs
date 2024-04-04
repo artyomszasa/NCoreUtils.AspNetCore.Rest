@@ -52,15 +52,13 @@ public class DefaultRestCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
             // check if already exists
             if (await Repository.Items.AnyAsync(context.CreateIdEqualsPredicate(data.Id), cancellationToken))
             {
-                // TODO: EventId = RestEntityAlreadyExists
-                Logger.LogDebug("Entity of type {EntityType} with key = {Key} already exists (rest-create).", typeof(TData), data.Id);
+                Logger.LogRestEntityAlreadyExists(typeof(TData), data.Id);
                 throw new ConflictException("Entity already exists.");
             }
         }
         // persist entity
         var result = await Repository.PersistAsync(data, cancellationToken);
-        // TODO: EventId = RestEntityCreatedSuccessfully
-        Logger.LogInformation("Entity of type {EntityType} has been created with key = {Key} (rest-create).", typeof(TData), result.Id);
+        Logger.LogRestEntityCreatedSuccessfully(typeof(TData), result.Id);
         return result;
     }
 }
