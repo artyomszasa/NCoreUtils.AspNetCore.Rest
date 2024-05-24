@@ -13,15 +13,10 @@ public static partial class LoggerExtensions
         public const int RestCollectionUriResolved = 9001;
 
         public const int RestReductionUriResolved = 9002;
-
     }
 
-    [LoggerMessage(
-        EventId = EventIds.RestCollection,
-        EventName = nameof(EventIds.RestCollection),
-        Level = LogLevel.Debug,
-        Message = "Collection request:{target}, {filter}, {sortBy}, {sortByDirection}, {fields}, {includes}, {offset}, {limit}.")]
-    public static partial void LogRestCollection(this ILogger logger,
+    public static void LogRestCollection(
+        this ILogger logger,
         string? target = default,
         string? filter = default,
         string? sortBy = default,
@@ -29,19 +24,26 @@ public static partial class LoggerExtensions
         IReadOnlyList<string>? fields = default,
         IReadOnlyList<string>? includes = default,
         int offset = 0,
-        int? limit = default);
+        int? limit = default)
+        => logger.Log(
+            LogLevel.Debug,
+            new EventId(EventIds.RestCollection, nameof(EventIds.RestCollection)),
+            new L.ListCollectionRequestData(target, filter, sortBy, sortByDirection, fields, includes, offset, limit),
+            default,
+            L.ListCollectionRequestData.LogFormatter
+        );
 
     [LoggerMessage(
         EventId = EventIds.RestCollectionUriResolved,
         EventName = nameof(EventIds.RestCollectionUriResolved),
         Level = LogLevel.Trace,
-        Message = "Collection endpoint for {Type} has been resolved as {RequestUri}.")]
+        Message = "Collection endpoint for {Type} has been resolved to {RequestUri}.")]
     public static partial void LogRestCollectionUriResolved(this ILogger logger, Type type, string requestUri);
 
     [LoggerMessage(
         EventId = EventIds.RestReductionUriResolved,
         EventName = nameof(EventIds.RestReductionUriResolved),
         Level = LogLevel.Trace,
-        Message = "Reduction endpoint for {Type} has been resolved as {RequestUri}.")]
+        Message = "Reduction endpoint for {Type} has been resolved to {RequestUri}.")]
     public static partial void LogRestReductionUriResolved(this ILogger logger, Type type, string requestUri);
 }
