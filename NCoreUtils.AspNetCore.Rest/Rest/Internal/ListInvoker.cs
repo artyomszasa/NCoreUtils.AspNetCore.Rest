@@ -93,7 +93,6 @@ public sealed class ListInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
         try
         {
             var validationResult = await accessValidator.ValidateAsync(context.User, cancellationToken);
-            //Logger.LogTrace("[{Type}] Access validation ({AccessAllowed}).", Type, validationResult.Success);
             Logger.LogRestEntityAccessValidation(Type, validationResult.Success);
             validationResult.ThrowOnFailure();
             var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator
@@ -108,7 +107,7 @@ public sealed class ListInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
             else
             {
                 // FIXME: implement
-                throw new NotImplementedException("WIP");
+                await DoInvoke(metadata, restQuery, filter, context.Response, cancellationToken);
             }
         }
         finally
