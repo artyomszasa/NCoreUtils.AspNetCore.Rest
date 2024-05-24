@@ -166,7 +166,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         };
         using var response = await SendAsync(request, cancellationToken);
         HandleErrors(response, requestUri);
-        if (!response.Headers.TryGetValues("location", out var locationValues) || locationValues.TryGetFirst(out var locationValue) || locationValue is null)
+        if (!response.Headers.TryGetValues("location", out var locationValues) || !locationValues.TryGetFirst(out var locationValue) || locationValue is null)
         {
             throw new RestException(requestUri, "REST CREATE returned no location.");
         }

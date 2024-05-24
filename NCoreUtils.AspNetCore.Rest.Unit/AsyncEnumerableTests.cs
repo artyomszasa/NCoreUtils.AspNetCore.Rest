@@ -42,6 +42,22 @@ public class AsyncEnumerableTests : IAsyncDisposable
         Assert.Equal(3, items.Count);
     }
 
+    [Fact]
+    public async Task Create()
+    {
+        await using var serviceProvider = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton<IHttpClientFactory>(new TestHttpClientFactory(TestHost))
+            .AddCommonRestClientServices(TestSerializerContext.Default)
+            .AddRemoteRestType<TestData, int>("/")
+            // .AddRestClientServices()
+            // .AddDefaultRestClient("/", (IJsonTypeInfoResolver)TestSerializerContext.Default)
+            .AddDataQueryServices(TestQueryContext.Singleton)
+            .BuildServiceProvider(false);
+        var restClient = serviceProvider.GetRequiredService<IRestClient<TestData, int>>();
+        var x = await restClient.CreateAsync(new TestData(42, "xasd", 2.0, ["xxx"]));
+    }
+
     public async ValueTask DisposeAsync()
     {
         await TestHost.StopAsync(default);
