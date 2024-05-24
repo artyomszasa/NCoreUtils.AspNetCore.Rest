@@ -42,8 +42,10 @@ public class DefaultRestCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
     /// Object returned by dataset after insert operation. Depending on the repository implementation some of the values
     /// of the returned object may differ from the input.
     /// </returns>
+#if NET7_0
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Handled by query provider.")]
     [UnconditionalSuppressMessage("Trim", "IL2026", Justification = "Handled by query provider.")]
+#endif
     public virtual async ValueTask<TData> InvokeAsync(IRestCreateContext<TData, TId> context, CancellationToken cancellationToken)
     {
         var data = context.Data;
@@ -52,15 +54,13 @@ public class DefaultRestCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
             // check if already exists
             if (await Repository.Items.AnyAsync(context.CreateIdEqualsPredicate(data.Id), cancellationToken))
             {
-                // TODO: EventId = RestEntityAlreadyExists
-                Logger.LogDebug("Entity of type {EntityType} with key = {Key} already exists (rest-create).", typeof(TData), data.Id);
+                Logger.LogRestEntityAlreadyExists(typeof(TData), data.Id);
                 throw new ConflictException("Entity already exists.");
             }
         }
         // persist entity
         var result = await Repository.PersistAsync(data, cancellationToken);
-        // TODO: EventId = RestEntityCreatedSuccessfully
-        Logger.LogInformation("Entity of type {EntityType} has been created with key = {Key} (rest-create).", typeof(TData), result.Id);
+        Logger.LogRestEntityCreatedSuccessfully(typeof(TData), result.Id);
         return result;
     }
 }

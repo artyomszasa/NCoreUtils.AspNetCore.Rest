@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
@@ -37,6 +38,21 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
         }
     }
 
+    private static class Operations
+    {
+        public const string Collection = "COLLECTION";
+
+        public const string Item = "ITEM";
+
+        public const string Reduction = "REDUCTION";
+
+        public const string Create = "CREATE";
+
+        public const string Update = "UPDATE";
+
+        public const string Delete = "DELETE";
+    }
+
     private sealed class RestContextMetadata(IReadOnlyDictionary<Type, EndpointInvoker> invokers) : IRestContextMetadata
     {
         private IReadOnlyDictionary<Type, EndpointInvoker> Invokers { get; } = invokers;
@@ -51,6 +67,8 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
             throw new InvalidOperationException($"No invoker for {typeof(TData).Name}.");
         }
     }
+
+    private const string TagOperation = "operation";
 
     private static bool IsTruthy(string? value)
         => value switch
@@ -182,10 +200,11 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
         var entitiesConfiguration = _configuration.EntitiesConfiguration;
         var restMetadata = new RestContextMetadata(entitiesConfiguration.Invokers);
         // COLLECTION BASE
-        Func<Func<HttpContext, EndpointInvoker, Type, Task>, RequestDelegate> restCollectionMethod = implementation =>
+        Func<Func<HttpContext, EndpointInvoker, Activity?, Type, Task>, RequestDelegate> restCollectionMethod = implementation =>
             new RequestDelegate(async httpContext =>
             {
                 string? entityType = default;
+                using var activity = G.ActivitySource.StartActivity("REST method execution", ActivityKind.Server);
                 try
                 {
                     entityType = (string?)httpContext.Request.RouteValues["type"];
@@ -195,15 +214,17 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                         {
                             throw new InvalidOperationException($"No invoker registered for {type.Name}.");
                         }
-                        await implementation(httpContext, invoker, type);
+                        await implementation(httpContext, invoker, activity, type);
                     }
                     else
                     {
                         httpContext.Response.StatusCode = 404;
                     }
+                    activity?.SetStatus(ActivityStatusCode.Ok);
                 }
                 catch (Exception exn)
                 {
+                    activity?.SetStatus(ActivityStatusCode.Error, exn.Message);
                     var error = ExceptionDispatchInfo.Capture(exn);
                     var errorAccessor = httpContext.RequestServices.GetService<IRestErrorAccessor>();
                     if (errorAccessor is not null && errorAccessor is ServiceCollectionRestExtensions.RestErrorAccessor accessor)
@@ -213,12 +234,17 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                     var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
                     await HandleExceptionDuringExecution(httpContext.RequestServices, httpContext.Response, logger, error, httpContext.RequestAborted);
                 }
+                finally
+                {
+                    activity?.Stop();
+                }
             });
         // ITEM BASE
-        Func<Func<HttpContext, EndpointInvoker, Type, object, Task>, RequestDelegate> restItemMethod = implementation =>
+        Func<Func<HttpContext, EndpointInvoker, Activity?, Type, object, Task>, RequestDelegate> restItemMethod = implementation =>
             new RequestDelegate(async httpContext =>
             {
                 string? entityType = default;
+                using var activity = G.ActivitySource.StartActivity("REST method execution", ActivityKind.Server);
                 try
                 {
                     entityType = (string?)httpContext.Request.RouteValues["type"];
@@ -230,15 +256,17 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                         }
                         var idType = invoker.IdType;
                         var id = _idParser.ParseId(httpContext.Request.RouteValues["id"] as string, idType);
-                        await implementation(httpContext, invoker, type, id!);
+                        await implementation(httpContext, invoker, activity, type, id!);
                     }
                     else
                     {
                         httpContext.Response.StatusCode = 404;
                     }
+                    activity?.SetStatus(ActivityStatusCode.Ok);
                 }
                 catch (Exception exn)
                 {
+                    activity?.SetStatus(ActivityStatusCode.Error, exn.Message);
                     var error = ExceptionDispatchInfo.Capture(exn);
                     var errorAccessor = httpContext.RequestServices.GetService<IRestErrorAccessor>();
                     if (errorAccessor is not null && errorAccessor is ServiceCollectionRestExtensions.RestErrorAccessor accessor)
@@ -253,68 +281,83 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
         // *********************************************************************************************************
         // COLLECTION ENDPOINT
         RequestDelegate collectionRequestDelegate = restCollectionMethod(
-            (httpContext, invoker, entityType) => invoker.InvokeList(httpContext, restMetadata, accessConfiguration)
+            (httpContext, invoker, activity, entityType) =>
+            {
+                activity?.SetTag(TagOperation, Operations.Collection);
+                return invoker.InvokeList(httpContext, restMetadata, accessConfiguration);
+            }
         );
         endpoints.Add(ApplyConventions(new RouteEndpointBuilder(collectionRequestDelegate, collectionRoutePattern, 100)
         {
-            DisplayName = $"REST-COLLECTION",
-            Metadata = { new HttpMethodMetadata(new [] { "GET" }) }
+            DisplayName = "REST-COLLECTION",
+            Metadata = { new HttpMethodMetadata([HttpMethods.Get]) }
         }).Build());
         // *********************************************************************************************************
         // ITEM / REDUCTION ENDPOINT
-        RequestDelegate itemRequestDelegate = restCollectionMethod(
-            (httpContext, invoker, entityType) =>
+        RequestDelegate itemOrReductionRequestDelegate = restCollectionMethod(
+            (httpContext, invoker, activity, entityType) =>
             {
                 var arg = (string?)httpContext.Request.RouteValues["id"];
                 if (arg is not null && DefaultReductions.Names.Contains(arg))
                 {
+                    activity?.SetTag(TagOperation, Operations.Reduction);
                     return invoker.InvokeReduction(httpContext, restMetadata, arg, accessConfiguration);
                 }
+                activity?.SetTag(TagOperation, Operations.Item);
                 var idType = invoker.IdType;
                 var id = _idParser.ParseId(arg, idType);
                 return invoker.InvokeItem(httpContext, restMetadata, id!, accessConfiguration);
             }
         );
-        endpoints.Add(ApplyConventions(new RouteEndpointBuilder(itemRequestDelegate, itemRoutePattern, 100)
+        endpoints.Add(ApplyConventions(new RouteEndpointBuilder(itemOrReductionRequestDelegate, itemRoutePattern, 100)
         {
-            DisplayName = $"REST-ITEM",
-            Metadata = { new HttpMethodMetadata(new [] { "GET" }) }
+            DisplayName = "REST-ITEM",
+            Metadata = { new HttpMethodMetadata([HttpMethods.Get]) }
         }).Build());
         // *********************************************************************************************************
         // CREATE ENDPOINT
         RequestDelegate createRequestDelegate = restCollectionMethod(
-            (httpContext, invoker, entityType) => invoker.InvokeCreate(httpContext, restMetadata, accessConfiguration)
+            (httpContext, invoker, activity, entityType) =>
+            {
+                activity?.SetTag(TagOperation, Operations.Create);
+                return invoker.InvokeCreate(httpContext, restMetadata, accessConfiguration);
+            }
         );
         endpoints.Add(ApplyConventions(new RouteEndpointBuilder(createRequestDelegate, collectionRoutePattern, 100)
         {
-            DisplayName = $"REST-CREATE",
-            Metadata = { new HttpMethodMetadata(new [] { "POST" }) }
+            DisplayName = "REST-CREATE",
+            Metadata = { new HttpMethodMetadata([HttpMethods.Post]) }
         }).Build());
         // *********************************************************************************************************
         // UPDATE ENDPOINT
         RequestDelegate updateRequestDelegate = restItemMethod(
-            (httpContext, invoker, entityType, id) => invoker.InvokeUpdate(httpContext, restMetadata, id, accessConfiguration)
+            (httpContext, invoker, activity, entityType, id) =>
+            {
+                activity?.SetTag(TagOperation, Operations.Update);
+                return invoker.InvokeUpdate(httpContext, restMetadata, id, accessConfiguration);
+            }
         );
         endpoints.Add(ApplyConventions(new RouteEndpointBuilder(updateRequestDelegate, itemRoutePattern, 100)
         {
-            DisplayName = $"REST-UPDATE",
-            Metadata = { new HttpMethodMetadata(new [] { "PUT" }) }
+            DisplayName = "REST-UPDATE",
+            Metadata = { new HttpMethodMetadata([HttpMethods.Put]) }
         }).Build());
         // *********************************************************************************************************
         // DELETE ENDPOINT
         RequestDelegate deleteRequestDelegate = restItemMethod(
-            (httpContext, invoker, entityType, id) =>
+            (httpContext, invoker, activity, entityType, id) =>
             {
                 var request = httpContext.Request;
                 var force = (request.Headers.TryGetValue("X-Force", out var hvs) && hvs.Any(IsTruthy))
                     || (request.Query.TryGetValue("force", out var qvs) && qvs.Any(IsTruthy));
+                activity?.SetTag(TagOperation, Operations.Delete);
                 return invoker.InvokeDelete(httpContext, restMetadata, id, force, accessConfiguration);
             }
         );
         endpoints.Add(ApplyConventions(new RouteEndpointBuilder(deleteRequestDelegate, itemRoutePattern, 100)
         {
-            DisplayName = $"REST-DELETE",
-            Metadata = { new HttpMethodMetadata(new [] { "DELETE" }) }
+            DisplayName = "REST-DELETE",
+            Metadata = { new HttpMethodMetadata([HttpMethods.Delete]) }
         }).Build());
         // *********************************************************************************************************
         return endpoints;

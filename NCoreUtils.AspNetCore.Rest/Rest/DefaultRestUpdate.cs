@@ -40,8 +40,10 @@ public class DefaultRestUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
     /// Object returned by dataset after update operation. Depending on the repository implementation some of the values
     /// of the returned object may differ from the input.
     /// </returns>
+#if NET7_0
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Handled by query provider.")]
     [UnconditionalSuppressMessage("Trim", "IL2026", Justification = "Handled by query provider.")]
+#endif
     public async ValueTask<TData> InvokeAsync(IRestUpdateContext<TData, TId> context, CancellationToken cancellationToken)
     {
         var id = context.Id;
@@ -56,8 +58,7 @@ public class DefaultRestUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
             throw new NotFoundException();
         }
         var result = await Repository.PersistAsync(data, cancellationToken);
-        // TODO: EventId = RestEntityUpdatedSuccessfully
-        Logger.LogInformation("Entity of type {EntityType} with key = {Key} has been updated (rest-update).", typeof(TData), id);
+        Logger.LogRestEntityUpdatedSuccessfully(typeof(TData), id);
         return result;
     }
 }
