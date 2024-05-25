@@ -15,7 +15,7 @@ public abstract class ItemInvoker
     protected sealed class RestItemInvocation<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.Interfaces)] TData, TId>(
         IRestItem<TData, TId> invoker,
         IRestItemContext<TData, TId> context)
-        : RestMethodInvocation<TData>
+        : RestMethodInvocation<TData?>
         where TData : IHasId<TId>
     {
         private readonly ArgumentCollection<IRestItemContext<TData, TId>> Args = ArgumentCollection.Create(context);
@@ -28,10 +28,10 @@ public abstract class ItemInvoker
 
         public override IReadOnlyList<object> Arguments => Args;
 
-        public override ValueTask<TData> InvokeAsync(CancellationToken cancellationToken = default)
+        public override ValueTask<TData?> InvokeAsync(CancellationToken cancellationToken = default)
             => Invoker.InvokeAsync(Args.Arg, cancellationToken);
 
-        public override RestMethodInvocation<TData> UpdateArguments(IReadOnlyList<object> arguments)
+        public override RestMethodInvocation<TData?> UpdateArguments(IReadOnlyList<object> arguments)
         {
             if (arguments.Count != 1)
             {
@@ -70,25 +70,33 @@ public sealed class ItemInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
         var accessValidator = AccessConfiguration.Query.GetOrCreateValidator(ServiceProvider, out var disposeValidator);
         try
         {
-            (await accessValidator.ValidateAsync(httpContext.User, cancellationToken)).ThrowOnFailure();
+            (await accessValidator.ValidateAsync(httpContext.User, cancellationToken).ConfigureAwait(false)).ThrowOnFailure();
             var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator
                 ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, httpContext.User, ctoken))
                 : ListInvoker._noFilter;
             var context = RestContext.Item<TData, TId>((TId)id, filter, metadata);
             var invocation = new RestItemInvocation<TData, TId>(Implementation, context);
-            var result = await MethodInvoker.InvokeAsync(invocation, cancellationToken);
+            TData? result;
+            using (var activity = G.ActivitySource.StartActivity("REST ITEM method execution"))
+            {
+                result = await MethodInvoker.InvokeAsync(invocation, cancellationToken).ConfigureAwait(false);
+            }
             if (result is null)
             {
                 httpContext.Response.StatusCode = 404;
                 return;
             }
-            await Serializer.SerializeAsync(new HttpResponseOutput(httpContext.Response), result, cancellationToken);
+            using (var activity = G.ActivitySource.StartActivity("REST ITEM method result serialization"))
+            {
+                await Serializer.SerializeAsync(new HttpResponseOutput(httpContext.Response), result, cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
         finally
         {
             if (disposeValidator)
             {
-                (accessValidator as IDisposable)?.Dispose();
+                await G.DisposeAsync(accessValidator).ConfigureAwait(false);
             }
         }
     }

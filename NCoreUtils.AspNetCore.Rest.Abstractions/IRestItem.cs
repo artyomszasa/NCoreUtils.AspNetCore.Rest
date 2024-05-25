@@ -21,5 +21,5 @@ public interface IRestItem<[DynamicallyAccessedMembers(DynamicallyAccessedMember
     /// <returns>
     /// Object of the specified type for the specified id.
     /// </returns>
-    ValueTask<TData> InvokeAsync(IRestItemContext<TData, TId> context, CancellationToken cancellationToken);
+    ValueTask<TData?> InvokeAsync(IRestItemContext<TData, TId> context, CancellationToken cancellationToken);
 }

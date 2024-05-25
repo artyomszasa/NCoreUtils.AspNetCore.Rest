@@ -19,7 +19,7 @@ namespace NCoreUtils.AspNetCore.Rest;
 /// <param name="repository">Repository to use.</param>
 public class DefaultRestItem<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TData, TId>(IDataRepository<TData, TId> repository)
     : IRestItem<TData, TId>
-    , IBoxedInvoke<IRestItemContext<TData, TId>, TData>
+    , IBoxedInvoke<IRestItemContext<TData, TId>, TData?>
     where TData : IHasId<TId>
 {
     object IBoxedInvoke.Instance => this;
@@ -35,9 +35,11 @@ public class DefaultRestItem<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
     /// <returns>
     /// Object of the specified type for the specified id.
     /// </returns>
+#if NET7_0
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Handled by query provider.")]
     [UnconditionalSuppressMessage("Trim", "IL2026", Justification = "Handled by query provider.")]
-    public async ValueTask<TData> InvokeAsync(IRestItemContext<TData, TId> context, CancellationToken cancellationToken)
+#endif
+    public async ValueTask<TData?> InvokeAsync(IRestItemContext<TData, TId> context, CancellationToken cancellationToken)
     {
         var query = Repository.Items.Where(context.CreateIdEqualsPredicate(context.Id));
         var accessibleQuery = (IQueryable<TData>)await context.AccessValidator(query, cancellationToken);

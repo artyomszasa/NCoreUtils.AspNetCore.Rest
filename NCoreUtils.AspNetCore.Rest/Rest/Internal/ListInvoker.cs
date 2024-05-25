@@ -81,9 +81,12 @@ public sealed class ListInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
     {
         var context = RestContext.ListCollection<TData, TId>(restQuery, filter, metadata);
         var invocation = new RestCollectionInvocation<TData>(Implementation, context);
-        var result = MethodInvoker.InvokeAsync(invocation, cancellationToken);
+        IAsyncEnumerable<TData> results;
+        using var activity = G.ActivitySource.StartActivity("REST COLLECTION method execution");
+        results = MethodInvoker.InvokeAsync(invocation, cancellationToken);
         var serializer = SerializerFactory.GetSerializer<IAsyncEnumerable<TData>>();
-        await serializer.SerializeAsync(new HttpResponseOutput(response), result, cancellationToken)
+        using var subactivity = G.ActivitySource.StartActivity("REST COLLECTION method result serialization");
+        await serializer.SerializeAsync(new HttpResponseOutput(response), results, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -92,7 +95,7 @@ public sealed class ListInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
         var accessValidator = AccessConfiguration.Query.GetOrCreateValidator(ServiceProvider, out var disposeValidator);
         try
         {
-            var validationResult = await accessValidator.ValidateAsync(context.User, cancellationToken);
+            var validationResult = await accessValidator.ValidateAsync(context.User, cancellationToken).ConfigureAwait(false);
             Logger.LogRestEntityAccessValidation(Type, validationResult.Success);
             validationResult.ThrowOnFailure();
             var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator
@@ -102,19 +105,19 @@ public sealed class ListInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
             Logger.LogRestQueryParsingDone(Type);
             if (!restQuery.Fields.HasValue || restQuery.Fields.Value.Count == 0)
             {
-                await DoInvoke(metadata, restQuery, filter, context.Response, cancellationToken);
+                await DoInvoke(metadata, restQuery, filter, context.Response, cancellationToken).ConfigureAwait(false);
             }
             else
             {
                 // FIXME: implement
-                await DoInvoke(metadata, restQuery, filter, context.Response, cancellationToken);
+                await DoInvoke(metadata, restQuery, filter, context.Response, cancellationToken).ConfigureAwait(false);
             }
         }
         finally
         {
             if (disposeValidator)
             {
-                (accessValidator as IDisposable)?.Dispose();
+                await G.DisposeAsync(accessValidator).ConfigureAwait(false);
             }
         }
     }

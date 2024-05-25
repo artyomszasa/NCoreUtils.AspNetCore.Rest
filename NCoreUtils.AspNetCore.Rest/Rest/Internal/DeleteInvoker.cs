@@ -63,17 +63,20 @@ public sealed class DeleteInvoker<[DynamicallyAccessedMembers(DynamicallyAccesse
         var accessValidator = AccessConfiguration.Delete.GetOrCreateValidator(ServiceProvider, out var disposeValidator);
         try
         {
-            (await accessValidator.ValidateAsync(httpContext.User, cancellationToken)).ThrowOnFailure();
+            (await accessValidator.ValidateAsync(httpContext.User, cancellationToken).ConfigureAwait(false)).ThrowOnFailure();
             var context = RestContext.Delete<TData, TId>((TId)id, force, metadata);
             var invocation = new RestDeleteInvocation<TData, TId>(Implementation, context);
-            await MethodInvoker.InvokeAsync(invocation, cancellationToken);
+            using (var activity = G.ActivitySource.StartActivity("REST DELETE method execution"))
+            {
+                await MethodInvoker.InvokeAsync(invocation, cancellationToken).ConfigureAwait(false);
+            }
             httpContext.Response.StatusCode = 200;
         }
         finally
         {
             if (disposeValidator)
             {
-                (accessValidator as IDisposable)?.Dispose();
+                await G.DisposeAsync(accessValidator);
             }
         }
     }

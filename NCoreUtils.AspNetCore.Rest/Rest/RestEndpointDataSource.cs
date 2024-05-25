@@ -234,10 +234,6 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                     var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
                     await HandleExceptionDuringExecution(httpContext.RequestServices, httpContext.Response, logger, error, httpContext.RequestAborted);
                 }
-                finally
-                {
-                    activity?.Stop();
-                }
             });
         // ITEM BASE
         Func<Func<HttpContext, EndpointInvoker, Activity?, Type, object, Task>, RequestDelegate> restItemMethod = implementation =>

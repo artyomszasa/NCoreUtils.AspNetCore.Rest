@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -125,6 +126,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         int? limit = default,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        using var activity = G.ActivitySource.StartActivity("Remote REST COLLECTION method execution", System.Diagnostics.ActivityKind.Client);
         var requestUri = Context.GetCollectionEndpoint();
         Logger.LogRestCollectionUriResolved(typeof(TData), requestUri);
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
@@ -133,6 +135,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         using var response = await SendAsync(request, cancellationToken);
         HandleErrors(response, requestUri);
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var subactivity = G.ActivitySource.StartActivity("Remote REST COLLECTION result deserialization");
         await foreach (var item in Context.DeserializeCollectionAsync(stream, cancellationToken).ConfigureAwait(false))
         {
             yield return item;
@@ -143,6 +146,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         TId id,
         CancellationToken cancellationToken = default)
     {
+        using var activity = G.ActivitySource.StartActivity("Remote REST ITEM method execution", System.Diagnostics.ActivityKind.Client);
         var requestUri = Context.GetItemEndpoint(id);
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
         using var response = await SendAsync(request, cancellationToken);
@@ -152,6 +156,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         }
         HandleErrors(response, requestUri);
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var subactivity = G.ActivitySource.StartActivity("Remote REST ITEM result deserialization");
         return await Context.DeserializeItemAsync(stream, cancellationToken);
     }
 
@@ -159,6 +164,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         TData data,
         CancellationToken cancellationToken = default)
     {
+        using var activity = G.ActivitySource.StartActivity("Remote REST CREATE method execution", System.Diagnostics.ActivityKind.Client);
         var requestUri = Context.GetCollectionEndpoint();
         using var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
         {
@@ -187,6 +193,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         {
             throw new InvalidOperationException($"Invalid id.");
         }
+        using var activity = G.ActivitySource.StartActivity("Remote REST UPDATE method execution", System.Diagnostics.ActivityKind.Client);
         var requestUri = Context.GetItemEndpoint(data.Id);
         using var request = new HttpRequestMessage(HttpMethod.Put, requestUri)
         {
@@ -220,6 +227,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
     {
         var requestUri = Context.GetReductionEndpoint(reduction.Name);
         Logger.LogRestReductionUriResolved(typeof(TData), requestUri);
+        using var activity = G.ActivitySource.StartActivity("Remote REST REDUCTION method execution", System.Diagnostics.ActivityKind.Client);
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
         Context.QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, offset, limit);
         using var response = await SendAsync(request, cancellationToken);
@@ -240,10 +248,16 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         return reduction switch
         {
             null => throw new ArgumentNullException(nameof(reduction)),
-            First or Data.Protocol.Reductions.Single => ReductionResult<TData>.Item(await Context.DeserializeItemAsync(stream, cancellationToken)),
+            First or Data.Protocol.Reductions.Single => ReductionResult<TData>.Item(await DeserializerSingleItemAsync(Context, stream, cancellationToken)),
             Count => ReductionResult<TData>.Int32(await JsonSerializer.DeserializeAsync(stream, ReductionResultSerializerContext.Default.Int32, cancellationToken)),
             Any => ReductionResult<TData>.Boolean(await JsonSerializer.DeserializeAsync(stream, ReductionResultSerializerContext.Default.Boolean, cancellationToken)),
             _ => throw new NotSupportedException($"Not supported reduction: {reduction}.")
         };
+
+        static async ValueTask<TData> DeserializerSingleItemAsync(IRestClientContext<TData, TId> context, Stream stream, CancellationToken cancellationToken)
+        {
+            using var subactivity = G.ActivitySource.StartActivity("Remote REST ITEM result deserialization");
+            return await context.DeserializeItemAsync(stream, cancellationToken);
+        }
     }
 }

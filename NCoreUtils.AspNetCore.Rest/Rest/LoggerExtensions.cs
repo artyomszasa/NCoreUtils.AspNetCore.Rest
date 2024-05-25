@@ -62,14 +62,14 @@ internal static partial class LoggingExtensions
         EventName = nameof(RestEntityAccessValidation),
         Level = LogLevel.Trace,
         Message = "[{Type}] Access validation ({AccessAllowed}).")]
-    public static partial void LogRestEntityAccessValidation(this ILogger logger, object? type, bool accessAllowed);
+    public static partial void LogRestEntityAccessValidation(this ILogger logger, string type, bool accessAllowed);
 
     [LoggerMessage(
         EventId = RestQueryParsingDone,
         EventName = nameof(RestQueryParsingDone),
         Level = LogLevel.Trace,
         Message = "[{Type}] REST query parsing done.")]
-    public static partial void LogRestQueryParsingDone(this ILogger logger, object? type);
+    public static partial void LogRestQueryParsingDone(this ILogger logger, string type);
 
     [LoggerMessage(
         EventId = RestUsingFallbackAsyncEnumerableSerializer,

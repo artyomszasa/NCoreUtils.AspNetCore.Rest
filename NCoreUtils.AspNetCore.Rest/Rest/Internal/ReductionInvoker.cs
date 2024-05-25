@@ -73,30 +73,40 @@ public sealed class ReductionInvoker<[DynamicallyAccessedMembers(DynamicallyAcce
         var accessValidator = _accessConfiguration.Query.GetOrCreateValidator(_serviceProvider, out var disposeValidator);
         try
         {
-            (await accessValidator.ValidateAsync(httpContext.User, cancellationToken)).ThrowOnFailure();
+            (await accessValidator.ValidateAsync(httpContext.User, cancellationToken).ConfigureAwait(false)).ThrowOnFailure();
             var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator
                 ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, httpContext.User, ctoken))
                 : ListInvoker._noFilter;
             using var restQuery = await _queryParser.ParseAsync(httpContext.Request, cancellationToken);
             var context = RestContext.Reduction<TData, TId>(restQuery, reduction, filter, metadata);
             var invocation = new RestReductionInvocation<TData>(_implementation, context);
-            var result = await _methodInvoker.InvokeAsync(invocation, cancellationToken);
+            object? result;
+            using (var activity = G.ActivitySource.StartActivity("REST REDUCTION method execution"))
+            {
+                result = await _methodInvoker.InvokeAsync(invocation, cancellationToken).ConfigureAwait(false);
+            }
             if (result is null)
             {
                 httpContext.Response.StatusCode = 204;
                 return;
             }
-            await _serializerFactory.SerializeAsync(
-                new HttpResponseOutput(httpContext.Response),
-                result,
-                SuppressWarnings(result.GetType()),
-                cancellationToken);
+            using (var activity = G.ActivitySource.StartActivity("REST REDUCTION method result serialization"))
+            {
+                await _serializerFactory
+                    .SerializeAsync(
+                        new HttpResponseOutput(httpContext.Response),
+                        result,
+                        SuppressWarnings(result.GetType()),
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+            }
         }
         finally
         {
             if (disposeValidator)
             {
-                (accessValidator as IDisposable)?.Dispose();
+                await G.DisposeAsync(accessValidator).ConfigureAwait(false);
             }
         }
     }
