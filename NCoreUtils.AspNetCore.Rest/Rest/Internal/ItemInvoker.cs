@@ -77,7 +77,7 @@ public sealed class ItemInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
             var context = RestContext.Item<TData, TId>((TId)id, filter, metadata);
             var invocation = new RestItemInvocation<TData, TId>(Implementation, context);
             TData? result;
-            using (var activity = G.ActivitySource.StartActivity("REST ITEM method execution"))
+            // using (var activity = G.ActivitySource.StartActivity("REST ITEM method execution"))
             {
                 result = await MethodInvoker.InvokeAsync(invocation, cancellationToken).ConfigureAwait(false);
             }
@@ -86,7 +86,7 @@ public sealed class ItemInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
                 httpContext.Response.StatusCode = 404;
                 return;
             }
-            using (var activity = G.ActivitySource.StartActivity("REST ITEM method result serialization"))
+            // using (var activity = G.ActivitySource.StartActivity("REST ITEM method result serialization"))
             {
                 await Serializer.SerializeAsync(new HttpResponseOutput(httpContext.Response), result, cancellationToken)
                     .ConfigureAwait(false);

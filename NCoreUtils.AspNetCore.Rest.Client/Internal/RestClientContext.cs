@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 
@@ -9,6 +11,7 @@ public class RestClientContext<TData, TId>(
     ISerializer<TData> serializer,
     IRestQuerySerializer querySerializer,
     IRestIdHandler<TId> idHandler,
+    IReadOnlyList<IRestClientErrorHandler> errorHandlers,
     string endpoint,
     string httpClientConfigurationName)
     : IRestClientContext<TData, TId>
@@ -18,6 +21,9 @@ public class RestClientContext<TData, TId>(
     protected ISerializer<TData> Serializer { get; } = serializer ?? throw new ArgumentNullException(nameof(serializer));
 
     protected IRestIdHandler<TId> IdHandler { get; } = idHandler ?? throw new ArgumentNullException(nameof(idHandler));
+
+    [SuppressMessage("Style", "IDE0301:Simplify collection initialization", Justification = "Possible foreach optimization.")]
+    public IReadOnlyList<IRestClientErrorHandler> ErrorHandlers { get; } = errorHandlers ?? Array.Empty<IRestClientErrorHandler>();
 
     public IRestQuerySerializer QuerySerializer { get; } = querySerializer ?? throw new ArgumentNullException(nameof(querySerializer));
 

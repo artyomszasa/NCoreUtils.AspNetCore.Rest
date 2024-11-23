@@ -66,7 +66,7 @@ public sealed class DeleteInvoker<[DynamicallyAccessedMembers(DynamicallyAccesse
             (await accessValidator.ValidateAsync(httpContext.User, cancellationToken).ConfigureAwait(false)).ThrowOnFailure();
             var context = RestContext.Delete<TData, TId>((TId)id, force, metadata);
             var invocation = new RestDeleteInvocation<TData, TId>(Implementation, context);
-            using (var activity = G.ActivitySource.StartActivity("REST DELETE method execution"))
+            // using (var activity = G.ActivitySource.StartActivity("REST DELETE method execution"))
             {
                 await MethodInvoker.InvokeAsync(invocation, cancellationToken).ConfigureAwait(false);
             }

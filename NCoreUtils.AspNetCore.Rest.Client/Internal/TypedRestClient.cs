@@ -27,6 +27,40 @@ internal partial class ReductionResultSerializerContext : JsonSerializerContext 
 public abstract class TypedRestClient(ILogger<TypedRestClient> logger)
     : IRestClient
 {
+    private static async ValueTask ExecuteUserErrorHandlersAsync_Array(
+        IRestClientErrorHandler[] handlers,
+        HttpResponseMessage response,
+        string requestUri,
+        CancellationToken cancellationToken)
+    {
+        foreach (var handler in handlers)
+        {
+            await handler.ProcessAsync(response, requestUri, cancellationToken);
+        }
+    }
+
+    private static async ValueTask ExecuteUserErrorHandlersAsync_Generic(
+        IReadOnlyList<IRestClientErrorHandler> handlers,
+        HttpResponseMessage response,
+        string requestUri,
+        CancellationToken cancellationToken)
+    {
+        foreach (var handler in handlers)
+        {
+            await handler.ProcessAsync(response, requestUri, cancellationToken);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static ValueTask ExecuteUserErrorHandlersAsync(
+        IReadOnlyList<IRestClientErrorHandler> handlers,
+        HttpResponseMessage response,
+        string requestUri,
+        CancellationToken cancellationToken)
+        => handlers is IRestClientErrorHandler[] handlerArray
+            ? ExecuteUserErrorHandlersAsync_Array(handlerArray, response, requestUri, cancellationToken)
+            : ExecuteUserErrorHandlersAsync_Generic(handlers, response, requestUri, cancellationToken);
+
     protected ILogger Logger { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public abstract Type DataType { get; }
@@ -79,6 +113,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Type IdType => typeof(TId);
 
+    [Obsolete("User async version instead.")]
     protected virtual void HandleErrors(HttpResponseMessage response, string requestUri)
     {
         ArgumentNullException.ThrowIfNull(response);
@@ -93,6 +128,17 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         }
         // fallback to non-informational exception if failed...
         response.EnsureSuccessStatusCode();
+    }
+
+    protected virtual async ValueTask HandleErrorsAsync(
+        HttpResponseMessage response,
+        string requestUri,
+        CancellationToken cancellationToken)
+    {
+        await ExecuteUserErrorHandlersAsync(Context.ErrorHandlers, response, requestUri, cancellationToken);
+#pragma warning disable CS0618 // Call sync version to ensure compatibility, once it is removed its code goes here
+        HandleErrors(response, requestUri);
+#pragma warning restore CS0618
     }
 
     protected TId ParseLocation(string location, string requestUri)
@@ -126,6 +172,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         int? limit = default,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         using var activity = G.ActivitySource.StartActivity("Remote REST COLLECTION method execution", System.Diagnostics.ActivityKind.Client);
         var requestUri = Context.GetCollectionEndpoint();
         Logger.LogRestCollectionUriResolved(typeof(TData), requestUri);
@@ -133,9 +180,9 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         Context.QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, offset, limit);
         Logger.LogRestCollection(target, filter, sortBy, sortByDirection, fields, includes, offset, limit);
         using var response = await SendAsync(request, cancellationToken);
-        HandleErrors(response, requestUri);
+        await HandleErrorsAsync(response, requestUri, cancellationToken);
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var subactivity = G.ActivitySource.StartActivity("Remote REST COLLECTION result deserialization");
+        // using var subactivity = G.ActivitySource.StartActivity("Remote REST COLLECTION result deserialization");
         await foreach (var item in Context.DeserializeCollectionAsync(stream, cancellationToken).ConfigureAwait(false))
         {
             yield return item;
@@ -146,6 +193,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         TId id,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         using var activity = G.ActivitySource.StartActivity("Remote REST ITEM method execution", System.Diagnostics.ActivityKind.Client);
         var requestUri = Context.GetItemEndpoint(id);
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
@@ -154,9 +202,9 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         {
             return default;
         }
-        HandleErrors(response, requestUri);
+        await HandleErrorsAsync(response, requestUri, cancellationToken);
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var subactivity = G.ActivitySource.StartActivity("Remote REST ITEM result deserialization");
+        // using var subactivity = G.ActivitySource.StartActivity("Remote REST ITEM result deserialization");
         return await Context.DeserializeItemAsync(stream, cancellationToken);
     }
 
@@ -164,6 +212,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         TData data,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         using var activity = G.ActivitySource.StartActivity("Remote REST CREATE method execution", System.Diagnostics.ActivityKind.Client);
         var requestUri = Context.GetCollectionEndpoint();
         using var request = new HttpRequestMessage(HttpMethod.Post, requestUri)
@@ -171,7 +220,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
             Content = new SerializedContent<TData>(data, Context.GetSerializer())
         };
         using var response = await SendAsync(request, cancellationToken);
-        HandleErrors(response, requestUri);
+        await HandleErrorsAsync(response, requestUri, cancellationToken);
         if (!response.Headers.TryGetValues("location", out var locationValues) || !locationValues.TryGetFirst(out var locationValue) || locationValue is null)
         {
             throw new RestException(requestUri, "REST CREATE returned no location.");
@@ -185,6 +234,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         TData data,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (!IdUtils.IsValidId(id))
         {
             throw new InvalidOperationException($"Invalid id.");
@@ -200,11 +250,12 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
             Content = new SerializedContent<TData>(data, Context.GetSerializer())
         };
         using var response = await SendAsync(request, cancellationToken);
-        HandleErrors(response, requestUri);
+        await HandleErrorsAsync(response, requestUri, cancellationToken);;
     }
 
     public virtual async Task DeleteAsync(TId id, bool force, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var requestUri = Context.GetItemEndpoint(id);
         using var request = new HttpRequestMessage(HttpMethod.Delete, requestUri);
         if (force)
@@ -212,7 +263,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
             request.Headers.Add("X-Force", "true");
         }
         using var response = await SendAsync(request, cancellationToken);
-        HandleErrors(response, requestUri);
+        await HandleErrorsAsync(response, requestUri, cancellationToken);;
     }
 
     public override async Task<ReductionResult<TData>> ReductionAsync(
@@ -225,13 +276,14 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         int? limit = null,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var requestUri = Context.GetReductionEndpoint(reduction.Name);
         Logger.LogRestReductionUriResolved(typeof(TData), requestUri);
         using var activity = G.ActivitySource.StartActivity("Remote REST REDUCTION method execution", System.Diagnostics.ActivityKind.Client);
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
         Context.QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, offset, limit);
         using var response = await SendAsync(request, cancellationToken);
-        HandleErrors(response, requestUri);
+        await HandleErrorsAsync(response, requestUri, cancellationToken);
         if (HttpStatusCode.NoContent == response.StatusCode)
         {
             return reduction switch
@@ -256,7 +308,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
         static async ValueTask<TData> DeserializerSingleItemAsync(IRestClientContext<TData, TId> context, Stream stream, CancellationToken cancellationToken)
         {
-            using var subactivity = G.ActivitySource.StartActivity("Remote REST ITEM result deserialization");
+            // using var subactivity = G.ActivitySource.StartActivity("Remote REST ITEM result deserialization");
             return await context.DeserializeItemAsync(stream, cancellationToken);
         }
     }

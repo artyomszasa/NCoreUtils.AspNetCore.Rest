@@ -71,13 +71,13 @@ public sealed class UpdateInvoker<[DynamicallyAccessedMembers(DynamicallyAccesse
         {
             (await accessValidator.ValidateAsync(httpContext.User, cancellationToken).ConfigureAwait(false)).ThrowOnFailure();
             TData data;
-            using (var activity = G.ActivitySource.StartActivity("REST UPDATE method input deserialization"))
+            // using (var activity = G.ActivitySource.StartActivity("REST UPDATE method input deserialization"))
             {
                 data = await Deserializer.DeserializeAsync(httpContext.Request.Body, cancellationToken).ConfigureAwait(false);
             }
             var context = RestContext.Update((TId)id, data, metadata);
             var invocation = new RestUpdateInvocation<TData, TId>(Implementation, context);
-            using (var activity = G.ActivitySource.StartActivity("REST UPDATE method execution"))
+            // using (var activity = G.ActivitySource.StartActivity("REST UPDATE method execution"))
             {
                 await MethodInvoker.InvokeAsync(invocation, cancellationToken).ConfigureAwait(false);
             }

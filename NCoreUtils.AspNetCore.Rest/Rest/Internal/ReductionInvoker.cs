@@ -81,7 +81,7 @@ public sealed class ReductionInvoker<[DynamicallyAccessedMembers(DynamicallyAcce
             var context = RestContext.Reduction<TData, TId>(restQuery, reduction, filter, metadata);
             var invocation = new RestReductionInvocation<TData>(_implementation, context);
             object? result;
-            using (var activity = G.ActivitySource.StartActivity("REST REDUCTION method execution"))
+            // using (var activity = G.ActivitySource.StartActivity("REST REDUCTION method execution"))
             {
                 result = await _methodInvoker.InvokeAsync(invocation, cancellationToken).ConfigureAwait(false);
             }
@@ -90,17 +90,15 @@ public sealed class ReductionInvoker<[DynamicallyAccessedMembers(DynamicallyAcce
                 httpContext.Response.StatusCode = 204;
                 return;
             }
-            using (var activity = G.ActivitySource.StartActivity("REST REDUCTION method result serialization"))
-            {
-                await _serializerFactory
-                    .SerializeAsync(
-                        new HttpResponseOutput(httpContext.Response),
-                        result,
-                        SuppressWarnings(result.GetType()),
-                        cancellationToken
-                    )
-                    .ConfigureAwait(false);
-            }
+            // using var activity = G.ActivitySource.StartActivity("REST REDUCTION method result serialization");
+            await _serializerFactory
+                .SerializeAsync(
+                    new HttpResponseOutput(httpContext.Response),
+                    result,
+                    SuppressWarnings(result.GetType()),
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         finally
         {

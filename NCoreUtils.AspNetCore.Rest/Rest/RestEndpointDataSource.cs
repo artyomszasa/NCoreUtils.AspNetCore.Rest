@@ -279,7 +279,12 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
         RequestDelegate collectionRequestDelegate = restCollectionMethod(
             (httpContext, invoker, activity, entityType) =>
             {
-                activity?.SetTag(TagOperation, Operations.Collection);
+                // activity?.SetTag(TagOperation, Operations.Collection);
+                if (activity is not null)
+                {
+                    activity.DisplayName = "REST COLLECTION execution";
+                    activity.SetTag("rest.entity", entityType.Name);
+                }
                 return invoker.InvokeList(httpContext, restMetadata, accessConfiguration);
             }
         );
@@ -296,12 +301,24 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                 var arg = (string?)httpContext.Request.RouteValues["id"];
                 if (arg is not null && DefaultReductions.Names.Contains(arg))
                 {
-                    activity?.SetTag(TagOperation, Operations.Reduction);
+                    // activity?.SetTag(TagOperation, Operations.Reduction);
+                    if (activity is not null)
+                    {
+                        activity.DisplayName = "REST REDUCTION execution";
+                        activity.SetTag("rest.entity", entityType.Name);
+                        activity.SetTag("rest.reduction", arg);
+                    }
                     return invoker.InvokeReduction(httpContext, restMetadata, arg, accessConfiguration);
                 }
-                activity?.SetTag(TagOperation, Operations.Item);
+                // activity?.SetTag(TagOperation, Operations.Item);
                 var idType = invoker.IdType;
                 var id = _idParser.ParseId(arg, idType);
+                if (activity is not null)
+                {
+                    activity.DisplayName = "REST ITEM execution";
+                    activity.SetTag("rest.entity", entityType.Name);
+                    activity.SetTag("rest.id", id?.ToString() ?? string.Empty);
+                }
                 return invoker.InvokeItem(httpContext, restMetadata, id!, accessConfiguration);
             }
         );
@@ -315,7 +332,12 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
         RequestDelegate createRequestDelegate = restCollectionMethod(
             (httpContext, invoker, activity, entityType) =>
             {
-                activity?.SetTag(TagOperation, Operations.Create);
+                // activity?.SetTag(TagOperation, Operations.Create);
+                if (activity is not null)
+                {
+                    activity.DisplayName = "REST CREATE execution";
+                    activity.SetTag("rest.entity", entityType.Name);
+                }
                 return invoker.InvokeCreate(httpContext, restMetadata, accessConfiguration);
             }
         );
@@ -329,7 +351,13 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
         RequestDelegate updateRequestDelegate = restItemMethod(
             (httpContext, invoker, activity, entityType, id) =>
             {
-                activity?.SetTag(TagOperation, Operations.Update);
+                // activity?.SetTag(TagOperation, Operations.Update);
+                if (activity is not null)
+                {
+                    activity.DisplayName = "REST UPDATE execution";
+                    activity.SetTag("rest.entity", entityType.Name);
+                    activity.SetTag("rest.id", id.ToString());
+                }
                 return invoker.InvokeUpdate(httpContext, restMetadata, id, accessConfiguration);
             }
         );
@@ -346,7 +374,14 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                 var request = httpContext.Request;
                 var force = (request.Headers.TryGetValue("X-Force", out var hvs) && hvs.Any(IsTruthy))
                     || (request.Query.TryGetValue("force", out var qvs) && qvs.Any(IsTruthy));
-                activity?.SetTag(TagOperation, Operations.Delete);
+                // activity?.SetTag(TagOperation, Operations.Delete);
+                if (activity is not null)
+                {
+                    activity.DisplayName = "REST DELETE execution";
+                    activity.SetTag("rest.entity", entityType.Name);
+                    activity.SetTag("rest.id", id.ToString());
+                    activity.SetTag("rest.force", force ? "true" : "false");
+                }
                 return invoker.InvokeDelete(httpContext, restMetadata, id, force, accessConfiguration);
             }
         );

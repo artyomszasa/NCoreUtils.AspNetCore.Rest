@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
@@ -7,6 +8,8 @@ namespace NCoreUtils.Rest.Internal;
 
 public interface IRestClientContextConfiguration
 {
+    IReadOnlyList<IRestClientErrorHandler> ErrorHandlers { get; }
+
     string Endpoint { get; }
 
     string HttpClientConfigurationName { get; }
@@ -28,6 +31,7 @@ internal interface IRestClientContextConfiguration<[DynamicallyAccessedMembers(D
                 factory.SerializerFactory.GetSerializer<TData>(),
                 factory.QuerySerializer,
                 IdHandler,
+                ErrorHandlers,
                 Endpoint,
                 HttpClientConfigurationName
             ),

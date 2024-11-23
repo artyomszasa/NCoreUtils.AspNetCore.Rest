@@ -111,14 +111,14 @@ public sealed class CreateInvoker<[DynamicallyAccessedMembers(DynamicallyAccesse
         {
             (await accessValidator.ValidateAsync(httpContext.User, cancellationToken).ConfigureAwait(false)).ThrowOnFailure();
             TData data;
-            using (var activity = G.ActivitySource.StartActivity("REST CREATE method input deserialization"))
+            // using (var activity = G.ActivitySource.StartActivity("REST CREATE method input deserialization"))
             {
                 data = await Deserializer.DeserializeAsync(httpContext.Request.Body, cancellationToken).ConfigureAwait(false);
             }
             var context = RestContext.Create<TData, TId>(data, metadata);
             var invocation = new RestCreateInvocation<TData, TId>(Implementation, context);
             TData result;
-            using (var activity = G.ActivitySource.StartActivity("REST CREATE method execution"))
+            // using (var activity = G.ActivitySource.StartActivity("REST CREATE method execution"))
             {
                 result = await MethodInvoker.InvokeAsync(invocation, cancellationToken).ConfigureAwait(false);
             }

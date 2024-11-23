@@ -68,11 +68,13 @@ public static partial class ServiceCollectionRestClientExtensions
         this IServiceCollection services,
         string endpoint,
         string? httpClientConfigurationName = default,
-        IRestIdHandler<TId>? idHandler = default)
+        IRestIdHandler<TId>? idHandler = default,
+        IReadOnlyList<IRestClientErrorHandler>? errorHandlers = default)
         where TData : class, IHasId<TId>
         where TId : IEquatable<TId>
     {
         services.AddSingleton<RemoteRestTypeRegistration>(serviceProvider => new RemoteRestTypeRegistration<TData, TId>(
+            errorHandlers ?? Array.Empty<IRestClientErrorHandler>(),
             endpoint,
             httpClientConfigurationName ?? "NCoreUtilsRestClient",
             idHandler ?? RestIdHandler.For<TId>(),

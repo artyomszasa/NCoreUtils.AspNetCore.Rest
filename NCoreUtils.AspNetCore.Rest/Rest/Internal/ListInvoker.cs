@@ -82,10 +82,10 @@ public sealed class ListInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
         var context = RestContext.ListCollection<TData, TId>(restQuery, filter, metadata);
         var invocation = new RestCollectionInvocation<TData>(Implementation, context);
         IAsyncEnumerable<TData> results;
-        using var activity = G.ActivitySource.StartActivity("REST COLLECTION method execution");
+        // using var activity = G.ActivitySource.StartActivity("REST COLLECTION method execution");
         results = MethodInvoker.InvokeAsync(invocation, cancellationToken);
         var serializer = SerializerFactory.GetSerializer<IAsyncEnumerable<TData>>();
-        using var subactivity = G.ActivitySource.StartActivity("REST COLLECTION method result serialization");
+        // using var subactivity = G.ActivitySource.StartActivity("REST COLLECTION method result serialization");
         await serializer.SerializeAsync(new HttpResponseOutput(response), results, cancellationToken)
             .ConfigureAwait(false);
     }

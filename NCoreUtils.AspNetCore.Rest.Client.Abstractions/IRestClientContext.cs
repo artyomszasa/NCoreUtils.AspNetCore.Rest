@@ -18,6 +18,8 @@ public interface IRestClientContext
 
     IRestQuerySerializer QuerySerializer { get; }
 
+    IReadOnlyList<IRestClientErrorHandler> ErrorHandlers { get; }
+
     HttpClient CreateHttpClient();
 
     string GetCollectionEndpoint()
