@@ -283,7 +283,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
         Context.QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, offset, limit);
         using var response = await SendAsync(request, cancellationToken);
-        await HandleErrorsAsync(response, requestUri, cancellationToken);
+        // handle NoContent
         if (HttpStatusCode.NoContent == response.StatusCode)
         {
             return reduction switch
@@ -296,6 +296,12 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
                 _ => throw new NotSupportedException($"Not supported reduction: {reduction}.")
             };
         }
+        // handle NotFound (First or Single)
+        if (HttpStatusCode.NotFound == response.StatusCode && reduction is First or Data.Protocol.Reductions.Single)
+        {
+            return ReductionResult<TData>.Item(default);
+        }
+        await HandleErrorsAsync(response, requestUri, cancellationToken);
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
         return reduction switch
         {
