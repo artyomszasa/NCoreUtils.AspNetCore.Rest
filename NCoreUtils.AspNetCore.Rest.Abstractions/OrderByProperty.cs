@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -17,9 +18,14 @@ public readonly struct OrderByProperty(PropertyInfo property, bool isDescending)
     [DebuggerStepThrough]
     public static bool operator!=(OrderByProperty a, OrderByProperty b) => !a.Equals(b);
 
-    public PropertyInfo Property { get; } = property;
+    public static readonly OrderByProperty Default = default;
+
+    public PropertyInfo? Property { get; } = property;
 
     public bool IsDescending { get; } = isDescending;
+
+    [MemberNotNullWhen(true, nameof(Property))]
+    public bool HasValue => Property is not null;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [DebuggerStepThrough]

@@ -111,7 +111,7 @@ public class DefaultQueryOrderer<[DynamicallyAccessedMembers(DynamicallyAccessed
         return ThenBy(source, option.By, option.IsDescending);
     }
 
-    public IOrderedQueryable<T> ApplyOrder(IQueryable<T> source, RestQuery restQuery)
+    public IQueryable<T> ApplyOrder(IQueryable<T> source, RestQuery restQuery)
     {
         var options = GetOrderingOptions(restQuery);
         IOrderedQueryable<T>? result = null;

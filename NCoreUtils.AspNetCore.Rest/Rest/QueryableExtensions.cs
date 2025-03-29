@@ -16,7 +16,7 @@ internal static class QueryableExtensions
     internal static IQueryable<T> Apply<T>(this IQueryable<T> source, IRestQueryFilter<T> filter, RestQuery restQuery)
         => filter.ApplyFilters(source, restQuery);
 
-    internal static IOrderedQueryable<T> Apply<T>(this IQueryable<T> source, IRestQueryOrderer<T> orderer, RestQuery restQuery)
+    internal static IQueryable<T> Apply<T>(this IQueryable<T> source, IRestQueryOrderer<T> orderer, RestQuery restQuery)
         => orderer.ApplyOrder(source, restQuery);
 
     internal static async ValueTask<IQueryable<T>> ApplyAsync<T>(this IQueryable<T> source, AsyncQueryFilter filter, CancellationToken cancellationToken)

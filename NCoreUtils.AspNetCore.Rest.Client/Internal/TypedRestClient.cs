@@ -152,6 +152,14 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
             }
             return Context.ParseId(location.AsSpan(index));
         }
+        if (requestUri.StartsWith('/'))
+        {
+            var index = location.LastIndexOf('/');
+            if (-1 != index)
+            {
+                return Context.ParseId(location.AsSpan(index + 1));
+            }
+        }
         throw new RestException(requestUri, $"REST CREATE returned invalid location: {location}.");
     }
 

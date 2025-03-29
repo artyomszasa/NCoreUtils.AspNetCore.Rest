@@ -13,6 +13,7 @@ public interface IRestQueryOrderer<T>
     /// </summary>
     /// <param name="source">Source queryable.</param>
     /// <param name="restQuery">REST query to apply.</param>
-    /// <returns>Ordered queryable.</returns>
-    IOrderedQueryable<T> ApplyOrder(IQueryable<T> source, RestQuery restQuery);
+    /// <returns>Potentially ordered queryable (query may be unordered if DefaultOrderProperty returns empty value).
+    // </returns>
+    IQueryable<T> ApplyOrder(IQueryable<T> source, RestQuery restQuery);
 }

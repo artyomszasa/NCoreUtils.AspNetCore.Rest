@@ -120,15 +120,18 @@ public partial class DefaultQueryOrderer
     protected static IOrderedQueryable<TData> ThenBy<[DynamicallyAccessedMembers(AllProps)] TData>(IOrderedQueryable<TData> source, string memberName, bool isDescending)
         => ThenBy(source, CreateMemberSelector<TData>(memberName), isDescending);
 
-    protected static IOrderedQueryable<TData> OrderByDefaultProperty<[DynamicallyAccessedMembers(AllProps)] TData>(
+    protected static IQueryable<TData> OrderByDefaultProperty<[DynamicallyAccessedMembers(AllProps)] TData>(
         IQueryable<TData> source,
         IServiceProvider serviceProvider)
     {
-        var defaultOrderProperty = serviceProvider.GetOptionalService<IDefaultOrderProperty<TData>>();
-        var property = defaultOrderProperty is null
-            ? DefaultDefaultOrderProperty.GetDefaultOrderByProperty(typeof(TData))
-            : defaultOrderProperty.Select();
-        return OrderBy(source, property.Property.CreateSelector(), property.IsDescending);
+        var property = serviceProvider.GetOptionalService<IDefaultOrderProperty<TData>>() switch
+        {
+            null => DefaultDefaultOrderProperty.GetDefaultOrderByProperty(typeof(TData)),
+            var defaultOrderProperty => defaultOrderProperty.Select()
+        };
+        return property.HasValue
+            ? OrderBy(source, property.Property.CreateSelector(), property.IsDescending)
+            : source;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
