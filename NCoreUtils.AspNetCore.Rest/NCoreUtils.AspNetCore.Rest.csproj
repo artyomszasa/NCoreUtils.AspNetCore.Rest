@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>net8.0;net7.0;net6.0</TargetFrameworks>
     <RootNamespace>NCoreUtils.AspNetCore</RootNamespace>
+    <Version>8.0.1-rc12</Version>
   </PropertyGroup>
     <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

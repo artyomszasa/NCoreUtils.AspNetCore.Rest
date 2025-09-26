@@ -30,7 +30,15 @@ internal static class QueryableExtensions
         return Expression.Property(Expression.Constant(box), nameof(ValueBox<T>.Value));
     }
 
+#if NET7_0
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Should handled by query provider.")]
+#endif
     public static IQueryable<T> TakeWhenNonNegative<T>(this IQueryable<T> source, int value)
         => value < 0 ? source : source.Take(value);
+
+#if NET7_0
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Should handled by query provider.")]
+#endif
+    public static IQueryable<T> TakeWhenNonNegative<T>(this IQueryable<T> source, int? value)
+        => value is not int v || v < 0 ? source : source.Take(v);
 }

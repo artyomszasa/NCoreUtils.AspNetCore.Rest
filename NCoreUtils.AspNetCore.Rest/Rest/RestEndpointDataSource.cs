@@ -192,7 +192,12 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
     private IReadOnlyList<Endpoint> BuildEndpoints()
     {
         var endpoints = new List<Endpoint>();
-        var prefixPatternSegment = string.IsNullOrEmpty(_configuration.Prefix) ? default : RoutePatternFactory.Segment(RoutePatternFactory.LiteralPart(_configuration.Prefix));
+        var prefixPatternSegment = string.IsNullOrEmpty(_configuration.Prefix)
+            ? default
+            : RoutePatternFactory.Segment(
+                _configuration.Prefix.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .MapToArray(RoutePatternFactory.LiteralPart)
+            );
         var collectionRoutePattern = Segments.Combine(prefixPatternSegment, "type");
         var itemRoutePattern = Segments.Combine(prefixPatternSegment, "type", "id");
         // COMMON

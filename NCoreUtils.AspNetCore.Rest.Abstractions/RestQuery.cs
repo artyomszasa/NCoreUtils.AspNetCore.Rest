@@ -6,8 +6,6 @@ namespace NCoreUtils.AspNetCore.Rest;
 
 public sealed class RestQuery : IDisposable
 {
-    public const int DefaultCount = 10000;
-
     private ArraySegment<string>? _fields;
 
     private ArraySegment<string>? _sortBy;
@@ -144,6 +142,6 @@ public sealed class RestQuery : IDisposable
         => Offset ?? 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetCount()
-        => Count ?? DefaultCount;
+    public int? GetCount()
+        => Count;
 }
