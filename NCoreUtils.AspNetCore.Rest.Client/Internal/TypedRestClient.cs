@@ -83,6 +83,7 @@ public abstract class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAcc
         string? filter = default,
         string? sortBy = default,
         string? sortByDirection = default,
+        IReadOnlyList<ThenBySorting>? thenBy = default,
         IReadOnlyList<string>? fields = default,
         IReadOnlyList<string>? includes = default,
         int offset = 0,
@@ -95,6 +96,7 @@ public abstract class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAcc
         string? filter = null,
         string? sortBy = null,
         string? sortByDirection = null,
+        IReadOnlyList<ThenBySorting>? thenBy = default,
         int offset = 0,
         int? limit = null,
         CancellationToken cancellationToken = default);
@@ -174,6 +176,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         string? filter = default,
         string? sortBy = default,
         string? sortByDirection = default,
+        IReadOnlyList<ThenBySorting>? thenBy = default,
         IReadOnlyList<string>? fields = default,
         IReadOnlyList<string>? includes = default,
         int offset = 0,
@@ -185,7 +188,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         var requestUri = Context.GetCollectionEndpoint();
         Logger.LogRestCollectionUriResolved(typeof(TData), requestUri);
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-        Context.QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, offset, limit);
+        Context.QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, thenBy, offset, limit);
         Logger.LogRestCollection(target, filter, sortBy, sortByDirection, fields, includes, offset, limit);
         using var response = await SendAsync(request, cancellationToken);
         await HandleErrorsAsync(response, requestUri, cancellationToken);
@@ -280,6 +283,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         string? filter = null,
         string? sortBy = null,
         string? sortByDirection = null,
+        IReadOnlyList<ThenBySorting>? thenBy = default,
         int offset = 0,
         int? limit = null,
         CancellationToken cancellationToken = default)
@@ -289,7 +293,7 @@ public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         Logger.LogRestReductionUriResolved(typeof(TData), requestUri);
         using var activity = G.ActivitySource.StartActivity("Remote REST REDUCTION method execution", System.Diagnostics.ActivityKind.Client);
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-        Context.QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, offset, limit);
+        Context.QuerySerializer.Apply(request, target, filter, sortBy, sortByDirection, thenBy, offset, limit);
         using var response = await SendAsync(request, cancellationToken);
         // handle NoContent
         if (HttpStatusCode.NoContent == response.StatusCode)

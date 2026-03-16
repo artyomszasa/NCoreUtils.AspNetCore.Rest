@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.Data.Protocol;
 using NCoreUtils.Data.Protocol.Ast;
+using NCoreUtils.Data.Protocol.Linq;
 
 namespace NCoreUtils.Rest.Internal;
 
@@ -28,6 +29,7 @@ public class TypedRestQueryExecutor(IServiceProvider serviceProvider) : IRestDat
         Node? filter = null,
         Node? sortBy = null,
         bool isDescending = false,
+        IReadOnlyList<ThenByOrdering>? thenBy = default,
         IReadOnlyList<string>? fields = null,
         IReadOnlyList<string>? includes = null,
         int offset = 0,
@@ -39,6 +41,9 @@ public class TypedRestQueryExecutor(IServiceProvider serviceProvider) : IRestDat
             filter: filter?.ToString(),
             sortBy: sortBy?.ToString(),
             sortByDirection: isDescending ? "desc" : "asc",
+            thenBy: thenBy is null
+                ? default
+                : thenBy.MapToArray(ord => new ThenBySorting(ord.Expression?.ToString() ?? string.Empty, ord.IsDescending ? "desc" : "asc")),
             fields: fields,
             includes: includes,
             offset: offset,
@@ -47,12 +52,35 @@ public class TypedRestQueryExecutor(IServiceProvider serviceProvider) : IRestDat
         )));
     }
 
+    [Obsolete("Use variation that handles thenBy instead.")]
+    public IAsyncEnumerable<T> ExecuteEnumerationAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        string target,
+        Node? filter = null,
+        Node? sortBy = null,
+        bool isDescending = false,
+        IReadOnlyList<string>? fields = null,
+        IReadOnlyList<string>? includes = null,
+        int offset = 0,
+        int? limit = null)
+        => ExecuteEnumerationAsync<T>(
+            target,
+            filter,
+            sortBy,
+            isDescending,
+            null,
+            fields,
+            includes,
+            offset,
+            limit
+        );
+
     public async Task<TResult> ExecuteReductionAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TSource, TResult>(
         string target,
         Reduction reduction,
         Node? filter = null,
         Node? sortBy = null,
         bool isDescending = false,
+        IReadOnlyList<ThenByOrdering>? thenBy = default,
         int offset = 0,
         int? limit = null,
         CancellationToken cancellationToken = default)
@@ -64,6 +92,9 @@ public class TypedRestQueryExecutor(IServiceProvider serviceProvider) : IRestDat
             filter?.ToString(),
             sortBy?.ToString(),
             sortByDirection: isDescending ? "desc" : "asc",
+            thenBy: thenBy is null
+                ? default
+                : thenBy.MapToArray(ord => new ThenBySorting(ord.Expression?.ToString() ?? string.Empty, ord.IsDescending ? "desc" : "asc")),
             offset: offset,
             limit,
             cancellationToken
@@ -72,4 +103,26 @@ public class TypedRestQueryExecutor(IServiceProvider serviceProvider) : IRestDat
             ? result!
             : throw new InvalidCastException($"{res} cannot be converted to {typeof(TResult)}");
     }
+
+    [Obsolete("Use variation that handles thenBy instead.")]
+    public Task<TResult> ExecuteReductionAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TSource, TResult>(
+        string target,
+        Reduction reduction,
+        Node? filter = null,
+        Node? sortBy = null,
+        bool isDescending = false,
+        int offset = 0,
+        int? limit = null,
+        CancellationToken cancellationToken = default)
+        => ExecuteReductionAsync<TSource, TResult>(
+            target,
+            reduction,
+            filter,
+            sortBy,
+            isDescending,
+            default,
+            offset,
+            limit,
+            cancellationToken
+        );
 }

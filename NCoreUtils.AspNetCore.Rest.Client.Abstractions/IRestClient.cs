@@ -25,6 +25,7 @@ public interface IRestClient<TData> : IRestClient
         string? filter = default,
         string? sortBy = default,
         string? sortByDirection = default,
+        IReadOnlyList<ThenBySorting>? thenBy = default,
         IReadOnlyList<string>? fields = default,
         IReadOnlyList<string>? includes = default,
         int offset = 0,
@@ -38,6 +39,7 @@ public interface IRestClient<TData> : IRestClient
         string? filter = null,
         string? sortBy = null,
         string? sortByDirection = null,
+        IReadOnlyList<ThenBySorting>? thenBy = default,
         int offset = 0,
         int? limit = null,
         CancellationToken cancellationToken = default

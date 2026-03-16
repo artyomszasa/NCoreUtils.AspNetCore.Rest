@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NCoreUtils.AspNetCore.Rest.Unit.Data;
+using NCoreUtils.Data.Protocol.Internal;
 using NCoreUtils.Linq;
 using NCoreUtils.Rest;
 using Xunit;
@@ -31,7 +32,6 @@ public class AsyncEnumerableTests : IAsyncDisposable
             .AddSingleton<IHttpClientFactory>(new TestHttpClientFactory(TestHost))
             .AddCommonRestClientServices(TestSerializerContext.Default)
             .AddRemoteRestType<TestData, int>("/")
-            // .AddRestClientServices()
             // .AddDefaultRestClient("/", (IJsonTypeInfoResolver)TestSerializerContext.Default)
             .AddDataQueryServices(TestQueryContext.Singleton)
             .BuildServiceProvider(false);
@@ -39,7 +39,15 @@ public class AsyncEnumerableTests : IAsyncDisposable
         var restClient = serviceProvider.GetRequiredService<IRestClient<TestData, int>>();
         var items = await restClient.ListCollectionAsync().ToListAsync(default);
         Assert.NotNull(items);
-        Assert.Equal(3, items.Count);
+        Assert.Equal(4, items.Count);
+
+        items = await restClient.ListCollectionAsync(
+            sortBy: "e => e.stringData",
+            sortByDirection: "desc",
+            thenBy: [new("e => e.id", "asc")]
+        ).ToListAsync(default);
+        Assert.NotNull(items);
+        Assert.Equal(4, items.Count);
     }
 
     [Fact]

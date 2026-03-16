@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net.Http;
 
 namespace NCoreUtils.Rest
@@ -8,12 +10,17 @@ namespace NCoreUtils.Rest
     {
         public static RestQueryAsHeaderSerializer Instance { get; } = new RestQueryAsHeaderSerializer();
 
+        private static string AscWhenNull(string? source) => string.IsNullOrEmpty(source)
+            ? "asc"
+            : source;
+
         public void Apply(
             HttpRequestMessage request,
             string? target = null,
             string? filter = null,
             string? sortBy = null,
             string? sortByDirection = null,
+            IReadOnlyList<ThenBySorting>? thenBy = default,
             int offset = 0,
             int? limit = null)
         {
@@ -23,8 +30,18 @@ namespace NCoreUtils.Rest
             }
             if (!string.IsNullOrEmpty(sortBy))
             {
-                request.Headers.Add("X-Sort-By", Uri.EscapeDataString(sortBy));
-                request.Headers.Add("X-Sort-By-Direction", sortByDirection);
+                if (thenBy is { Count: > 0 })
+                {
+                    var sortByValue = string.Join(',', [sortBy, ..thenBy.Select(ord => ord.By)]);
+                    var sortByDirectionValue = string.Join(',', [AscWhenNull(sortByDirection), ..thenBy.Select(ord => AscWhenNull(ord.Direction))]);
+                    request.Headers.Add("X-Sort-By", Uri.EscapeDataString(sortByValue));
+                    request.Headers.Add("X-Sort-By-Direction", sortByDirectionValue);
+                }
+                else
+                {
+                    request.Headers.Add("X-Sort-By", Uri.EscapeDataString(sortBy));
+                    request.Headers.Add("X-Sort-By-Direction", sortByDirection);
+                }
             }
             request.Headers.Add("X-Offset", offset.ToString(CultureInfo.InvariantCulture));
             if (limit.HasValue)
