@@ -68,7 +68,7 @@ public interface IRestClientContext<TData, TId> : IRestClientContext
             {
                 bufferSpan[offset++] = '/';
             }
-            reduction.CopyTo(bufferSpan[offset..]);
+            reduction.ThrowIfNull().CopyTo(bufferSpan[offset..]);
             offset += reduction.Length;
             return new(bufferSpan[.. offset]);
         }

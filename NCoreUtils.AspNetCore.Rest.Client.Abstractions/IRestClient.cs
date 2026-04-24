@@ -16,6 +16,9 @@ public interface IRestClient
 
 public interface IRestClient<TData> : IRestClient
 {
+    // FIXME: 
+    new Type DataType => typeof(TData);
+
     Type IRestClient.DataType => typeof(TData);
 
     IQueryable<TData> CreateQueryable();
