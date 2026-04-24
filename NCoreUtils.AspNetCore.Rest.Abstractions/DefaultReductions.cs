@@ -12,7 +12,9 @@ public static class DefaultReductions
 {
     public const string First = "first";
 
+#pragma warning disable CA1720 // Identifier contains type name
     public const string Single = "single";
+#pragma warning restore CA1720 // Identifier contains type name
 
     public const string Count = "count";
 

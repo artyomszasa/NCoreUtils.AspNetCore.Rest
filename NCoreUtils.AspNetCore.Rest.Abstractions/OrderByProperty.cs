@@ -18,7 +18,7 @@ public readonly struct OrderByProperty(PropertyInfo property, bool isDescending)
     [DebuggerStepThrough]
     public static bool operator!=(OrderByProperty a, OrderByProperty b) => !a.Equals(b);
 
-    public static readonly OrderByProperty Default = default;
+    public static readonly OrderByProperty Default = default!;
 
     public PropertyInfo? Property { get; } = property;
 

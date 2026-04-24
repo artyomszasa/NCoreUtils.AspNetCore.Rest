@@ -12,5 +12,7 @@ public interface IDefaultOrderProperty<[DynamicallyAccessedMembers(DynamicallyAc
     /// Retrieves default ordering property for the predefined type.
     /// </summary>
     /// <returns>Order by property descriptor.</returns>
+#pragma warning disable CA1716 // Identifiers should not match keywords
     OrderByProperty Select();
+#pragma warning restore CA1716 // Identifiers should not match keywords
 }

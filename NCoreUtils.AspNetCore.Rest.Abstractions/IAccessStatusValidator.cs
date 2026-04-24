@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.CompilerServices;
 using System.Security.Claims;
 using System.Threading;
@@ -5,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NCoreUtils.AspNetCore.Rest;
 
-public readonly struct AccessStatusValidatorResult
+public readonly struct AccessStatusValidatorResult : IEquatable<AccessStatusValidatorResult>
 {
     public static readonly AccessStatusValidatorResult Succeeded = new(true, default, default);
 
@@ -29,6 +30,23 @@ public readonly struct AccessStatusValidatorResult
         StatusCode = statusCode;
         Message = message;
     }
+
+    public override bool Equals(object? obj)
+        => obj is AccessStatusValidatorResult other && Equals(other);
+
+    public bool Equals(AccessStatusValidatorResult other)
+        => Success == other.Success && StatusCode == other.StatusCode && Message == other.Message;
+
+    public override int GetHashCode()
+        => HashCode.Combine(Success, StatusCode, Message);
+
+    public static bool operator ==(AccessStatusValidatorResult left, AccessStatusValidatorResult right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(AccessStatusValidatorResult left, AccessStatusValidatorResult right)
+        => !(left == right);
 }
 
 public interface IAccessStatusValidator

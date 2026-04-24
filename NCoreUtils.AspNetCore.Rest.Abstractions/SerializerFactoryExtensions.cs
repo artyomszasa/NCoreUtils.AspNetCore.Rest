@@ -15,14 +15,6 @@ public static class SerializerFactoryExtensions
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type itemType,
         CancellationToken cancellationToken = default)
     {
-#if NET8_0_OR_GREATER
-        ArgumentNullException.ThrowIfNull(item);
-#else
-        if (item is null)
-        {
-            throw new ArgumentNullException(nameof(item));
-        }
-#endif
-        return serializerFactory.SerializeAsync(configurableStream, item, itemType, cancellationToken);
+        return serializerFactory.ThrowIfNull().SerializeAsync(configurableStream, item, itemType, cancellationToken);
     }
 }

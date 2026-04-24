@@ -6,15 +6,18 @@ namespace NCoreUtils.AspNetCore.Rest;
 
 public sealed class RestQuery : IDisposable
 {
+    private bool _isDisposed;
     private ArraySegment<string>? _fields;
 
     private ArraySegment<string>? _sortBy;
 
     private ArraySegment<RestSortByDirection>? _sortByDirections;
 
+#pragma warning disable CA1721 // Property names should not match get methods
     public int? Offset { get; }
 
     public int? Count { get; }
+#pragma warning restore CA1721 // Property names should not match get methods
 
     public string? Filter { get; }
 
@@ -62,8 +65,12 @@ public sealed class RestQuery : IDisposable
         }
     }
 
-    void IDisposable.Dispose()
+    public void Dispose()
     {
+        if (_isDisposed)
+        {
+            return;
+        }
         if (_fields.HasValue)
         {
             var fields = _fields.Value;
@@ -82,6 +89,7 @@ public sealed class RestQuery : IDisposable
             _sortByDirections = default;
             ArrayPool<RestSortByDirection>.Shared.Return(sortByDirections.Array!);
         }
+        _isDisposed = true;
     }
 
     internal RestQuery Override(RestQuery other)
@@ -137,6 +145,7 @@ public sealed class RestQuery : IDisposable
         return new RestQuery(offset, count, filter, fields, sortBy, sortByDirections);
     }
 
+#pragma warning disable CA1024 // Use properties where appropriate
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetOffset()
         => Offset ?? 0;
@@ -144,4 +153,5 @@ public sealed class RestQuery : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int? GetCount()
         => Count;
+#pragma warning restore CA1024 // Use properties where appropriate
 }

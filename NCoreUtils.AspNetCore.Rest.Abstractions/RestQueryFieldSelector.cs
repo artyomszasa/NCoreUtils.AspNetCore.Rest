@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace NCoreUtils.AspNetCore.Rest;
 
+#pragma warning disable CA1815 // Override equals and operator equals on value types
 [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
 public readonly struct RestQueryFieldsSelector(IReadOnlyList<string>? includedFields)
 {
@@ -20,3 +21,4 @@ public readonly struct RestQueryFieldsSelector(IReadOnlyList<string>? includedFi
         get => IncludedFields is null;
     }
 }
+#pragma warning restore CA1815 // Override equals and operator equals on value types
