@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net7.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net10.0;net8.0;net6.0</TargetFrameworks>
     <RootNamespace>NCoreUtils.AspNetCore</RootNamespace>
-    <Version>8.0.1-rc12</Version>
   </PropertyGroup>
     <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -16,9 +15,6 @@
     <PackageReference Include="NCoreUtils.Data.Protocol.Abstractions" Version="$(NCoreUtilsProtocolVersion)" />
     <PackageReference Include="NCoreUtils.Extensions.AsyncEnumerable" Version="8.0.0" />
     <PackageReference Include="NCoreUtils.Linq.Abstractions" Version="8.0.0" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
-    <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net7.0' ">
     <PackageReference Include="System.Text.Json" Version="8.0.5" />

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -6,6 +7,7 @@ namespace NCoreUtils.AspNetCore.Rest;
 
 internal static class PropertyInfoExtensions
 {
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Must have been preserved by caller")]
     public static LambdaExpression CreateSelector(this PropertyInfo property, Type? parameterType = null)
     {
         var eArgType = parameterType switch

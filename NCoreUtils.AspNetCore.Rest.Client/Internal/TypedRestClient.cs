@@ -68,7 +68,7 @@ public abstract class TypedRestClient(ILogger<TypedRestClient> logger)
     public abstract Type IdType { get; }
 }
 
-public abstract class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData>(
+public abstract class TypedRestClient<TData>(
     ILogger<TypedRestClient<TData>> logger,
     IProtocolQueryProvider protocolQueryProvider)
     : TypedRestClient(logger)
@@ -102,7 +102,7 @@ public abstract class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAcc
         CancellationToken cancellationToken = default);
 }
 
-public class TypedRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData, TId>(
+public class TypedRestClient<TData, TId>(
     ILogger<TypedRestClient<TData, TId>> logger,
     IRestClientContext<TData, TId> context,
     IProtocolQueryProvider protocolQueryProvider)

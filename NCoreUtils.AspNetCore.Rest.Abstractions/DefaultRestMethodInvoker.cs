@@ -12,7 +12,7 @@ public class DefaultRestMethodInvoker : IRestMethodInvoker
     {
         using var tx = await txMethod.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         var result = await target.InvokeAsync(cancellationToken).ConfigureAwait(false);
-        tx.Commit();
+        await tx.CommitAsync(cancellationToken).ConfigureAwait(false);
         return result;
     }
 
@@ -20,7 +20,7 @@ public class DefaultRestMethodInvoker : IRestMethodInvoker
     {
         using var tx = await txMethod.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         await target.InvokeAsync(cancellationToken).ConfigureAwait(false);
-        tx.Commit();
+        await tx.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public virtual ValueTask<T> InvokeAsync<T>(RestMethodInvocation<T> target, CancellationToken cancellationToken)

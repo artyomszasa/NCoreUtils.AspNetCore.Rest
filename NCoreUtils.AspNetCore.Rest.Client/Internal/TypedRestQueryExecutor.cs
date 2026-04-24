@@ -12,7 +12,7 @@ namespace NCoreUtils.Rest.Internal;
 
 public class TypedRestQueryExecutor(IServiceProvider serviceProvider) : IRestDataQueryExecutor
 {
-    private static TypedRestClient<T> CastRestClient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(TypedRestClient client) => client switch
+    private static TypedRestClient<T> CastRestClient<T>(TypedRestClient client) => client switch
     {
         TypedRestClient<T> clientOfT => clientOfT,
         _ => throw new InvalidOperationException($"Rest client configuration returned client of invalid type: TypedRestClient<{typeof(T)}> expected, TypeRestClient<{client.DataType}> returned.")
@@ -24,7 +24,7 @@ public class TypedRestQueryExecutor(IServiceProvider serviceProvider) : IRestDat
 
     protected RestClientContextFactory ClientContextFactory => _clientContextFactory ??= ServiceProvider.GetRequiredService<RestClientContextFactory>();
 
-    public IAsyncEnumerable<T> ExecuteEnumerationAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+    public IAsyncEnumerable<T> ExecuteEnumerationAsync<T>(
         string target,
         Node? filter = null,
         Node? sortBy = null,
@@ -53,7 +53,7 @@ public class TypedRestQueryExecutor(IServiceProvider serviceProvider) : IRestDat
     }
 
     [Obsolete("Use variation that handles thenBy instead.")]
-    public IAsyncEnumerable<T> ExecuteEnumerationAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+    public IAsyncEnumerable<T> ExecuteEnumerationAsync<T>(
         string target,
         Node? filter = null,
         Node? sortBy = null,
@@ -74,7 +74,7 @@ public class TypedRestQueryExecutor(IServiceProvider serviceProvider) : IRestDat
             limit
         );
 
-    public async Task<TResult> ExecuteReductionAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TSource, TResult>(
+    public async Task<TResult> ExecuteReductionAsync<TSource, TResult>(
         string target,
         Reduction reduction,
         Node? filter = null,
@@ -105,7 +105,7 @@ public class TypedRestQueryExecutor(IServiceProvider serviceProvider) : IRestDat
     }
 
     [Obsolete("Use variation that handles thenBy instead.")]
-    public Task<TResult> ExecuteReductionAsync<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TSource, TResult>(
+    public Task<TResult> ExecuteReductionAsync<TSource, TResult>(
         string target,
         Reduction reduction,
         Node? filter = null,
