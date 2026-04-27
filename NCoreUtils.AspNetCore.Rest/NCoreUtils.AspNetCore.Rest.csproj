@@ -3,7 +3,11 @@
     <TargetFrameworks>net10.0;net8.0;net6.0</TargetFrameworks>
     <RootNamespace>NCoreUtils.AspNetCore</RootNamespace>
   </PropertyGroup>
-    <ItemGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>All</AnalysisMode>
+  </PropertyGroup>
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
@@ -19,4 +23,12 @@
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' Or '$(TargetFramework)' == 'net7.0' ">
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
+  <!-- NOTE: NET Standard polyfill -->
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <Compile Include="..\shared\CompilerServices\**" />
+  </ItemGroup>
+  <!-- NOTE: Common -->
+  <!-- <ItemGroup>
+    <Compile Include="..\shared\Check.cs" />
+  </ItemGroup> -->
 </Project>

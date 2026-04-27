@@ -45,7 +45,7 @@ public class DefaultRestListCollection<[DynamicallyAccessedMembers(DynamicallyAc
     [UnconditionalSuppressMessage("Trim", "IL2026", Justification = "Handled by query provider.")]
     public IAsyncEnumerable<TData> InvokeAsync(IRestListCollectionContext<TData> context, CancellationToken cancellationToken)
     {
-        var restQuery = context.RestQuery;
+        var restQuery = context.ThrowIfNull().RestQuery;
         var filteredQueryTask = Repository.Items
             // apply filters
             .Apply(QueryFilter, restQuery)

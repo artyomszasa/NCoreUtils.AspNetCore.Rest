@@ -33,7 +33,7 @@ public abstract class UpdateInvoker
 
         public override RestMethodInvocation<TData> UpdateArguments(IReadOnlyList<object> arguments)
         {
-            if (arguments.Count != 1)
+            if (arguments.ThrowIfNull().Count != 1)
             {
                 throw new InvalidOperationException("Invalid number of arguments.");
             }

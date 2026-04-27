@@ -41,9 +41,11 @@ public class DefaultRestItem<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 #endif
     public async ValueTask<TData?> InvokeAsync(IRestItemContext<TData, TId> context, CancellationToken cancellationToken)
     {
-        var query = Repository.Items.Where(context.CreateIdEqualsPredicate(context.Id));
-        var accessibleQuery = (IQueryable<TData>)await context.AccessValidator(query, cancellationToken);
-        var item = await accessibleQuery.FirstOrDefaultAsync(cancellationToken) ?? throw new NotFoundException();
+        var query = Repository.Items.Where(context.ThrowIfNull().CreateIdEqualsPredicate(context.ThrowIfNull().Id));
+        var accessibleQuery = (IQueryable<TData>)await context.AccessValidator(query, cancellationToken)
+            .ConfigureAwait(false);
+        var item = await accessibleQuery.FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false)
+            ?? throw new NotFoundException();
         return item;
     }
 }

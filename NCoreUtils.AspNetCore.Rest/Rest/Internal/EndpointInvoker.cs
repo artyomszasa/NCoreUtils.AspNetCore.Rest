@@ -63,7 +63,7 @@ public class EndpointInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Task InvokeCreate(HttpContext httpContext, IRestContextMetadata metadata, RestAccessConfiguration accessConfiguration)
     {
-        var serviceProvider = httpContext.RequestServices;
+        var serviceProvider = httpContext.ThrowIfNull().RequestServices;
         var createInvoker = new CreateInvoker<TData, TId>(
             serviceProvider: serviceProvider,
             accessConfiguration: accessConfiguration,
@@ -75,7 +75,7 @@ public class EndpointInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Task InvokeDelete(HttpContext httpContext, IRestContextMetadata metadata, object id, bool force, RestAccessConfiguration accessConfiguration)
     {
-        var serviceProvider = httpContext.RequestServices;
+        var serviceProvider = httpContext.ThrowIfNull().RequestServices;
         var deleteInvoker = new DeleteInvoker<TData, TId>(
             serviceProvider: serviceProvider,
             accessConfiguration: accessConfiguration,
@@ -87,7 +87,7 @@ public class EndpointInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Task InvokeItem(HttpContext httpContext, IRestContextMetadata metadata, object id, RestAccessConfiguration accessConfiguration)
     {
-        var serviceProvider = httpContext.RequestServices;
+        var serviceProvider = httpContext.ThrowIfNull().RequestServices;
         var itemInvoker = new ItemInvoker<TData, TId>(
             serviceProvider: serviceProvider,
             accessConfiguration: accessConfiguration,
@@ -100,7 +100,7 @@ public class EndpointInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Task InvokeList(HttpContext httpContext, IRestContextMetadata metadata, RestAccessConfiguration accessConfiguration)
     {
-        var serviceProvider = httpContext.RequestServices;
+        var serviceProvider = httpContext.ThrowIfNull().RequestServices;
         var listInvoker = new ListInvoker<TData, TId>(
             serviceProvider: serviceProvider,
             accessConfiguration: accessConfiguration,
@@ -115,7 +115,7 @@ public class EndpointInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Task InvokeReduction(HttpContext httpContext, IRestContextMetadata metadata, string reduction, RestAccessConfiguration accessConfiguration)
     {
-        var serviceProvider = httpContext.RequestServices;
+        var serviceProvider = httpContext.ThrowIfNull().RequestServices;
         var reductionInvoker = new ReductionInvoker<TData, TId>(
             serviceProvider: serviceProvider,
             accessConfiguration: accessConfiguration,
@@ -129,7 +129,7 @@ public class EndpointInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Task InvokeUpdate(HttpContext httpContext, IRestContextMetadata metadata, object id, RestAccessConfiguration accessConfiguration)
     {
-        var serviceProvider = httpContext.RequestServices;
+        var serviceProvider = httpContext.ThrowIfNull().RequestServices;
         var updateInvoker = new UpdateInvoker<TData, TId>(
             serviceProvider: serviceProvider,
             accessConfiguration: accessConfiguration,

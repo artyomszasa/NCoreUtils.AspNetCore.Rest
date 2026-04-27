@@ -40,7 +40,7 @@ public class DefaultQueryOrderer<[DynamicallyAccessedMembers(DynamicallyAccessed
 
     protected virtual IEnumerable<OrderingOption> GetOrderingOptions(RestQuery restQuery)
     {
-        if (!restQuery.SortBy.HasValue || 0 == restQuery.SortBy.Value.Count)
+        if (!restQuery.ThrowIfNull().SortBy.HasValue || 0 == restQuery.SortBy.Value.Count)
         {
             yield break;
         }

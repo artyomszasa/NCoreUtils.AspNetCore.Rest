@@ -48,7 +48,7 @@ public class DefaultRestCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 #endif
     public virtual async ValueTask<TData> InvokeAsync(IRestCreateContext<TData, TId> context, CancellationToken cancellationToken)
     {
-        var data = context.Data;
+        var data = context.ThrowIfNull().Data;
         if (data.HasValidId())
         {
             // check if already exists

@@ -57,7 +57,7 @@ public class DefaultRestReduction<[DynamicallyAccessedMembers(DynamicallyAccesse
 
     public async ValueTask<object?> InvokeAsync(IRestReductionContext<T> context, CancellationToken cancellationToken)
     {
-        var reduction = context.Reduction;
+        var reduction = context.ThrowIfNull().Reduction;
         var restQuery = context.RestQuery;
         var query = await Repository.Items
             // apply filters

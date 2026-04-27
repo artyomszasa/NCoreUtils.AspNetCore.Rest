@@ -36,7 +36,7 @@ public class DefaultRestDelete<[DynamicallyAccessedMembers(DynamicallyAccessedMe
     /// <param name="cancellationToken">Cancellation token.</param>
     public virtual async ValueTask InvokeAsync(IRestDeleteContext<TData, TId> context, CancellationToken cancellationToken)
     {
-        var id = context.Id;
+        var id = context.ThrowIfNull().Id;
         var item = await Repository.LookupAsync(id, cancellationToken);
         if (item is null)
         {

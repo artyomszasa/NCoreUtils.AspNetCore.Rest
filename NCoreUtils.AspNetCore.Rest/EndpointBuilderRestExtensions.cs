@@ -11,6 +11,7 @@ public static class EndpointBuilderRestExtensions
         this IEndpointRouteBuilder builder,
         RestConfiguration configuration)
     {
+        builder.ThrowIfNull();
         var dataSource = new RestEndpointDataSource(configuration, builder.ServiceProvider.GetOptionalService<IIdParser>());
         builder.DataSources.Add(dataSource);
         return dataSource;

@@ -20,7 +20,7 @@ public class HeaderRestQueryParser : IRestQueryParser
 
     public ValueTask<RestQuery> ParseAsync(HttpRequest httpRequest, CancellationToken cancellationToken)
     {
-        var headers = httpRequest.Headers;
+        var headers = httpRequest.ThrowIfNull().Headers;
         // offset
         var offset = headers.TryGetValue("X-Offset", out var values)
             && values.Count > 0

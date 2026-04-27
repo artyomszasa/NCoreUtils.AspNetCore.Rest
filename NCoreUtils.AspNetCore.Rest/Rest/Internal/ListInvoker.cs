@@ -34,7 +34,7 @@ public abstract class ListInvoker
 
         public override RestMethodEnumerableInvocation<T> UpdateArguments(IReadOnlyList<object> arguments)
         {
-            if (arguments.Count != 1)
+            if (arguments.ThrowIfNull().Count != 1)
             {
                 throw new InvalidOperationException("Invalid number of arguments.");
             }
@@ -101,7 +101,7 @@ public sealed class ListInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
             var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator
                 ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, context.User, ctoken))
                 : _noFilter;
-            using var restQuery = await QueryParser.ParseAsync(context.Request, cancellationToken);
+            using var restQuery = await QueryParser.ParseAsync(context.Request, cancellationToken).ConfigureAwait(false);
             Logger.LogRestQueryParsingDone(Type);
             if (!restQuery.Fields.HasValue || restQuery.Fields.Value.Count == 0)
             {

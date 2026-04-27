@@ -24,6 +24,7 @@ namespace NCoreUtils.Rest
             int offset = 0,
             int? limit = null)
         {
+            request.ThrowIfNull();
             if (!string.IsNullOrEmpty(filter))
             {
                 request.Headers.Add("X-Filter", Uri.EscapeDataString(filter));

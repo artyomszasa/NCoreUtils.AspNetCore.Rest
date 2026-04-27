@@ -11,7 +11,7 @@ public class QueryArgumentsRestQueryParser : IRestQueryParser
 {
     public ValueTask<RestQuery> ParseAsync(HttpRequest httpRequest, CancellationToken cancellationToken)
     {
-        var q = httpRequest.Query;
+        var q = httpRequest.ThrowIfNull().Query;
         // offset
         var offset = q.TryGetValue("offset", out var values)
             && values.Count > 0

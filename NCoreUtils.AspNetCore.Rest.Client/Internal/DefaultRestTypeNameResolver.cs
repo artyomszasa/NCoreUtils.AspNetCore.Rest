@@ -7,5 +7,5 @@ public sealed class DefaultRestTypeNameResolver : IRestTypeNameResolver
     public static DefaultRestTypeNameResolver Singleton { get; } = new();
 
     public string ResolveTypeName(Type type)
-        => type.Name;
+        => type.ThrowIfNull().Name;
 }

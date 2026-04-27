@@ -1,13 +1,10 @@
 using System;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NCoreUtils.AspNetCore.Rest.Unit.Data;
-using NCoreUtils.Data.Protocol.Internal;
 using NCoreUtils.Linq;
 using NCoreUtils.Rest;
 using Xunit;

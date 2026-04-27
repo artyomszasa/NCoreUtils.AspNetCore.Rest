@@ -124,7 +124,7 @@ public partial class DefaultQueryOrderer
         IQueryable<TData> source,
         IServiceProvider serviceProvider)
     {
-        var property = serviceProvider.GetOptionalService<IDefaultOrderProperty<TData>>() switch
+        var property = serviceProvider.ThrowIfNull().GetOptionalService<IDefaultOrderProperty<TData>>() switch
         {
             null => DefaultDefaultOrderProperty.GetDefaultOrderByProperty(typeof(TData)),
             var defaultOrderProperty => defaultOrderProperty.Select()

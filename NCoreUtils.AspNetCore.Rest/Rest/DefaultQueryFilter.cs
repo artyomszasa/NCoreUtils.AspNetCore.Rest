@@ -13,6 +13,7 @@ public class DefaultQueryFilter<[DynamicallyAccessedMembers(DynamicallyAccessedM
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Should be handled by the provider.")]
     public IQueryable<T> ApplyFilters(IQueryable<T> source, RestQuery restQuery)
     {
+        restQuery.ThrowIfNull();
         if (string.IsNullOrWhiteSpace(restQuery.Filter))
         {
             return source;

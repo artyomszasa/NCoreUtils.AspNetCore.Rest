@@ -145,7 +145,7 @@ public class TypedRestClient<TData, TId>(
 
     protected TId ParseLocation(string location, string requestUri)
     {
-        if (location.StartsWith(Context.Endpoint))
+        if (location.ThrowIfNull().StartsWith(Context.Endpoint, StringComparison.OrdinalIgnoreCase))
         {
             var index = Context.Endpoint.Length;
             while (index < location.Length && location[index] == '/')
@@ -154,7 +154,7 @@ public class TypedRestClient<TData, TId>(
             }
             return Context.ParseId(location.AsSpan(index));
         }
-        if (requestUri.StartsWith('/'))
+        if (requestUri.ThrowIfNull().StartsWith('/'))
         {
             var index = location.LastIndexOf('/');
             if (-1 != index)
@@ -250,7 +250,7 @@ public class TypedRestClient<TData, TId>(
         {
             throw new InvalidOperationException($"Invalid id.");
         }
-        if (!id!.Equals(data.Id))
+        if (!id!.Equals(data.ThrowIfNull().Id))
         {
             throw new InvalidOperationException($"Invalid id.");
         }
@@ -289,7 +289,7 @@ public class TypedRestClient<TData, TId>(
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var requestUri = Context.GetReductionEndpoint(reduction.Name);
+        var requestUri = Context.GetReductionEndpoint(reduction.ThrowIfNull().Name);
         Logger.LogRestReductionUriResolved(typeof(TData), requestUri);
         using var activity = G.ActivitySource.StartActivity("Remote REST REDUCTION method execution", System.Diagnostics.ActivityKind.Client);
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);

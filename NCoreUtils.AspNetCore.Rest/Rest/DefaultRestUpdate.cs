@@ -46,7 +46,7 @@ public class DefaultRestUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 #endif
     public async ValueTask<TData> InvokeAsync(IRestUpdateContext<TData, TId> context, CancellationToken cancellationToken)
     {
-        var id = context.Id;
+        var id = context.ThrowIfNull().Id;
         var data = context.Data;
         // check that data has the same id
         if (!EqualityComparer<TId>.Default.Equals(id, data.Id))

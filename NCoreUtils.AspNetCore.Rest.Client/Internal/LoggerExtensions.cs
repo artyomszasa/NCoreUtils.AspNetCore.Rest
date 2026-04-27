@@ -25,7 +25,7 @@ public static partial class LoggerExtensions
         IReadOnlyList<string>? includes = default,
         int offset = 0,
         int? limit = default)
-        => logger.Log(
+        => logger.ThrowIfNull().Log(
             LogLevel.Debug,
             new EventId(EventIds.RestCollection, nameof(EventIds.RestCollection)),
             new L.ListCollectionRequestData(target, filter, sortBy, sortByDirection, fields, includes, offset, limit),

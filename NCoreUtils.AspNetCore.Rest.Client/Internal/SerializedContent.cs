@@ -18,7 +18,7 @@ public sealed class SerializedContent<T> : HttpContent
     {
         Value = value;
         Serializer = serializer;
-        Headers.ContentType = serializer.ContentType switch
+        Headers.ContentType = serializer.ThrowIfNull().ContentType switch
         {
             null or "application/json" or "application/json; charset=utf-8" => ApplicationJson,
             var rawContentType => MediaTypeHeaderValue.Parse(rawContentType)

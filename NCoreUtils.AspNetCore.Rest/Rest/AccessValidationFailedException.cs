@@ -64,7 +64,7 @@ public class AccessValidationFailedException : InvalidOperationException, IStatu
 #if !NET8_0_OR_GREATER
     public override void GetObjectData(SerializationInfo info, StreamingContext context)
     {
-        info.AddValue(nameof(StatusCode), StatusCode);
+        info.ThrowIfNull().AddValue(nameof(StatusCode), StatusCode);
         base.GetObjectData(info, context);
     }
 #endif
