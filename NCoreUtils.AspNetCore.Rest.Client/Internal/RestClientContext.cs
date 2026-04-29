@@ -18,7 +18,9 @@ public class RestClientContext<TData, TId>(
 {
     protected IHttpClientFactory HttpClientFactory { get; } = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
 
+#pragma warning disable CA1721 // Property names should not match get methods
     protected ISerializer<TData> Serializer { get; } = serializer ?? throw new ArgumentNullException(nameof(serializer));
+#pragma warning restore CA1721 // Property names should not match get methods
 
     protected IRestIdHandler<TId> IdHandler { get; } = idHandler ?? throw new ArgumentNullException(nameof(idHandler));
 

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -22,7 +21,7 @@ namespace NCoreUtils.Rest.Internal;
 [JsonSerializable(typeof(int))]
 [JsonSerializable(typeof(long))]
 [JsonSerializable(typeof(bool))]
-internal partial class ReductionResultSerializerContext : JsonSerializerContext { }
+internal sealed partial class ReductionResultSerializerContext : JsonSerializerContext { }
 
 public abstract class TypedRestClient(ILogger<TypedRestClient> logger)
     : IRestClient

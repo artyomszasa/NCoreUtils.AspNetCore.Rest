@@ -25,7 +25,7 @@ namespace NCoreUtils.Rest
         {
             var builder = new SpanBuilder(buffer);
             builder.Append(@base);
-            var delimiter = @base.Contains('?') ? '&' : '?';
+            var delimiter = @base.Contains('?', StringComparison.Ordinal) ? '&' : '?';
             if (!string.IsNullOrEmpty(target))
             {
                 builder.Append(delimiter);
@@ -168,7 +168,7 @@ namespace NCoreUtils.Rest
             {
                 newUriSize += "offset".Length + 2 + offsetString!.Length;
             }
-            string? limitString = limit.HasValue && limit.Value != -1 ? limit.Value.ToString() : default;
+            string? limitString = limit.HasValue && limit.Value != -1 ? limit.Value.ToString(CultureInfo.InvariantCulture) : default;
             if (!string.IsNullOrEmpty(limitString))
             {
                 newUriSize += "count".Length + 2 + limitString!.Length;

@@ -2,3 +2,9 @@
 # CA2007: Consider calling ConfigureAwait on the awaited task
 [*.cs]
 dotnet_diagnostic.CA2007.severity = silent
+
+[*.cs]
+dotnet_diagnostic.CA1054.severity = silent
+
+[*.cs]
+dotnet_diagnostic.CA1720.severity = silent
