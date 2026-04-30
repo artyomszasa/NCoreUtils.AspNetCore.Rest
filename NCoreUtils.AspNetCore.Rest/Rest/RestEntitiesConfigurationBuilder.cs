@@ -4,6 +4,8 @@ using System.Diagnostics.CodeAnalysis;
 using NCoreUtils.AspNetCore.Rest.Internal;
 using NCoreUtils.AspNetCore.Rest.Serialization;
 using NCoreUtils.Data;
+using System.Globalization;
+
 
 #if NET8_0_OR_GREATER
 using System.Collections.Frozen;
@@ -35,7 +37,7 @@ public class RestEntitiesConfigurationBuilder
         {
             throw new InvalidOperationException($"{xtype} has already been registered with name = {name}.");
         }
-        EntityNames.Add(type, name.ToLowerString());
+        EntityNames.Add(type, name.ToLowerString(CultureInfo.InvariantCulture));
         EntityTypes.Add(name, type);
         return this;
     }
@@ -44,9 +46,11 @@ public class RestEntitiesConfigurationBuilder
     public RestEntitiesConfigurationBuilder Add(Type type, CaseInsensitive name)
         => AddInternal(type, name);
 
+#pragma warning disable CA1308 // Normalize strings to uppercase
     [Obsolete(WarnAll)]
     public RestEntitiesConfigurationBuilder Add(Type type)
-        => AddInternal(type, type.Name.ToLowerInvariant());
+        => AddInternal(type, type.ThrowIfNull().Name.ToLowerInvariant());
+#pragma warning restore CA1308 // Normalize strings to uppercase
 
     [Obsolete(WarnEndpointInvoker)]
     public RestEntitiesConfigurationBuilder Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(CaseInsensitive name)
@@ -57,14 +61,16 @@ public class RestEntitiesConfigurationBuilder
         return AddInternal(typeof(T), name);
     }
 
+#pragma warning disable CA1308 // Normalize strings to uppercase
     [Obsolete(WarnEndpointInvoker)]
     public RestEntitiesConfigurationBuilder Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>()
         => Add<T>(typeof(T).Name.ToLowerInvariant());
+#pragma warning restore CA1308 // Normalize strings to uppercase
 
     [Obsolete(WarnAll)]
     public RestEntitiesConfigurationBuilder AddRange(params Type[] types)
     {
-        foreach (var type in types)
+        foreach (var type in types.ThrowIfNull())
         {
             Add(type);
         }
@@ -92,9 +98,11 @@ public class RestEntitiesConfigurationBuilder
         return AddInternal(typeof(TData), name);
     }
 
+#pragma warning disable CA1308 // Normalize strings to uppercase
     public RestEntitiesConfigurationBuilder Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData, TId>()
         where TData : class, IHasId<TId>
         => Add<TData, TId>(typeof(TData).Name.ToLowerInvariant());
+#pragma warning restore CA1308 // Normalize strings to uppercase
 
 #if NET8_0_OR_GREATER
     public RestEntitiesConfiguration Build() => new(

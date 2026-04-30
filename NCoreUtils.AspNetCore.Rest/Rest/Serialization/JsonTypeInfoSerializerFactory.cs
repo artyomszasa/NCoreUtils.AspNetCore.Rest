@@ -52,9 +52,11 @@ public class JsonTypeInfoSerializerFactory : ISerializerFactory
 
     private static async ValueTask SerializeNullAsync(IConfigurableOutput<Stream> configurableStream, CancellationToken cancellationToken)
     {
+#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
         await using var stream = await configurableStream
             .InitializeAsync(new OutputInfo(default, "application/json; charset=utf-8"), cancellationToken)
             .ConfigureAwait(false);
+#pragma warning restore CA2007 // Consider calling ConfigureAwait on the awaited task
         await stream.WriteAsync(BinNull, cancellationToken).ConfigureAwait(false);
     }
 
@@ -92,7 +94,7 @@ public class JsonTypeInfoSerializerFactory : ISerializerFactory
         CancellationToken cancellationToken = default)
         => item switch
         {
-            null => SerializeNullAsync(configurableStream, cancellationToken),
+            null => SerializeNullAsync(configurableStream.ThrowIfNull(), cancellationToken),
             _ => Invoker.Serialize(this, configurableStream, item, type, cancellationToken)
         };
 }

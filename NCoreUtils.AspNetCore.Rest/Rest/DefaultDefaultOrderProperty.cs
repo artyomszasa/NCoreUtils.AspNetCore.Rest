@@ -6,6 +6,8 @@ using System.Reflection;
 
 namespace NCoreUtils.AspNetCore.Rest;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1052:Static holder types should be Static or NotInheritable",
+    Justification = "This class must remain instantiable and inheritable for backward compatibility with external consumers, even though it currently only contains static members.")]
 public class DefaultDefaultOrderProperty
 {
     private static readonly ConcurrentDictionary<Type, OrderByProperty> _cache = new();

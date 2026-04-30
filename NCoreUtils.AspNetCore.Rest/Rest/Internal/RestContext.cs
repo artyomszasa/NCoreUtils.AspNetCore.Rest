@@ -41,7 +41,9 @@ public abstract class RestContext(IRestContextMetadata metadata) : IRestContext,
     public static RestUpdateContext<TData, TId> Update<TData, TId>(TId id, TData data, IRestContextMetadata metadata)
         => new(id, data, metadata);
 
+#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
     public IRestContextMetadata Metadata => metadata ?? throw new ArgumentNullException(nameof(metadata));
+#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
 
     public abstract object Clone();
 }
@@ -50,7 +52,9 @@ public class RestCreateContext<TData, TId>(TData data, IRestContextMetadata meta
     : RestContext(metadata)
     , IRestCreateContext<TData, TId>
 {
+#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
     public TData Data => data ?? throw new ArgumentNullException(nameof(data));
+#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
 
     public override object Clone()
         => Create<TData, TId>(CloneOrPass(Data), Metadata);
@@ -60,7 +64,9 @@ public class RestDeleteContext<TData, TId>(TId id, bool force, IRestContextMetad
     : RestContext(metadata)
     , IRestDeleteContext<TData, TId>
 {
+#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
     public TId Id => id ?? throw new ArgumentNullException(nameof(id));
+#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
 
     public bool Force => force;
 
@@ -72,9 +78,13 @@ public class RestItemContext<TData, TId>(TId id, AsyncQueryFilter accessValidato
     : RestContext(metadata)
     , IRestItemContext<TData, TId>
 {
+#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
     public TId Id => id ?? throw new ArgumentNullException(nameof(id));
+#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
 
+#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
     public AsyncQueryFilter AccessValidator => accessValidator ?? throw new ArgumentNullException(nameof(accessValidator));
+#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
 
     public override object Clone()
         => Item<TData, TId>(CloneOrPass(Id), AccessValidator, Metadata);
@@ -108,9 +118,13 @@ public class RestUpdateContext<TData, TId>(TId id, TData data, IRestContextMetad
     : RestContext(metadata)
     , IRestUpdateContext<TData, TId>
 {
+#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
     public TId Id => id ?? throw new ArgumentNullException(nameof(id));
+#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
 
+#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
     public TData Data => data ?? throw new ArgumentNullException(nameof(data));
+#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
 
     public override object Clone()
         => Update(CloneOrPass(Id), CloneOrPass(Data), Metadata);

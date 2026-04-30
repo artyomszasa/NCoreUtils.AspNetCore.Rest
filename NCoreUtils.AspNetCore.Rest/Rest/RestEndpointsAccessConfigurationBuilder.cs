@@ -74,7 +74,7 @@ public class RestEndpointsAccessConfigurationBuilder
             {
                 if (descriptor.TryGetOrCreateQueryAccessValidator(_serviceProvider, out var mayRequireDisposal, out var queryAccessValidator))
                 {
-                    result = await queryAccessValidator.FilterQueryAsync(result, principal, cancellationToken);
+                    result = await queryAccessValidator.FilterQueryAsync(result, principal, cancellationToken).ConfigureAwait(false);
                     if (mayRequireDisposal)
                     {
                         (queryAccessValidator as IDisposable)?.Dispose();
@@ -92,7 +92,7 @@ public class RestEndpointsAccessConfigurationBuilder
                 var validator = descriptor.GetOrCreateValidator(_serviceProvider, out var mayRequireDisposal);
                 try
                 {
-                    var pass = await validator.ValidateAsync(principal, cancellationToken);
+                    var pass = await validator.ValidateAsync(principal, cancellationToken).ConfigureAwait(false);
                     if (!pass.Success)
                     {
                         return pass;
@@ -124,6 +124,7 @@ public class RestEndpointsAccessConfigurationBuilder
         }
     }
 
+#pragma warning disable CA1002 // Do not expose generic lists
     public List<AccessValidatorDescriptor> Create { get; } = [];
 
     public List<AccessValidatorDescriptor> Update { get; } = [];
@@ -131,34 +132,35 @@ public class RestEndpointsAccessConfigurationBuilder
     public List<AccessValidatorDescriptor> Delete { get; } = [];
 
     public List<AccessValidatorDescriptor> Query { get; } = [];
+#pragma warning restore CA1002 // Do not expose generic lists
 
     public RestEndpointsAccessConfigurationBuilder ConfigureGlobal(Action<IRestEndpointOperationAccessConfigurationBuilder> configure)
     {
-        configure(new GlobalAccessConfigurationBuilder(this));
+        configure.ThrowIfNull()(new GlobalAccessConfigurationBuilder(this));
         return this;
     }
 
     public RestEndpointsAccessConfigurationBuilder ConfigureCreate(Action<IRestEndpointOperationAccessConfigurationBuilder<RestOperation.Create>> configure)
     {
-        configure(new OperationAccessConfigurationBuilder<RestOperation.Create>(Create));
+        configure.ThrowIfNull()(new OperationAccessConfigurationBuilder<RestOperation.Create>(Create));
         return this;
     }
 
     public RestEndpointsAccessConfigurationBuilder ConfigureUpdate(Action<IRestEndpointOperationAccessConfigurationBuilder<RestOperation.Update>> configure)
     {
-        configure(new OperationAccessConfigurationBuilder<RestOperation.Update>(Update));
+        configure.ThrowIfNull()(new OperationAccessConfigurationBuilder<RestOperation.Update>(Update));
         return this;
     }
 
     public RestEndpointsAccessConfigurationBuilder ConfigureDelete(Action<IRestEndpointOperationAccessConfigurationBuilder<RestOperation.Delete>> configure)
     {
-        configure(new OperationAccessConfigurationBuilder<RestOperation.Delete>(Delete));
+        configure.ThrowIfNull()(new OperationAccessConfigurationBuilder<RestOperation.Delete>(Delete));
         return this;
     }
 
     public RestEndpointsAccessConfigurationBuilder ConfigureQuery(Action<IRestEndpointOperationAccessConfigurationBuilder<RestOperation.Query>> configure)
     {
-        configure(new OperationAccessConfigurationBuilder<RestOperation.Query>(Query));
+        configure.ThrowIfNull()(new OperationAccessConfigurationBuilder<RestOperation.Query>(Query));
         return this;
     }
 

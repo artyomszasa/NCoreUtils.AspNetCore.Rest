@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace NCoreUtils.AspNetCore.Rest;
 
@@ -18,6 +19,6 @@ public sealed class DefaultIdParser : IIdParser
         {
             return Guid.Parse(raw);
         }
-        return Convert.ChangeType(raw, type);
+        return Convert.ChangeType(raw, type,CultureInfo.InvariantCulture);
     }
 }

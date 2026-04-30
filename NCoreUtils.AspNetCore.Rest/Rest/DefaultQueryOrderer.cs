@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text.RegularExpressions;
 using NCoreUtils.Data.Protocol;
 
 namespace NCoreUtils.AspNetCore.Rest;
@@ -40,10 +39,12 @@ public class DefaultQueryOrderer<[DynamicallyAccessedMembers(DynamicallyAccessed
 
     protected virtual IEnumerable<OrderingOption> GetOrderingOptions(RestQuery restQuery)
     {
+#pragma warning disable CS8629 // Nullable value type may be null.
         if (!restQuery.ThrowIfNull().SortBy.HasValue || 0 == restQuery.SortBy.Value.Count)
         {
             yield break;
         }
+#pragma warning restore CS8629 // Nullable value type may be null.
         if (!restQuery.SortByDirections.HasValue || 0 == restQuery.SortByDirections.Value.Count)
         {
             foreach (var by in restQuery.SortBy.Value)
@@ -73,7 +74,9 @@ public class DefaultQueryOrderer<[DynamicallyAccessedMembers(DynamicallyAccessed
         }
     }
 
+#pragma warning disable CA1716 // Identifiers should not match keywords
     protected virtual IOrderedQueryable<T> ApplyOrder(IQueryable<T> source, OrderingOption option)
+#pragma warning restore CA1716 // Identifiers should not match keywords
     {
         if (MaybeExpression(option.By))
         {
@@ -92,7 +95,9 @@ public class DefaultQueryOrderer<[DynamicallyAccessedMembers(DynamicallyAccessed
         return OrderBy(source, option.By, option.IsDescending);
     }
 
+#pragma warning disable CA1716 // Identifiers should not match keywords
     protected virtual IOrderedQueryable<T> ApplyFurtherOrder(IOrderedQueryable<T> source, OrderingOption option)
+#pragma warning restore CA1716 // Identifiers should not match keywords
     {
         if (MaybeExpression(option.By))
         {

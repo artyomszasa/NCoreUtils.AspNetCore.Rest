@@ -20,13 +20,13 @@ public class RestEndpointsConfigurationBuilder
 
     public RestEndpointsConfigurationBuilder ConfigureAccess(Action<RestEndpointsAccessConfigurationBuilder> configure)
     {
-        configure(AccessConfiguration);
+        configure.ThrowIfNull()(AccessConfiguration);
         return this;
     }
 
     public RestEndpointsConfigurationBuilder ConfigureEntities(Action<RestEntitiesConfigurationBuilder> configure)
     {
-        configure(EntitiesConfiguration);
+        configure.ThrowIfNull()(EntitiesConfiguration);
         return this;
     }
 

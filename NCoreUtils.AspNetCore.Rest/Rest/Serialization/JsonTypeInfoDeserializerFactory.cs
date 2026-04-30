@@ -6,7 +6,7 @@ namespace NCoreUtils.AspNetCore.Rest.Serialization;
 public static class JsonTypeInfoDeserializerFactory
 {
     public static IDeserializer<T> GetOrCreateDeserializer<T>(this IServiceProvider serviceProvider)
-        => serviceProvider.GetOptionalService<IDeserializer<T>>() switch
+        => serviceProvider.ThrowIfNull().GetOptionalService<IDeserializer<T>>() switch
         {
             null => serviceProvider.GetOptionalService<IRestJsonTypeInfoResolver>() switch
             {

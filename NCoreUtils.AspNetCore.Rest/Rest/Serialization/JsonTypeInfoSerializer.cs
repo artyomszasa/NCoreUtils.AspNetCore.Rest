@@ -13,9 +13,11 @@ public class JsonTypeInfoSerializer<T>(JsonTypeInfo<T> typeInfo) : ISerializer<T
 
     public async ValueTask SerializeAsync(IConfigurableOutput<Stream> configurableStream, T item, CancellationToken cancellationToken = default)
     {
-        await using var stream = await configurableStream
+#pragma warning disable CA2007 // Consider calling ConfigureAwait on the awaited task
+        await using var stream = await configurableStream.ThrowIfNull()
             .InitializeAsync(new OutputInfo(default, "application/json; charset=utf-8"), cancellationToken)
             .ConfigureAwait(false);
+#pragma warning restore CA2007 // Consider calling ConfigureAwait on the awaited task
         await JsonSerializer.SerializeAsync(stream, item, TypeInfo, cancellationToken).ConfigureAwait(false);
     }
 }
