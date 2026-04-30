@@ -1,3 +1,7 @@
 # CA1515: Consider making public types internal
 [*.cs]
 dotnet_diagnostic.CA1515.severity = none
+
+# CA2007: Consider calling ConfigureAwait on the awaited task
+[*.cs]
+dotnet_diagnostic.CA2007.severity = none

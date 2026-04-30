@@ -11,7 +11,7 @@ using Xunit;
 
 namespace NCoreUtils.AspNetCore.Rest.Unit;
 
-public class AsyncEnumerableTests : IAsyncDisposable
+public sealed class AsyncEnumerableTests : IAsyncDisposable
 {
     private IHost TestHost { get; }
 
