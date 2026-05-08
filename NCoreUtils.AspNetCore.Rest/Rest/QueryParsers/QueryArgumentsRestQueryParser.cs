@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -9,6 +10,7 @@ namespace NCoreUtils.AspNetCore.Rest.QueryParsers;
 
 public class QueryArgumentsRestQueryParser : IRestQueryParser
 {
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership of the disposable object is transferred to the caller.")]
     public ValueTask<RestQuery> ParseAsync(HttpRequest httpRequest, CancellationToken cancellationToken)
     {
         var q = httpRequest.ThrowIfNull().Query;

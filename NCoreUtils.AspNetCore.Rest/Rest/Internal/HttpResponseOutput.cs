@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal;
 
-internal class HttpResponseOutput(HttpResponse response) : IConfigurableOutput<Stream>
+internal sealed class HttpResponseOutput(HttpResponse response) : IConfigurableOutput<Stream>
 {
     private readonly HttpResponse _response = response ?? throw new ArgumentNullException(nameof(response));
 

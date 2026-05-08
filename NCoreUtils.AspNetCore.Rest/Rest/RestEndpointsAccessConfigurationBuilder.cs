@@ -110,6 +110,7 @@ public class RestEndpointsAccessConfigurationBuilder
         }
     }
 
+    [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Using IReadOnlyList to express that the collection is not modified.")]
     private static AccessValidatorDescriptor BuildFromList(IReadOnlyList<AccessValidatorDescriptor> source)
     {
         switch (source.Count)
@@ -171,6 +172,7 @@ public class RestEndpointsAccessConfigurationBuilder
         query: BuildFromList(Query)
     );
 
+    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used as a generic method group container.")]
     private sealed class AccessValidationAdder<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TAccessValidator>
         where TAccessValidator : IAccessStatusValidator
     {

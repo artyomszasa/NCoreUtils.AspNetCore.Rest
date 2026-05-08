@@ -32,10 +32,10 @@ public class CompositeQueryParser : IRestQueryParser
     public async ValueTask<RestQuery> ParseAsync(HttpRequest httpRequest, CancellationToken cancellationToken)
     {
         // NOTE: parsers.Count >= 1 (ctor invariant)
-        var values = await Parsers[0].ParseAsync(httpRequest, cancellationToken);
+        var values = await Parsers[0].ParseAsync(httpRequest, cancellationToken).ConfigureAwait(false);
         for (var i = 1; i < Parsers.Count; ++i)
         {
-            using var nextValues = await Parsers[i].ParseAsync(httpRequest, cancellationToken);
+            using var nextValues = await Parsers[i].ParseAsync(httpRequest, cancellationToken).ConfigureAwait(false);
             using var prevValues = values;
             values = prevValues.Override(nextValues);
         }

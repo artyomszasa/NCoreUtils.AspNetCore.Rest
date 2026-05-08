@@ -77,7 +77,7 @@ public sealed class ReductionInvoker<[DynamicallyAccessedMembers(DynamicallyAcce
             var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator
                 ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, httpContext.User, ctoken))
                 : ListInvoker._noFilter;
-            using var restQuery = await _queryParser.ParseAsync(httpContext.Request, cancellationToken);
+            using var restQuery = await _queryParser.ParseAsync(httpContext.Request, cancellationToken).ConfigureAwait(false);
             var context = RestContext.Reduction<TData, TId>(restQuery, reduction, filter, metadata);
             var invocation = new RestReductionInvocation<TData>(_implementation, context);
             object? result;

@@ -29,7 +29,9 @@ public class DefaultRestUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 {
     protected ILogger Logger { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
 
+#pragma warning disable CA1033 // Interface methods should be callable by child types
     object IBoxedInvoke.Instance => this;
+#pragma warning restore CA1033 // Interface methods should be callable by child types
 
     /// <summary>
     /// Performes REST UPDATE action for the specified type.
@@ -53,11 +55,11 @@ public class DefaultRestUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
         {
             throw new BadRequestException("Entity data has invalid id.");
         }
-        if (!await Repository.Items.AnyAsync(context.CreateIdEqualsPredicate(id), cancellationToken))
+        if (!await Repository.Items.AnyAsync(context.CreateIdEqualsPredicate(id), cancellationToken).ConfigureAwait(false))
         {
             throw new NotFoundException();
         }
-        var result = await Repository.PersistAsync(data, cancellationToken);
+        var result = await Repository.PersistAsync(data, cancellationToken).ConfigureAwait(false);
         Logger.LogRestEntityUpdatedSuccessfully(typeof(TData), id);
         return result;
     }

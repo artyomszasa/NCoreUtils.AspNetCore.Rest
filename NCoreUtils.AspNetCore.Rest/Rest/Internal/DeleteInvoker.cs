@@ -76,7 +76,7 @@ public sealed class DeleteInvoker<[DynamicallyAccessedMembers(DynamicallyAccesse
         {
             if (disposeValidator)
             {
-                await G.DisposeAsync(accessValidator);
+                await G.DisposeAsync(accessValidator).ConfigureAwait(false);
             }
         }
     }

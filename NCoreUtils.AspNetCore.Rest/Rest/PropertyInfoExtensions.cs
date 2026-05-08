@@ -8,6 +8,7 @@ namespace NCoreUtils.AspNetCore.Rest;
 internal static class PropertyInfoExtensions
 {
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Must have been preserved by caller")]
+    [SuppressMessage("Maintainability", "CA1508:Avoid dead conditional code", Justification = "The condition is kept for future use and to make the logic explicit.")]
     public static LambdaExpression CreateSelector(this PropertyInfo property, Type? parameterType = null)
     {
         var eArgType = parameterType switch

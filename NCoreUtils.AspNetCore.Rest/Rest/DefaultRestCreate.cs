@@ -28,7 +28,9 @@ public class DefaultRestCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 {
     protected ILogger Logger { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
 
+#pragma warning disable CA1033 // Interface methods should be callable by child types
     object IBoxedInvoke.Instance => this;
+#pragma warning restore CA1033 // Interface methods should be callable by child types
 
     protected virtual bool HasValidId(TData data)
         => data.HasValidId();
@@ -52,14 +54,14 @@ public class DefaultRestCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
         if (data.HasValidId())
         {
             // check if already exists
-            if (await Repository.Items.AnyAsync(context.CreateIdEqualsPredicate(data.Id), cancellationToken))
+            if (await Repository.Items.AnyAsync(context.CreateIdEqualsPredicate(data.Id), cancellationToken).ConfigureAwait(false))
             {
                 Logger.LogRestEntityAlreadyExists(typeof(TData), data.Id);
                 throw new ConflictException("Entity already exists.");
             }
         }
         // persist entity
-        var result = await Repository.PersistAsync(data, cancellationToken);
+        var result = await Repository.PersistAsync(data, cancellationToken).ConfigureAwait(false);
         Logger.LogRestEntityCreatedSuccessfully(typeof(TData), result.Id);
         return result;
     }

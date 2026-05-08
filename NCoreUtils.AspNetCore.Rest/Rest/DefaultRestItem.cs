@@ -22,7 +22,9 @@ public class DefaultRestItem<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
     , IBoxedInvoke<IRestItemContext<TData, TId>, TData?>
     where TData : IHasId<TId>
 {
+#pragma warning disable CA1033 // Interface methods should be callable by child types
     object IBoxedInvoke.Instance => this;
+#pragma warning restore CA1033 // Interface methods should be callable by child types
 
     /// Gets underlying data repository.
     protected IDataRepository<TData, TId> Repository { get; } = repository ?? throw new ArgumentNullException(nameof(repository));

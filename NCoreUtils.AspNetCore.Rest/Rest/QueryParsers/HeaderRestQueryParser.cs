@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -18,6 +19,7 @@ public class HeaderRestQueryParser : IRestQueryParser
         return Uri.UnescapeDataString(input);
     }
 
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership of the disposable object is transferred to the caller.")]
     public ValueTask<RestQuery> ParseAsync(HttpRequest httpRequest, CancellationToken cancellationToken)
     {
         var headers = httpRequest.ThrowIfNull().Headers;

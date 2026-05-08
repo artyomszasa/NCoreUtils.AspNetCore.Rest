@@ -9,6 +9,7 @@ namespace NCoreUtils.AspNetCore.Rest;
 
 public interface IRestExceptionHandler
 {
+#pragma warning disable CA1716 // Identifiers should not match keywords
     ValueTask<RestExceptionHandlerResult> HandleAsync(
         IServiceProvider serviceProvider,
         HttpResponse response,
@@ -16,4 +17,5 @@ public interface IRestExceptionHandler
         ExceptionDispatchInfo error,
         CancellationToken cancellationToken = default
     );
+#pragma warning restore CA1716 // Identifiers should not match keywords
 }

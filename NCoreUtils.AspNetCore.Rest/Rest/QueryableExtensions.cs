@@ -20,7 +20,7 @@ internal static class QueryableExtensions
         => orderer.ApplyOrder(source, restQuery);
 
     internal static async ValueTask<IQueryable<T>> ApplyAsync<T>(this IQueryable<T> source, AsyncQueryFilter filter, CancellationToken cancellationToken)
-        => (IQueryable<T>)await filter(source, cancellationToken);
+        => (IQueryable<T>)await filter(source, cancellationToken).ConfigureAwait(false);
 
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ValueBox<>))]
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Only known types are passed.")]

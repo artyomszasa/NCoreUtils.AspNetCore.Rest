@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.ExceptionServices;
@@ -68,8 +67,6 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
         }
     }
 
-    private const string TagOperation = "operation";
-
     private static bool IsTruthy(string? value)
         => value switch
         {
@@ -91,9 +88,10 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
         foreach (var handler in serviceProvider.GetServices<IRestExceptionHandler>())
         {
             RestExceptionHandlerResult res;
+#pragma warning disable CA1031 // Do not catch general exception types
             try
             {
-                res = await handler.HandleAsync(serviceProvider, response, logger, error, cancellationToken);
+                res = await handler.HandleAsync(serviceProvider, response, logger, error, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -104,6 +102,7 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                 LogExceptionHandlerThrownException(logger, exn, handler.GetType());
                 res = RestExceptionHandlerResult.Unhandled;
             }
+#pragma warning restore CA1031 // Do not catch general exception types
             switch (res)
             {
                 case { State: RestExceptionHandlerResult.States.Handled }:
@@ -189,7 +188,7 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
         return builder;
     }
 
-    private IReadOnlyList<Endpoint> BuildEndpoints()
+    private List<Endpoint> BuildEndpoints()
     {
         var endpoints = new List<Endpoint>();
         var prefixPatternSegment = string.IsNullOrEmpty(_configuration.Prefix)
@@ -210,6 +209,7 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
             {
                 string? entityType = default;
                 using var activity = G.ActivitySource.StartActivity("REST method execution", ActivityKind.Server);
+#pragma warning disable CA1031 // Do not catch general exception types
                 try
                 {
                     entityType = (string?)httpContext.Request.RouteValues["type"];
@@ -219,7 +219,7 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                         {
                             throw new InvalidOperationException($"No invoker registered for {type.Name}.");
                         }
-                        await implementation(httpContext, invoker, activity, type);
+                        await implementation(httpContext, invoker, activity, type).ConfigureAwait(false);
                     }
                     else
                     {
@@ -237,8 +237,9 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                         accessor.Error = error;
                     }
                     var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
-                    await HandleExceptionDuringExecution(httpContext.RequestServices, httpContext.Response, logger, error, httpContext.RequestAborted);
+                    await HandleExceptionDuringExecution(httpContext.RequestServices, httpContext.Response, logger, error, httpContext.RequestAborted).ConfigureAwait(false);
                 }
+#pragma warning restore CA1031 // Do not catch general exception types
             });
         // ITEM BASE
         Func<Func<HttpContext, EndpointInvoker, Activity?, Type, object, Task>, RequestDelegate> restItemMethod = implementation =>
@@ -246,6 +247,7 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
             {
                 string? entityType = default;
                 using var activity = G.ActivitySource.StartActivity("REST method execution", ActivityKind.Server);
+#pragma warning disable CA1031 // Do not catch general exception types
                 try
                 {
                     entityType = (string?)httpContext.Request.RouteValues["type"];
@@ -257,7 +259,7 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                         }
                         var idType = invoker.IdType;
                         var id = _idParser.ParseId(httpContext.Request.RouteValues["id"] as string, idType);
-                        await implementation(httpContext, invoker, activity, type, id!);
+                        await implementation(httpContext, invoker, activity, type, id!).ConfigureAwait(false);
                     }
                     else
                     {
@@ -275,8 +277,9 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                         accessor.Error = error;
                     }
                     var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
-                    await HandleExceptionDuringExecution(httpContext.RequestServices, httpContext.Response, logger, error, httpContext.RequestAborted);
+                    await HandleExceptionDuringExecution(httpContext.RequestServices, httpContext.Response, logger, error, httpContext.RequestAborted).ConfigureAwait(false);
                 }
+#pragma warning restore CA1031 // Do not catch general exception types
             });
         var accessConfiguration = _configuration.AccessConfiguration;
         // *********************************************************************************************************

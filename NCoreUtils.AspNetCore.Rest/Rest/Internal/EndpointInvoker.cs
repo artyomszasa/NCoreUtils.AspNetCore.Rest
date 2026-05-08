@@ -9,7 +9,9 @@ using NCoreUtils.Data;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal;
 
+#pragma warning disable CA1040 // Avoid empty interfaces
 public interface IEqualsPredicateFactory { }
+#pragma warning restore CA1040 // Avoid empty interfaces
 
 public interface IEqualsPredicateFactory<TData, TId> : IEqualsPredicateFactory
 {

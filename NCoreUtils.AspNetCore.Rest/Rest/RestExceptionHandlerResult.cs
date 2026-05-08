@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace NCoreUtils.AspNetCore.Rest;
 
+[SuppressMessage("Performance", "CA1815:Override equals and operator equals on value types", Justification = "Not required as the struct is never compared directly.")]
 public readonly struct RestExceptionHandlerResult
 {
     internal enum States

@@ -1,0 +1,3 @@
+# CA1711: Identifiers should not have incorrect suffix
+[*.cs]
+dotnet_diagnostic.CA1711.severity = silent

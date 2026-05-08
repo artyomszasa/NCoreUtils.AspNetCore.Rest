@@ -68,10 +68,10 @@ public class DefaultRestReduction<[DynamicallyAccessedMembers(DynamicallyAccesse
         var orderedQuery = query.Apply(QueryOrderer, restQuery);
         return reduction switch
         {
-            DefaultReductions.First => await ExecuteFirstOrDefaultAsync(orderedQuery, cancellationToken),
-            DefaultReductions.Single => await ExecuteSingleOrDefaultAsync(orderedQuery, cancellationToken),
-            DefaultReductions.Count => await ExecuteCountAsync(orderedQuery, cancellationToken),
-            DefaultReductions.Any => await ExecuteAnyAsync(orderedQuery, cancellationToken),
+            DefaultReductions.First => await ExecuteFirstOrDefaultAsync(orderedQuery, cancellationToken).ConfigureAwait(false),
+            DefaultReductions.Single => await ExecuteSingleOrDefaultAsync(orderedQuery, cancellationToken).ConfigureAwait(false),
+            DefaultReductions.Count => await ExecuteCountAsync(orderedQuery, cancellationToken).ConfigureAwait(false),
+            DefaultReductions.Any => await ExecuteAnyAsync(orderedQuery, cancellationToken).ConfigureAwait(false),
             _ => throw new NotSupportedException($"Reduction {reduction} is not supported")
         };
     }

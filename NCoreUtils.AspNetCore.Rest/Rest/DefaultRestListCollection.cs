@@ -13,7 +13,9 @@ namespace NCoreUtils.AspNetCore.Rest;
 /// Provides default implementation for REST LIST method.
 /// </summary>
 /// <typeparam name="TData">Type of the collection elements.</typeparam>
+#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
 public class DefaultRestListCollection<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData> : IRestListCollection<TData>
+#pragma warning restore CA1711 // Identifiers should not have incorrect suffix
 {
     protected IDataRepository<TData> Repository { get; }
 
@@ -62,7 +64,7 @@ public class DefaultRestListCollection<[DynamicallyAccessedMembers(DynamicallyAc
 
         return AsyncEnumerable.Delay(async (ctoken) =>
         {
-            var sourceQuery = await filteredQueryTask;
+            var sourceQuery = await filteredQueryTask.ConfigureAwait(false);
             var finalQuery = sourceQuery
                 .Apply(QueryOrderer, restQuery)
                 .Skip(restQuery.GetOffset())

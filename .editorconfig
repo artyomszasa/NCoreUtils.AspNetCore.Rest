@@ -48,4 +48,3 @@ dotnet_diagnostic.CA2016.severity = warning
 
 # CA1510: Keep explicit null guards for older target frameworks
 dotnet_diagnostic.CA1510.severity = silent
-
