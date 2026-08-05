@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Net.Http;
 
 namespace NCoreUtils.Rest
 {
@@ -24,7 +20,7 @@ namespace NCoreUtils.Rest
             int offset = 0,
             int? limit = null)
         {
-            request.ThrowIfNull();
+            Preconditions.ThrowIfNull(request);
             if (!string.IsNullOrEmpty(filter))
             {
                 request.Headers.Add("X-Filter", Uri.EscapeDataString(filter));

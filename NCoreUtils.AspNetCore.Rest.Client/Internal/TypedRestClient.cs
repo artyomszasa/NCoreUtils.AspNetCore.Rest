@@ -1,14 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
 using NCoreUtils.Data.Protocol;
@@ -144,7 +137,8 @@ public class TypedRestClient<TData, TId>(
 
     protected TId ParseLocation(string location, string requestUri)
     {
-        if (location.ThrowIfNull().StartsWith(Context.Endpoint, StringComparison.OrdinalIgnoreCase))
+        Preconditions.ThrowIfNull(location);
+        if (location.StartsWith(Context.Endpoint, StringComparison.OrdinalIgnoreCase))
         {
             var index = Context.Endpoint.Length;
             while (index < location.Length && location[index] == '/')
@@ -153,7 +147,8 @@ public class TypedRestClient<TData, TId>(
             }
             return Context.ParseId(location.AsSpan(index));
         }
-        if (requestUri.ThrowIfNull().StartsWith('/'))
+        Preconditions.ThrowIfNull(requestUri);
+        if (requestUri.StartsWith('/'))
         {
             var index = location.LastIndexOf('/');
             if (-1 != index)
@@ -244,12 +239,13 @@ public class TypedRestClient<TData, TId>(
         TData data,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(data);
         cancellationToken.ThrowIfCancellationRequested();
         if (!IdUtils.IsValidId(id))
         {
             throw new InvalidOperationException($"Invalid id.");
         }
-        if (!id!.Equals(data.ThrowIfNull().Id))
+        if (!id!.Equals(data.Id))
         {
             throw new InvalidOperationException($"Invalid id.");
         }
@@ -287,8 +283,9 @@ public class TypedRestClient<TData, TId>(
         int? limit = null,
         CancellationToken cancellationToken = default)
     {
+        Preconditions.ThrowIfNull(reduction);
         cancellationToken.ThrowIfCancellationRequested();
-        var requestUri = Context.GetReductionEndpoint(reduction.ThrowIfNull().Name);
+        var requestUri = Context.GetReductionEndpoint(reduction.Name);
         Logger.LogRestReductionUriResolved(typeof(TData), requestUri);
         using var activity = G.ActivitySource.StartActivity("Remote REST REDUCTION method execution", System.Diagnostics.ActivityKind.Client);
         using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);

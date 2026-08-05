@@ -1,8 +1,5 @@
-using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Net.Http;
 
 namespace NCoreUtils.Rest
 {
@@ -124,7 +121,8 @@ namespace NCoreUtils.Rest
             int offset = 0,
             int? limit = null)
         {
-            var requestUri = request.ThrowIfNull().RequestUri ?? throw new ArgumentException("Uri member must be initialized.", nameof(request));
+            Preconditions.ThrowIfNull(request);
+            var requestUri = request.RequestUri ?? throw new ArgumentException("Uri member must be initialized.", nameof(request));
             var uri = requestUri.ToString();
             var newUriSize = uri.Length;
             string? targetString = default;

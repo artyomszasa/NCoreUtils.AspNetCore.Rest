@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Net.Http;
-
 namespace NCoreUtils.Rest;
 
 public interface IRestQuerySerializer
@@ -13,5 +10,6 @@ public interface IRestQuerySerializer
         string? sortByDirection = null,
         IReadOnlyList<ThenBySorting>? thenBy = default,
         int offset = 0,
-        int? limit = null);
+        int? limit = null
+    );
 }

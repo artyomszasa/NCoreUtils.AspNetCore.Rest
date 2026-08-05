@@ -20,6 +20,9 @@
   </ItemGroup>
   <!-- NOTE: Common -->
   <ItemGroup>
-    <Compile Include="..\shared\Check.cs" />
+    <Using Include="System.Diagnostics.CodeAnalysis" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NCoreUtils.Extensions.Preconditions" Version="10.0.0.1" />
   </ItemGroup>
 </Project>

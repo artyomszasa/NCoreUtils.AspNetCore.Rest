@@ -12,9 +12,9 @@
     <Compile Include="..\shared\CompilerServices\**" />
   </ItemGroup>
   <!-- NOTE: Common -->
-  <!-- <ItemGroup>
-    <Compile Include="..\shared\Check.cs" />
-  </ItemGroup> -->
+  <ItemGroup>
+    <Using Include="System.Diagnostics.CodeAnalysis" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\NCoreUtils.AspNetCore.Rest.Client.Abstractions\NCoreUtils.AspNetCore.Rest.Client.Abstractions.csproj" />
   </ItemGroup>

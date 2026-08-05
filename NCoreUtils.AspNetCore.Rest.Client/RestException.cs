@@ -1,8 +1,5 @@
-using System;
 #if NET6_0_OR_GREATER
-#pragma warning disable IDE0005 // Using directive is unnecessary.
 using System.Runtime.Serialization;
-#pragma warning restore IDE0005 // Using directive is unnecessary.
 #endif
 
 namespace NCoreUtils.Rest;
@@ -16,9 +13,8 @@ public class RestException : Exception
     private const string KeyUri = "RestUri";
 #endif
 
-#pragma warning disable CA1056 // URI-like properties should not be strings
+    [SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "Only used as a string.")]
     public string Uri { get; }
-#pragma warning restore CA1056 // URI-like properties should not be strings
 
     public RestException(string uri, string message, Exception innerException)
         : base(message, innerException)
