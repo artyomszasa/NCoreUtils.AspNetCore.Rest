@@ -1,5 +1,3 @@
-using System;
-
 namespace NCoreUtils.AspNetCore.Rest;
 
 public interface IIdParser

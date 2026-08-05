@@ -1,13 +1,7 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.ExceptionServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -68,8 +62,6 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
         }
     }
 
-    private const string TagOperation = "operation";
-
     private static bool IsTruthy(string? value)
         => value switch
         {
@@ -93,7 +85,7 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
             RestExceptionHandlerResult res;
             try
             {
-                res = await handler.HandleAsync(serviceProvider, response, logger, error, cancellationToken);
+                res = await handler.HandleAsync(serviceProvider, response, logger, error, cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -189,7 +181,7 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
         return builder;
     }
 
-    private IReadOnlyList<Endpoint> BuildEndpoints()
+    private List<Endpoint> BuildEndpoints()
     {
         var endpoints = new List<Endpoint>();
         var prefixPatternSegment = string.IsNullOrEmpty(_configuration.Prefix)
@@ -219,7 +211,7 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                         {
                             throw new InvalidOperationException($"No invoker registered for {type.Name}.");
                         }
-                        await implementation(httpContext, invoker, activity, type);
+                        await implementation(httpContext, invoker, activity, type).ConfigureAwait(false);
                     }
                     else
                     {
@@ -237,7 +229,7 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                         accessor.Error = error;
                     }
                     var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
-                    await HandleExceptionDuringExecution(httpContext.RequestServices, httpContext.Response, logger, error, httpContext.RequestAborted);
+                    await HandleExceptionDuringExecution(httpContext.RequestServices, httpContext.Response, logger, error, httpContext.RequestAborted).ConfigureAwait(false);
                 }
             });
         // ITEM BASE
@@ -257,7 +249,7 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                         }
                         var idType = invoker.IdType;
                         var id = _idParser.ParseId(httpContext.Request.RouteValues["id"] as string, idType);
-                        await implementation(httpContext, invoker, activity, type, id!);
+                        await implementation(httpContext, invoker, activity, type, id!).ConfigureAwait(false);
                     }
                     else
                     {
@@ -275,7 +267,7 @@ public sealed partial class RestEndpointDataSource : EndpointDataSource, IEndpoi
                         accessor.Error = error;
                     }
                     var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger($"NCoreUtils.AspNetCore.Rest.{entityType ?? "Unknown"}");
-                    await HandleExceptionDuringExecution(httpContext.RequestServices, httpContext.Response, logger, error, httpContext.RequestAborted);
+                    await HandleExceptionDuringExecution(httpContext.RequestServices, httpContext.Response, logger, error, httpContext.RequestAborted).ConfigureAwait(false);
                 }
             });
         var accessConfiguration = _configuration.AccessConfiguration;

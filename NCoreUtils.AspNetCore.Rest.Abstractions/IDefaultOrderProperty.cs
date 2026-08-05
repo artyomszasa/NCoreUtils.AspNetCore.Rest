@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace NCoreUtils.AspNetCore.Rest;
 
 /// <summary>
@@ -12,5 +10,5 @@ public interface IDefaultOrderProperty<[DynamicallyAccessedMembers(DynamicallyAc
     /// Retrieves default ordering property for the predefined type.
     /// </summary>
     /// <returns>Order by property descriptor.</returns>
-    OrderByProperty Select();
+    OrderByProperty GetProperty();
 }

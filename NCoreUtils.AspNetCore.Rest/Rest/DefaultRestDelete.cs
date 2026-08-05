@@ -1,7 +1,3 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
 
@@ -27,6 +23,7 @@ public class DefaultRestDelete<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 {
     protected ILogger Logger { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
 
+    [SuppressMessage("Design", "CA1033:Interface methods should be callable by child types", Justification = "Only used internally.")]
     object IBoxedInvoke.Instance => this;
 
     /// <summary>
@@ -36,14 +33,15 @@ public class DefaultRestDelete<[DynamicallyAccessedMembers(DynamicallyAccessedMe
     /// <param name="cancellationToken">Cancellation token.</param>
     public virtual async ValueTask InvokeAsync(IRestDeleteContext<TData, TId> context, CancellationToken cancellationToken)
     {
+        Preconditions.ThrowIfNull(context);
         var id = context.Id;
-        var item = await Repository.LookupAsync(id, cancellationToken);
+        var item = await Repository.LookupAsync(id, cancellationToken).ConfigureAwait(false);
         if (item is null)
         {
             Logger.LogRestNoEntityFound(typeof(TData), id);
             throw new NotFoundException();
         }
-        await Repository.RemoveAsync(item, context.Force, cancellationToken: cancellationToken);
+        await Repository.RemoveAsync(item, context.Force, cancellationToken: cancellationToken).ConfigureAwait(false);
         Logger.LogRestEntityRemovedSuccessfully(typeof(TData), id);
     }
 }

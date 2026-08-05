@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using NCoreUtils.Data.Protocol;
 
 namespace NCoreUtils.Rest;
@@ -16,6 +11,9 @@ public interface IRestClient
 
 public interface IRestClient<TData> : IRestClient
 {
+    // FIXME:
+    new Type DataType => typeof(TData);
+
     Type IRestClient.DataType => typeof(TData);
 
     IQueryable<TData> CreateQueryable();

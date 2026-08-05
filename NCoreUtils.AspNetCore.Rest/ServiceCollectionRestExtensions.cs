@@ -8,6 +8,8 @@ namespace NCoreUtils.AspNetCore;
 
 public static class ServiceCollectionRestExtensions
 {
+
+    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by dependency injection.")]
     internal sealed class RestErrorAccessor : IRestErrorAccessor
     {
         public ExceptionDispatchInfo? Error { get; set; }

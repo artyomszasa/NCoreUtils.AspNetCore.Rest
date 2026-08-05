@@ -1,8 +1,5 @@
-using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Net.Http;
 
 namespace NCoreUtils.Rest
 {
@@ -25,7 +22,7 @@ namespace NCoreUtils.Rest
         {
             var builder = new SpanBuilder(buffer);
             builder.Append(@base);
-            var delimiter = @base.Contains('?') ? '&' : '?';
+            var delimiter = @base.Contains('?', StringComparison.Ordinal) ? '&' : '?';
             if (!string.IsNullOrEmpty(target))
             {
                 builder.Append(delimiter);
@@ -124,6 +121,7 @@ namespace NCoreUtils.Rest
             int offset = 0,
             int? limit = null)
         {
+            Preconditions.ThrowIfNull(request);
             var requestUri = request.RequestUri ?? throw new ArgumentException("Uri member must be initialized.", nameof(request));
             var uri = requestUri.ToString();
             var newUriSize = uri.Length;
@@ -168,7 +166,7 @@ namespace NCoreUtils.Rest
             {
                 newUriSize += "offset".Length + 2 + offsetString!.Length;
             }
-            string? limitString = limit.HasValue && limit.Value != -1 ? limit.Value.ToString() : default;
+            string? limitString = limit.HasValue && limit.Value != -1 ? limit.Value.ToString(CultureInfo.InvariantCulture) : default;
             if (!string.IsNullOrEmpty(limitString))
             {
                 newUriSize += "count".Length + 2 + limitString!.Length;

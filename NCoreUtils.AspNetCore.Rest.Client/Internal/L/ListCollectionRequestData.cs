@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Linq;
 using NCoreUtils.Memory;
 
 namespace NCoreUtils.Rest.Internal.L;
@@ -15,6 +16,7 @@ public readonly struct ListCollectionRequestData(
     int offset,
     int? limit)
     : ISpanExactEmplaceable
+    , IEquatable<ListCollectionRequestData>
 {
     private const string LogPrefix = "Executing COLLECTION method ";
 
@@ -201,4 +203,34 @@ public readonly struct ListCollectionRequestData(
     bool ISpanEmplaceable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider)
         => TryEmplace(destination, out charsWritten);
 #endif
+
+    public override bool Equals(object? obj)
+            => obj is ListCollectionRequestData other && Equals(other);
+
+    public bool Equals(ListCollectionRequestData other)
+        => Target == other.Target
+            && Filter == other.Filter
+            && SortBy == other.SortBy
+            && SortByDirection == other.SortByDirection
+            && (ReferenceEquals(Fields, other.Fields) || (Fields is not null && other.Fields is not null && Fields.SequenceEqual(other.Fields)))
+            && (ReferenceEquals(Includes, other.Includes) || (Includes is not null && other.Includes is not null && Includes.SequenceEqual(other.Includes)))
+            && Offset == other.Offset
+            && Limit == other.Limit;
+
+    public override int GetHashCode()
+    {
+        var hc = new HashCode();
+        hc.Add(Target);
+        hc.Add(Filter);
+        hc.Add(SortBy);
+        hc.Add(SortByDirection);
+        // NOTE: Not including collections into hashcode.
+        return hc.ToHashCode();
+    }
+
+    public static bool operator ==(ListCollectionRequestData left, ListCollectionRequestData right)
+        => left.Equals(right);
+
+    public static bool operator !=(ListCollectionRequestData left, ListCollectionRequestData right)
+        => !(left == right);
 }

@@ -1,15 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
 using NCoreUtils.Data.Protocol;
@@ -22,7 +14,7 @@ namespace NCoreUtils.Rest.Internal;
 [JsonSerializable(typeof(int))]
 [JsonSerializable(typeof(long))]
 [JsonSerializable(typeof(bool))]
-internal partial class ReductionResultSerializerContext : JsonSerializerContext { }
+internal sealed partial class ReductionResultSerializerContext : JsonSerializerContext { }
 
 public abstract class TypedRestClient(ILogger<TypedRestClient> logger)
     : IRestClient
@@ -145,7 +137,8 @@ public class TypedRestClient<TData, TId>(
 
     protected TId ParseLocation(string location, string requestUri)
     {
-        if (location.StartsWith(Context.Endpoint))
+        Preconditions.ThrowIfNull(location);
+        if (location.StartsWith(Context.Endpoint, StringComparison.OrdinalIgnoreCase))
         {
             var index = Context.Endpoint.Length;
             while (index < location.Length && location[index] == '/')
@@ -154,6 +147,7 @@ public class TypedRestClient<TData, TId>(
             }
             return Context.ParseId(location.AsSpan(index));
         }
+        Preconditions.ThrowIfNull(requestUri);
         if (requestUri.StartsWith('/'))
         {
             var index = location.LastIndexOf('/');
@@ -245,6 +239,7 @@ public class TypedRestClient<TData, TId>(
         TData data,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(data);
         cancellationToken.ThrowIfCancellationRequested();
         if (!IdUtils.IsValidId(id))
         {
@@ -288,6 +283,7 @@ public class TypedRestClient<TData, TId>(
         int? limit = null,
         CancellationToken cancellationToken = default)
     {
+        Preconditions.ThrowIfNull(reduction);
         cancellationToken.ThrowIfCancellationRequested();
         var requestUri = Context.GetReductionEndpoint(reduction.Name);
         Logger.LogRestReductionUriResolved(typeof(TData), requestUri);

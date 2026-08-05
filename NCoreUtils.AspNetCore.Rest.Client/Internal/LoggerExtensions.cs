@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 
 namespace NCoreUtils.Rest.Internal;
@@ -25,13 +23,16 @@ public static partial class LoggerExtensions
         IReadOnlyList<string>? includes = default,
         int offset = 0,
         int? limit = default)
-        => logger.Log(
-            LogLevel.Debug,
-            new EventId(EventIds.RestCollection, nameof(EventIds.RestCollection)),
-            new L.ListCollectionRequestData(target, filter, sortBy, sortByDirection, fields, includes, offset, limit),
-            default,
-            L.ListCollectionRequestData.LogFormatter
-        );
+    {
+        Preconditions.ThrowIfNull(logger);
+        logger.Log(
+                LogLevel.Debug,
+                new EventId(EventIds.RestCollection, nameof(EventIds.RestCollection)),
+                new L.ListCollectionRequestData(target, filter, sortBy, sortByDirection, fields, includes, offset, limit),
+                default,
+                L.ListCollectionRequestData.LogFormatter
+            );
+    }
 
     [LoggerMessage(
         EventId = EventIds.RestCollectionUriResolved,

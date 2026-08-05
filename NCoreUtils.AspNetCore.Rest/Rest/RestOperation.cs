@@ -1,5 +1,6 @@
 namespace NCoreUtils.AspNetCore.Rest;
 
+[SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "Kept for backward compatibility.")]
 public abstract class RestOperation
 {
     public sealed class Create : RestOperation

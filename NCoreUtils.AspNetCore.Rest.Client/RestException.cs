@@ -1,5 +1,6 @@
-using System;
+#if NET6_0_OR_GREATER
 using System.Runtime.Serialization;
+#endif
 
 namespace NCoreUtils.Rest;
 
@@ -12,6 +13,7 @@ public class RestException : Exception
     private const string KeyUri = "RestUri";
 #endif
 
+    [SuppressMessage("Design", "CA1056:URI-like properties should not be strings", Justification = "Only used as a string.")]
     public string Uri { get; }
 
     public RestException(string uri, string message, Exception innerException)
@@ -21,6 +23,15 @@ public class RestException : Exception
     public RestException(string uri, string message)
         : base(message)
         => Uri = uri ?? throw new ArgumentNullException(nameof(uri));
+
+    public RestException()
+        => Uri = string.Empty;
+
+    public RestException(string message) : base(message)
+        => Uri = string.Empty;
+
+    public RestException(string message, Exception innerException) : base(message, innerException)
+        => Uri = string.Empty;
 
 #if !NET8_0_OR_GREATER
     protected RestException(SerializationInfo info, StreamingContext context)

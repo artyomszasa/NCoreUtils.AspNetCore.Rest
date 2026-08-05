@@ -1,8 +1,3 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using NCoreUtils.Data;
 using NCoreUtils.Linq;
 
@@ -22,6 +17,7 @@ public class DefaultRestItem<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
     , IBoxedInvoke<IRestItemContext<TData, TId>, TData?>
     where TData : IHasId<TId>
 {
+    [SuppressMessage("Design", "CA1033:Interface methods should be callable by child types", Justification = "Only used internally.")]
     object IBoxedInvoke.Instance => this;
 
     /// Gets underlying data repository.
@@ -41,9 +37,12 @@ public class DefaultRestItem<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 #endif
     public async ValueTask<TData?> InvokeAsync(IRestItemContext<TData, TId> context, CancellationToken cancellationToken)
     {
+        Preconditions.ThrowIfNull(context);
         var query = Repository.Items.Where(context.CreateIdEqualsPredicate(context.Id));
-        var accessibleQuery = (IQueryable<TData>)await context.AccessValidator(query, cancellationToken);
-        var item = await accessibleQuery.FirstOrDefaultAsync(cancellationToken) ?? throw new NotFoundException();
+        var accessibleQuery = (IQueryable<TData>)await context.AccessValidator(query, cancellationToken)
+            .ConfigureAwait(false);
+        var item = await accessibleQuery.FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false)
+            ?? throw new NotFoundException();
         return item;
     }
 }

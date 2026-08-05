@@ -1,8 +1,5 @@
-using System.IO;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading.Tasks;
 
 namespace NCoreUtils.Rest.Internal;
 
@@ -16,6 +13,7 @@ public sealed class SerializedContent<T> : HttpContent
 
     public SerializedContent(T value, ISerializer<T> serializer)
     {
+        Preconditions.ThrowIfNull(serializer);
         Value = value;
         Serializer = serializer;
         Headers.ContentType = serializer.ContentType switch

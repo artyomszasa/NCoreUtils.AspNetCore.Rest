@@ -1,9 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using NCoreUtils.AspNetCore.Rest.Internal;
 using NCoreUtils.AspNetCore.Rest.Serialization;
 using NCoreUtils.Data;
+using System.Globalization;
+
 
 #if NET8_0_OR_GREATER
 using System.Collections.Frozen;
@@ -35,7 +34,7 @@ public class RestEntitiesConfigurationBuilder
         {
             throw new InvalidOperationException($"{xtype} has already been registered with name = {name}.");
         }
-        EntityNames.Add(type, name.ToLowerString());
+        EntityNames.Add(type, name.ToLowerString(CultureInfo.InvariantCulture));
         EntityTypes.Add(name, type);
         return this;
     }
@@ -45,8 +44,12 @@ public class RestEntitiesConfigurationBuilder
         => AddInternal(type, name);
 
     [Obsolete(WarnAll)]
+    [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "In REST context lowercase names are used.")]
     public RestEntitiesConfigurationBuilder Add(Type type)
-        => AddInternal(type, type.Name.ToLowerInvariant());
+    {
+        Preconditions.ThrowIfNull(type);
+        return AddInternal(type, type.Name.ToLowerInvariant());
+    }
 
     [Obsolete(WarnEndpointInvoker)]
     public RestEntitiesConfigurationBuilder Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>(CaseInsensitive name)
@@ -58,12 +61,14 @@ public class RestEntitiesConfigurationBuilder
     }
 
     [Obsolete(WarnEndpointInvoker)]
+    [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "In REST context lowercase names are used.")]
     public RestEntitiesConfigurationBuilder Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] T>()
         => Add<T>(typeof(T).Name.ToLowerInvariant());
 
     [Obsolete(WarnAll)]
     public RestEntitiesConfigurationBuilder AddRange(params Type[] types)
     {
+        Preconditions.ThrowIfNull(types);
         foreach (var type in types)
         {
             Add(type);
@@ -92,6 +97,7 @@ public class RestEntitiesConfigurationBuilder
         return AddInternal(typeof(TData), name);
     }
 
+    [SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase", Justification = "Within REST context lowercased names are used.")]
     public RestEntitiesConfigurationBuilder Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData, TId>()
         where TData : class, IHasId<TId>
         => Add<TData, TId>(typeof(TData).Name.ToLowerInvariant());

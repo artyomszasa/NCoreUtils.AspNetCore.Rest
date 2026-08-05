@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -34,6 +29,7 @@ public abstract class ListInvoker
 
         public override RestMethodEnumerableInvocation<T> UpdateArguments(IReadOnlyList<object> arguments)
         {
+            Preconditions.ThrowIfNull(arguments);
             if (arguments.Count != 1)
             {
                 throw new InvalidOperationException("Invalid number of arguments.");
@@ -90,27 +86,27 @@ public sealed class ListInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedM
             .ConfigureAwait(false);
     }
 
-    public override async ValueTask Invoke(HttpContext context, IRestContextMetadata metadata, CancellationToken cancellationToken)
+    public override async ValueTask Invoke(HttpContext httpContext, IRestContextMetadata metadata, CancellationToken cancellationToken)
     {
         var accessValidator = AccessConfiguration.Query.GetOrCreateValidator(ServiceProvider, out var disposeValidator);
         try
         {
-            var validationResult = await accessValidator.ValidateAsync(context.User, cancellationToken).ConfigureAwait(false);
+            var validationResult = await accessValidator.ValidateAsync(httpContext.User, cancellationToken).ConfigureAwait(false);
             Logger.LogRestEntityAccessValidation(Type, validationResult.Success);
             validationResult.ThrowOnFailure();
             var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator
-                ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, context.User, ctoken))
+                ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, httpContext.User, ctoken))
                 : _noFilter;
-            using var restQuery = await QueryParser.ParseAsync(context.Request, cancellationToken);
+            using var restQuery = await QueryParser.ParseAsync(httpContext.Request, cancellationToken).ConfigureAwait(false);
             Logger.LogRestQueryParsingDone(Type);
             if (!restQuery.Fields.HasValue || restQuery.Fields.Value.Count == 0)
             {
-                await DoInvoke(metadata, restQuery, filter, context.Response, cancellationToken).ConfigureAwait(false);
+                await DoInvoke(metadata, restQuery, filter, httpContext.Response, cancellationToken).ConfigureAwait(false);
             }
             else
             {
                 // FIXME: implement
-                await DoInvoke(metadata, restQuery, filter, context.Response, cancellationToken).ConfigureAwait(false);
+                await DoInvoke(metadata, restQuery, filter, httpContext.Response, cancellationToken).ConfigureAwait(false);
             }
         }
         finally

@@ -1,7 +1,3 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
 using NCoreUtils.Linq;
@@ -28,6 +24,7 @@ public class DefaultRestCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 {
     protected ILogger Logger { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
 
+    [SuppressMessage("Design", "CA1033:Interface methods should be callable by child types", Justification = "Only used internally.")]
     object IBoxedInvoke.Instance => this;
 
     protected virtual bool HasValidId(TData data)
@@ -48,18 +45,19 @@ public class DefaultRestCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 #endif
     public virtual async ValueTask<TData> InvokeAsync(IRestCreateContext<TData, TId> context, CancellationToken cancellationToken)
     {
+        Preconditions.ThrowIfNull(context);
         var data = context.Data;
         if (data.HasValidId())
         {
             // check if already exists
-            if (await Repository.Items.AnyAsync(context.CreateIdEqualsPredicate(data.Id), cancellationToken))
+            if (await Repository.Items.AnyAsync(context.CreateIdEqualsPredicate(data.Id), cancellationToken).ConfigureAwait(false))
             {
                 Logger.LogRestEntityAlreadyExists(typeof(TData), data.Id);
                 throw new ConflictException("Entity already exists.");
             }
         }
         // persist entity
-        var result = await Repository.PersistAsync(data, cancellationToken);
+        var result = await Repository.PersistAsync(data, cancellationToken).ConfigureAwait(false);
         Logger.LogRestEntityCreatedSuccessfully(typeof(TData), result.Id);
         return result;
     }

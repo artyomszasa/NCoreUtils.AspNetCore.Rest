@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 #if !NET8_0_OR_GREATER
 using System.Collections.Immutable;
 #else
@@ -12,6 +10,7 @@ public static class DefaultReductions
 {
     public const string First = "first";
 
+    [SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "Intentional maps to the exact method name.")]
     public const string Single = "single";
 
     public const string Count = "count";

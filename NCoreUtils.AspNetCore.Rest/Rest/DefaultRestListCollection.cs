@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.Data;
 using NCoreUtils.Linq;
@@ -45,6 +40,7 @@ public class DefaultRestListCollection<[DynamicallyAccessedMembers(DynamicallyAc
     [UnconditionalSuppressMessage("Trim", "IL2026", Justification = "Handled by query provider.")]
     public IAsyncEnumerable<TData> InvokeAsync(IRestListCollectionContext<TData> context, CancellationToken cancellationToken)
     {
+        Preconditions.ThrowIfNull(context);
         var restQuery = context.RestQuery;
         var filteredQueryTask = Repository.Items
             // apply filters
@@ -62,7 +58,7 @@ public class DefaultRestListCollection<[DynamicallyAccessedMembers(DynamicallyAc
 
         return AsyncEnumerable.Delay(async (ctoken) =>
         {
-            var sourceQuery = await filteredQueryTask;
+            var sourceQuery = await filteredQueryTask.ConfigureAwait(false);
             var finalQuery = sourceQuery
                 .Apply(QueryOrderer, restQuery)
                 .Skip(restQuery.GetOffset())

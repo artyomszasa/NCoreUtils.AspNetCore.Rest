@@ -3,11 +3,26 @@
     <TargetFrameworks>net10.0;net8.0;net6.0</TargetFrameworks>
     <RootNamespace>NCoreUtils.Rest</RootNamespace>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisMode>All</AnalysisMode>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NCoreUtils.Data.Abstractions" Version="$(NCoreUtilsDataVersion)" />
     <PackageReference Include="NCoreUtils.Data.Protocol.Client.Abstractions" Version="$(NCoreUtilsProtocolVersion)" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+   <!-- NOTE: NET Standard polyfill -->
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
+    <Compile Include="..\shared\CompilerServices\**" />
+  </ItemGroup>
+  <!-- NOTE: Common -->
+  <ItemGroup>
+    <Using Include="System.Diagnostics.CodeAnalysis" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NCoreUtils.Extensions.Preconditions" Version="10.0.0.1" />
   </ItemGroup>
 </Project>

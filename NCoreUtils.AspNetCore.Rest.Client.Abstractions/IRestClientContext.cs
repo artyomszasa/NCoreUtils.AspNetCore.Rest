@@ -1,10 +1,4 @@
-using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace NCoreUtils.Rest;
 
@@ -57,6 +51,7 @@ public interface IRestClientContext<TData, TId> : IRestClientContext
 
     string GetReductionEndpoint(string reduction)
     {
+        Preconditions.ThrowIfNull(reduction);
         var buffer = ArrayPool<char>.Shared.Rent(16 * 1024);
         try
         {

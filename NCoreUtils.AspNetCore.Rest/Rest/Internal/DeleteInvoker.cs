@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.Data;
@@ -30,6 +25,7 @@ public abstract class DeleteInvoker
 
         public override ViodRestMethodInvocation UpdateArguments(IReadOnlyList<object> arguments)
         {
+            Preconditions.ThrowIfNull(arguments);
             if (arguments.Count != 1)
             {
                 throw new InvalidOperationException("Invalid number of arguments.");
@@ -76,7 +72,7 @@ public sealed class DeleteInvoker<[DynamicallyAccessedMembers(DynamicallyAccesse
         {
             if (disposeValidator)
             {
-                await G.DisposeAsync(accessValidator);
+                await G.DisposeAsync(accessValidator).ConfigureAwait(false);
             }
         }
     }

@@ -1,7 +1,4 @@
-using System;
 using System.Globalization;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using NCoreUtils.Collections;
 
@@ -9,8 +6,10 @@ namespace NCoreUtils.AspNetCore.Rest.QueryParsers;
 
 public class QueryArgumentsRestQueryParser : IRestQueryParser
 {
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership of the disposable object is transferred to the caller.")]
     public ValueTask<RestQuery> ParseAsync(HttpRequest httpRequest, CancellationToken cancellationToken)
     {
+        Preconditions.ThrowIfNull(httpRequest);
         var q = httpRequest.Query;
         // offset
         var offset = q.TryGetValue("offset", out var values)

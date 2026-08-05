@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.AspNetCore.Rest.Serialization;
@@ -29,6 +24,7 @@ public abstract class ReductionInvoker
 
         public override RestMethodInvocation<object?> UpdateArguments(IReadOnlyList<object> arguments)
         {
+            Preconditions.ThrowIfNull(arguments);
             if (arguments.Count != 1)
             {
                 throw new InvalidOperationException("Invalid number of arguments.");
@@ -77,7 +73,7 @@ public sealed class ReductionInvoker<[DynamicallyAccessedMembers(DynamicallyAcce
             var filter = null != accessValidator && accessValidator is IQueryAccessStatusValidator queryAccessValidator
                 ? new AsyncQueryFilter((source, ctoken) => queryAccessValidator.FilterQueryAsync(source, httpContext.User, ctoken))
                 : ListInvoker._noFilter;
-            using var restQuery = await _queryParser.ParseAsync(httpContext.Request, cancellationToken);
+            using var restQuery = await _queryParser.ParseAsync(httpContext.Request, cancellationToken).ConfigureAwait(false);
             var context = RestContext.Reduction<TData, TId>(restQuery, reduction, filter, metadata);
             var invocation = new RestReductionInvocation<TData>(_implementation, context);
             object? result;

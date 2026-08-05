@@ -1,0 +1,50 @@
+root = true
+
+[*.cs]
+
+# Prefer collection expressions only when the target type matches exactly
+dotnet_style_prefer_collection_expression = when_types_exactly_match
+
+# CA1062: Validate arguments of public methods
+dotnet_diagnostic.CA1062.severity = warning
+
+# cleaning code
+
+# IDE0005: Remove unnecessary usings
+dotnet_diagnostic.IDE0005.severity = warning
+
+# IDE0051: Remove unused private members
+dotnet_diagnostic.IDE0051.severity = warning
+
+# IDE0060: Remove unused method parameters
+dotnet_diagnostic.IDE0060.severity = warning
+
+# IDE0290: Suggest primary constructors (C# 12+)
+dotnet_style_prefer_primary_constructors = true:suggestion
+
+# optimization
+
+# CA1822: Mark members static when they do not access instance data
+dotnet_diagnostic.CA1822.severity = warning
+
+# CA1825: Use Array.Empty<T>() instead of allocating empty arrays
+dotnet_diagnostic.CA1825.severity = warning
+
+# CA1860: Prefer collection-specific Count/Length over Enumerable.Any()
+dotnet_diagnostic.CA1860.severity = warning
+
+# async and logical safety
+
+# CA2012: Ensure correct ValueTask usage
+dotnet_diagnostic.CA2012.severity = warning
+
+# CA2245: Do not assign a variable or property to itself
+dotnet_diagnostic.CA2245.severity = warning
+
+# CA2016: Forward CancellationToken when supported
+dotnet_diagnostic.CA2016.severity = warning
+
+# multi-target compatibility
+
+# CA1510: Keep explicit null guards for older target frameworks
+dotnet_diagnostic.CA1510.severity = silent

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
 using NCoreUtils.Linq;
@@ -29,6 +24,7 @@ public class DefaultRestUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 {
     protected ILogger Logger { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
 
+    [SuppressMessage("Design", "CA1033:Interface methods should be callable by child types", Justification = "Only used internally.")]
     object IBoxedInvoke.Instance => this;
 
     /// <summary>
@@ -46,6 +42,7 @@ public class DefaultRestUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 #endif
     public async ValueTask<TData> InvokeAsync(IRestUpdateContext<TData, TId> context, CancellationToken cancellationToken)
     {
+        Preconditions.ThrowIfNull(context);
         var id = context.Id;
         var data = context.Data;
         // check that data has the same id
@@ -53,11 +50,11 @@ public class DefaultRestUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
         {
             throw new BadRequestException("Entity data has invalid id.");
         }
-        if (!await Repository.Items.AnyAsync(context.CreateIdEqualsPredicate(id), cancellationToken))
+        if (!await Repository.Items.AnyAsync(context.CreateIdEqualsPredicate(id), cancellationToken).ConfigureAwait(false))
         {
             throw new NotFoundException();
         }
-        var result = await Repository.PersistAsync(data, cancellationToken);
+        var result = await Repository.PersistAsync(data, cancellationToken).ConfigureAwait(false);
         Logger.LogRestEntityUpdatedSuccessfully(typeof(TData), id);
         return result;
     }

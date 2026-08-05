@@ -3,6 +3,8 @@
 .ionide
 .fake
 
+*.csproj.lscache
+
 NCoreUtils*/obj
 NCoreUtils*/bin
 NCoreUtils*Unit/coverage*.xml

@@ -1,8 +1,3 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.Data;
 using NCoreUtils.Linq;
@@ -57,6 +52,7 @@ public class DefaultRestReduction<[DynamicallyAccessedMembers(DynamicallyAccesse
 
     public async ValueTask<object?> InvokeAsync(IRestReductionContext<T> context, CancellationToken cancellationToken)
     {
+        Preconditions.ThrowIfNull(context);
         var reduction = context.Reduction;
         var restQuery = context.RestQuery;
         var query = await Repository.Items
@@ -68,10 +64,10 @@ public class DefaultRestReduction<[DynamicallyAccessedMembers(DynamicallyAccesse
         var orderedQuery = query.Apply(QueryOrderer, restQuery);
         return reduction switch
         {
-            DefaultReductions.First => await ExecuteFirstOrDefaultAsync(orderedQuery, cancellationToken),
-            DefaultReductions.Single => await ExecuteSingleOrDefaultAsync(orderedQuery, cancellationToken),
-            DefaultReductions.Count => await ExecuteCountAsync(orderedQuery, cancellationToken),
-            DefaultReductions.Any => await ExecuteAnyAsync(orderedQuery, cancellationToken),
+            DefaultReductions.First => await ExecuteFirstOrDefaultAsync(orderedQuery, cancellationToken).ConfigureAwait(false),
+            DefaultReductions.Single => await ExecuteSingleOrDefaultAsync(orderedQuery, cancellationToken).ConfigureAwait(false),
+            DefaultReductions.Count => await ExecuteCountAsync(orderedQuery, cancellationToken).ConfigureAwait(false),
+            DefaultReductions.Any => await ExecuteAnyAsync(orderedQuery, cancellationToken).ConfigureAwait(false),
             _ => throw new NotSupportedException($"Reduction {reduction} is not supported")
         };
     }

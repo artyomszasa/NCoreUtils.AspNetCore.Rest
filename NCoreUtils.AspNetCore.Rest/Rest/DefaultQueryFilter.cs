@@ -1,6 +1,4 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
+using System.Globalization;
 using System.Linq.Expressions;
 using NCoreUtils.Data.Protocol;
 
@@ -13,6 +11,7 @@ public class DefaultQueryFilter<[DynamicallyAccessedMembers(DynamicallyAccessedM
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Should be handled by the provider.")]
     public IQueryable<T> ApplyFilters(IQueryable<T> source, RestQuery restQuery)
     {
+        Preconditions.ThrowIfNull(restQuery);
         if (string.IsNullOrWhiteSpace(restQuery.Filter))
         {
             return source;
@@ -27,7 +26,7 @@ public class DefaultQueryFilter<[DynamicallyAccessedMembers(DynamicallyAccessedM
             var expression = _queryExpressionBuilder.BuildExpression(typeof(T), restQuery.Filter);
             if (expression.Body.TryExtractConstant(out var cbox))
             {
-                var cbool = (bool)Convert.ChangeType(cbox, typeof(bool))!;
+                var cbool = (bool)Convert.ChangeType(cbox, typeof(bool), CultureInfo.InvariantCulture)!;
                 predicate = Expression.Lambda<Func<T, bool>>(QueryableExtensions.BoxConstant(cbool), expression.Parameters);
             }
             else

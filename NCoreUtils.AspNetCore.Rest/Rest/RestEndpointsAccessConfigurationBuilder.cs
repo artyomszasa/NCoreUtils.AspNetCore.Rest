@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 using NCoreUtils.AspNetCore.Rest.Internal;
 
 namespace NCoreUtils.AspNetCore.Rest;
@@ -74,7 +68,7 @@ public class RestEndpointsAccessConfigurationBuilder
             {
                 if (descriptor.TryGetOrCreateQueryAccessValidator(_serviceProvider, out var mayRequireDisposal, out var queryAccessValidator))
                 {
-                    result = await queryAccessValidator.FilterQueryAsync(result, principal, cancellationToken);
+                    result = await queryAccessValidator.FilterQueryAsync(result, principal, cancellationToken).ConfigureAwait(false);
                     if (mayRequireDisposal)
                     {
                         (queryAccessValidator as IDisposable)?.Dispose();
@@ -92,7 +86,7 @@ public class RestEndpointsAccessConfigurationBuilder
                 var validator = descriptor.GetOrCreateValidator(_serviceProvider, out var mayRequireDisposal);
                 try
                 {
-                    var pass = await validator.ValidateAsync(principal, cancellationToken);
+                    var pass = await validator.ValidateAsync(principal, cancellationToken).ConfigureAwait(false);
                     if (!pass.Success)
                     {
                         return pass;
@@ -110,6 +104,7 @@ public class RestEndpointsAccessConfigurationBuilder
         }
     }
 
+    [SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Using IReadOnlyList to express that the collection is not modified.")]
     private static AccessValidatorDescriptor BuildFromList(IReadOnlyList<AccessValidatorDescriptor> source)
     {
         switch (source.Count)
@@ -124,40 +119,49 @@ public class RestEndpointsAccessConfigurationBuilder
         }
     }
 
+    [SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Intended to be modifiable from outside the instance.")]
     public List<AccessValidatorDescriptor> Create { get; } = [];
 
+    [SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Intended to be modifiable from outside the instance.")]
     public List<AccessValidatorDescriptor> Update { get; } = [];
 
+    [SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Intended to be modifiable from outside the instance.")]
     public List<AccessValidatorDescriptor> Delete { get; } = [];
 
+    [SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Intended to be modifiable from outside the instance.")]
     public List<AccessValidatorDescriptor> Query { get; } = [];
 
     public RestEndpointsAccessConfigurationBuilder ConfigureGlobal(Action<IRestEndpointOperationAccessConfigurationBuilder> configure)
     {
+        Preconditions.ThrowIfNull(configure);
         configure(new GlobalAccessConfigurationBuilder(this));
         return this;
     }
 
     public RestEndpointsAccessConfigurationBuilder ConfigureCreate(Action<IRestEndpointOperationAccessConfigurationBuilder<RestOperation.Create>> configure)
     {
+        Preconditions.ThrowIfNull(configure);
         configure(new OperationAccessConfigurationBuilder<RestOperation.Create>(Create));
         return this;
     }
 
     public RestEndpointsAccessConfigurationBuilder ConfigureUpdate(Action<IRestEndpointOperationAccessConfigurationBuilder<RestOperation.Update>> configure)
     {
+        Preconditions.ThrowIfNull(configure);
         configure(new OperationAccessConfigurationBuilder<RestOperation.Update>(Update));
         return this;
     }
 
     public RestEndpointsAccessConfigurationBuilder ConfigureDelete(Action<IRestEndpointOperationAccessConfigurationBuilder<RestOperation.Delete>> configure)
     {
+        Preconditions.ThrowIfNull(configure);
         configure(new OperationAccessConfigurationBuilder<RestOperation.Delete>(Delete));
         return this;
     }
 
     public RestEndpointsAccessConfigurationBuilder ConfigureQuery(Action<IRestEndpointOperationAccessConfigurationBuilder<RestOperation.Query>> configure)
     {
+        Preconditions.ThrowIfNull(configure);
         configure(new OperationAccessConfigurationBuilder<RestOperation.Query>(Query));
         return this;
     }
@@ -169,6 +173,7 @@ public class RestEndpointsAccessConfigurationBuilder
         query: BuildFromList(Query)
     );
 
+    [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Used as a generic method group container.")]
     private sealed class AccessValidationAdder<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TAccessValidator>
         where TAccessValidator : IAccessStatusValidator
     {

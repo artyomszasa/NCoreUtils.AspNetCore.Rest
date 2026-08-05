@@ -1,4 +1,3 @@
-using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 
@@ -6,14 +5,17 @@ namespace NCoreUtils.AspNetCore.Rest;
 
 public sealed class RestQuery : IDisposable
 {
+    private bool _isDisposed;
     private ArraySegment<string>? _fields;
 
     private ArraySegment<string>? _sortBy;
 
     private ArraySegment<RestSortByDirection>? _sortByDirections;
 
+    [SuppressMessage("Naming", "CA1721:Property names should not match get methods", Justification = "Intentional.")]
     public int? Offset { get; }
 
+    [SuppressMessage("Naming", "CA1721:Property names should not match get methods", Justification = "Intentional.")]
     public int? Count { get; }
 
     public string? Filter { get; }
@@ -62,8 +64,12 @@ public sealed class RestQuery : IDisposable
         }
     }
 
-    void IDisposable.Dispose()
+    public void Dispose()
     {
+        if (_isDisposed)
+        {
+            return;
+        }
         if (_fields.HasValue)
         {
             var fields = _fields.Value;
@@ -82,6 +88,7 @@ public sealed class RestQuery : IDisposable
             _sortByDirections = default;
             ArrayPool<RestSortByDirection>.Shared.Return(sortByDirections.Array!);
         }
+        _isDisposed = true;
     }
 
     internal RestQuery Override(RestQuery other)
@@ -138,10 +145,14 @@ public sealed class RestQuery : IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SuppressMessage("Design", "CA1024:Use properties where appropriate",
+        Justification = "Method may changed in the future and should not be assumed to complete in constant time.")]
     public int GetOffset()
         => Offset ?? 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SuppressMessage("Design", "CA1024:Use properties where appropriate",
+        Justification = "Method may changed in the future and should not be assumed to complete in constant time.")]
     public int? GetCount()
         => Count;
 }

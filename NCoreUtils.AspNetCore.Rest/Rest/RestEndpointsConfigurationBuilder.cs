@@ -1,5 +1,3 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
 using NCoreUtils.Data;
 
 namespace NCoreUtils.AspNetCore.Rest;
@@ -20,12 +18,14 @@ public class RestEndpointsConfigurationBuilder
 
     public RestEndpointsConfigurationBuilder ConfigureAccess(Action<RestEndpointsAccessConfigurationBuilder> configure)
     {
+        Preconditions.ThrowIfNull(configure);
         configure(AccessConfiguration);
         return this;
     }
 
     public RestEndpointsConfigurationBuilder ConfigureEntities(Action<RestEntitiesConfigurationBuilder> configure)
     {
+        Preconditions.ThrowIfNull(configure);
         configure(EntitiesConfiguration);
         return this;
     }
