@@ -1,9 +1,3 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace NCoreUtils.AspNetCore.Rest;
 
 /// <summary>
@@ -18,5 +12,6 @@ public interface ISerializerFactory
         IConfigurableOutput<Stream> configurableStream,
         object item,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type type,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

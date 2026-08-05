@@ -1,16 +1,11 @@
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-
 namespace NCoreUtils.AspNetCore.Rest;
 
 /// <summary>
 /// Defines functionality to implement REST LIST method for the concrete type.
 /// </summary>
 /// <typeparam name="T">Type of the target object.</typeparam>
-#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
+[SuppressMessage("Naming", "CA1711:Identifiers should not have incorrect suffix", Justification = "Intentional REST method name.")]
 public interface IRestListCollection<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>
-#pragma warning restore CA1711 // Identifiers should not have incorrect suffix
 {
     /// <summary>
     /// Performes REST LIST action for the predefined type with the specified parameters.

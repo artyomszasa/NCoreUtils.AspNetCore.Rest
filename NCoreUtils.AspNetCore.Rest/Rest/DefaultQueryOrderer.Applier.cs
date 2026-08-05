@@ -127,7 +127,7 @@ public partial class DefaultQueryOrderer
         var property = serviceProvider.ThrowIfNull().GetOptionalService<IDefaultOrderProperty<TData>>() switch
         {
             null => DefaultDefaultOrderProperty.GetDefaultOrderByProperty(typeof(TData)),
-            var defaultOrderProperty => defaultOrderProperty.Select()
+            var defaultOrderProperty => defaultOrderProperty.GetProperty()
         };
         return property.HasValue
             ? OrderBy(source, property.Property.CreateSelector(), property.IsDescending)

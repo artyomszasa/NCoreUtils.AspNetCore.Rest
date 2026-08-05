@@ -1,8 +1,5 @@
-using System;
 using System.Runtime.CompilerServices;
 using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace NCoreUtils.AspNetCore.Rest;
 

@@ -13,11 +13,12 @@
   </ItemGroup>
   <!-- NOTE: Common -->
   <ItemGroup>
-    <Compile Include="..\shared\Check.cs" />
+    <Using Include="System.Diagnostics.CodeAnalysis" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="NCoreUtils.Data.Abstractions" Version="$(NCoreUtilsDataVersion)" />
-    <PackageReference Include="NCoreUtils.Extensions.Collections" Version="8.0.0" />
+    <PackageReference Include="NCoreUtils.Extensions.Collections" Version="10.0.0" />
+    <PackageReference Include="NCoreUtils.Extensions.Preconditions" Version="10.0.0.1" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.1' ">
     <Compile Remove="CodeAnalysis\**" />

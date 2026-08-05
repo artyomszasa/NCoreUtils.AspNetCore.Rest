@@ -1,5 +1,3 @@
-using System.Linq;
-
 namespace NCoreUtils.AspNetCore.Rest;
 
 /// <summary>

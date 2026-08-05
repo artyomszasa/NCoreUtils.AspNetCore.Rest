@@ -1,4 +1,3 @@
-using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 
@@ -13,11 +12,11 @@ public sealed class RestQuery : IDisposable
 
     private ArraySegment<RestSortByDirection>? _sortByDirections;
 
-#pragma warning disable CA1721 // Property names should not match get methods
+    [SuppressMessage("Naming", "CA1721:Property names should not match get methods", Justification = "Intentional.")]
     public int? Offset { get; }
 
+    [SuppressMessage("Naming", "CA1721:Property names should not match get methods", Justification = "Intentional.")]
     public int? Count { get; }
-#pragma warning restore CA1721 // Property names should not match get methods
 
     public string? Filter { get; }
 
@@ -145,13 +144,15 @@ public sealed class RestQuery : IDisposable
         return new RestQuery(offset, count, filter, fields, sortBy, sortByDirections);
     }
 
-#pragma warning disable CA1024 // Use properties where appropriate
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SuppressMessage("Design", "CA1024:Use properties where appropriate",
+        Justification = "Method may changed in the future and should not be assumed to complete in constant time.")]
     public int GetOffset()
         => Offset ?? 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [SuppressMessage("Design", "CA1024:Use properties where appropriate",
+        Justification = "Method may changed in the future and should not be assumed to complete in constant time.")]
     public int? GetCount()
         => Count;
-#pragma warning restore CA1024 // Use properties where appropriate
 }

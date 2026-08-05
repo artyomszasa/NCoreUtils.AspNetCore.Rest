@@ -61,5 +61,5 @@ public class DefaultDefaultOrderProperty
 public class DefaultDefaultOrderProperty<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] T>
     : DefaultDefaultOrderProperty, IDefaultOrderProperty<T>
 {
-    public OrderByProperty Select() => GetDefaultOrderByProperty(typeof(T));
+    public OrderByProperty GetProperty() => GetDefaultOrderByProperty(typeof(T));
 }
