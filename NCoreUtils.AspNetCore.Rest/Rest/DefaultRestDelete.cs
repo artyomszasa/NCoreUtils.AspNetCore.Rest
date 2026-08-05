@@ -1,7 +1,3 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
 
@@ -27,9 +23,8 @@ public class DefaultRestDelete<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 {
     protected ILogger Logger { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
 
-#pragma warning disable CA1033 // Interface methods should be callable by child types
+    [SuppressMessage("Design", "CA1033:Interface methods should be callable by child types", Justification = "Only used internally.")]
     object IBoxedInvoke.Instance => this;
-#pragma warning restore CA1033 // Interface methods should be callable by child types
 
     /// <summary>
     /// Performes REST DELETE action for the predefined type.
@@ -38,7 +33,8 @@ public class DefaultRestDelete<[DynamicallyAccessedMembers(DynamicallyAccessedMe
     /// <param name="cancellationToken">Cancellation token.</param>
     public virtual async ValueTask InvokeAsync(IRestDeleteContext<TData, TId> context, CancellationToken cancellationToken)
     {
-        var id = context.ThrowIfNull().Id;
+        Preconditions.ThrowIfNull(context);
+        var id = context.Id;
         var item = await Repository.LookupAsync(id, cancellationToken).ConfigureAwait(false);
         if (item is null)
         {

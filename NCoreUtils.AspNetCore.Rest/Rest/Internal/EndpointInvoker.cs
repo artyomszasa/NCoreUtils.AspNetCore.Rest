@@ -1,7 +1,4 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -9,9 +6,8 @@ using NCoreUtils.Data;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal;
 
-#pragma warning disable CA1040 // Avoid empty interfaces
+[SuppressMessage("Design", "CA1040:Avoid empty interfaces", Justification = "May be extended in the future.")]
 public interface IEqualsPredicateFactory { }
-#pragma warning restore CA1040 // Avoid empty interfaces
 
 public interface IEqualsPredicateFactory<TData, TId> : IEqualsPredicateFactory
 {
@@ -65,7 +61,8 @@ public class EndpointInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Task InvokeCreate(HttpContext httpContext, IRestContextMetadata metadata, RestAccessConfiguration accessConfiguration)
     {
-        var serviceProvider = httpContext.ThrowIfNull().RequestServices;
+        Preconditions.ThrowIfNull(httpContext);
+        var serviceProvider = httpContext.RequestServices;
         var createInvoker = new CreateInvoker<TData, TId>(
             serviceProvider: serviceProvider,
             accessConfiguration: accessConfiguration,
@@ -77,7 +74,8 @@ public class EndpointInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Task InvokeDelete(HttpContext httpContext, IRestContextMetadata metadata, object id, bool force, RestAccessConfiguration accessConfiguration)
     {
-        var serviceProvider = httpContext.ThrowIfNull().RequestServices;
+        Preconditions.ThrowIfNull(httpContext);
+        var serviceProvider = httpContext.RequestServices;
         var deleteInvoker = new DeleteInvoker<TData, TId>(
             serviceProvider: serviceProvider,
             accessConfiguration: accessConfiguration,
@@ -89,7 +87,8 @@ public class EndpointInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Task InvokeItem(HttpContext httpContext, IRestContextMetadata metadata, object id, RestAccessConfiguration accessConfiguration)
     {
-        var serviceProvider = httpContext.ThrowIfNull().RequestServices;
+        Preconditions.ThrowIfNull(httpContext);
+        var serviceProvider = httpContext.RequestServices;
         var itemInvoker = new ItemInvoker<TData, TId>(
             serviceProvider: serviceProvider,
             accessConfiguration: accessConfiguration,
@@ -102,7 +101,8 @@ public class EndpointInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Task InvokeList(HttpContext httpContext, IRestContextMetadata metadata, RestAccessConfiguration accessConfiguration)
     {
-        var serviceProvider = httpContext.ThrowIfNull().RequestServices;
+        Preconditions.ThrowIfNull(httpContext);
+        var serviceProvider = httpContext.RequestServices;
         var listInvoker = new ListInvoker<TData, TId>(
             serviceProvider: serviceProvider,
             accessConfiguration: accessConfiguration,
@@ -117,7 +117,8 @@ public class EndpointInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Task InvokeReduction(HttpContext httpContext, IRestContextMetadata metadata, string reduction, RestAccessConfiguration accessConfiguration)
     {
-        var serviceProvider = httpContext.ThrowIfNull().RequestServices;
+        Preconditions.ThrowIfNull(httpContext);
+        var serviceProvider = httpContext.RequestServices;
         var reductionInvoker = new ReductionInvoker<TData, TId>(
             serviceProvider: serviceProvider,
             accessConfiguration: accessConfiguration,
@@ -131,7 +132,8 @@ public class EndpointInvoker<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
     public override Task InvokeUpdate(HttpContext httpContext, IRestContextMetadata metadata, object id, RestAccessConfiguration accessConfiguration)
     {
-        var serviceProvider = httpContext.ThrowIfNull().RequestServices;
+        Preconditions.ThrowIfNull(httpContext);
+        var serviceProvider = httpContext.RequestServices;
         var updateInvoker = new UpdateInvoker<TData, TId>(
             serviceProvider: serviceProvider,
             accessConfiguration: accessConfiguration,

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
 using NCoreUtils.Linq;
@@ -29,9 +24,8 @@ public class DefaultRestUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 {
     protected ILogger Logger { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
 
-#pragma warning disable CA1033 // Interface methods should be callable by child types
+    [SuppressMessage("Design", "CA1033:Interface methods should be callable by child types", Justification = "Only used internally.")]
     object IBoxedInvoke.Instance => this;
-#pragma warning restore CA1033 // Interface methods should be callable by child types
 
     /// <summary>
     /// Performes REST UPDATE action for the specified type.
@@ -48,7 +42,8 @@ public class DefaultRestUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 #endif
     public async ValueTask<TData> InvokeAsync(IRestUpdateContext<TData, TId> context, CancellationToken cancellationToken)
     {
-        var id = context.ThrowIfNull().Id;
+        Preconditions.ThrowIfNull(context);
+        var id = context.Id;
         var data = context.Data;
         // check that data has the same id
         if (!EqualityComparer<TId>.Default.Equals(id, data.Id))

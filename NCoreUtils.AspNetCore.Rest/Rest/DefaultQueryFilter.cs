@@ -1,7 +1,4 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using System.Linq.Expressions;
 using NCoreUtils.Data.Protocol;
 
@@ -14,7 +11,7 @@ public class DefaultQueryFilter<[DynamicallyAccessedMembers(DynamicallyAccessedM
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Should be handled by the provider.")]
     public IQueryable<T> ApplyFilters(IQueryable<T> source, RestQuery restQuery)
     {
-        restQuery.ThrowIfNull();
+        Preconditions.ThrowIfNull(restQuery);
         if (string.IsNullOrWhiteSpace(restQuery.Filter))
         {
             return source;

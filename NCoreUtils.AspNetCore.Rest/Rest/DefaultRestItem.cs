@@ -1,8 +1,3 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using NCoreUtils.Data;
 using NCoreUtils.Linq;
 
@@ -22,9 +17,8 @@ public class DefaultRestItem<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
     , IBoxedInvoke<IRestItemContext<TData, TId>, TData?>
     where TData : IHasId<TId>
 {
-#pragma warning disable CA1033 // Interface methods should be callable by child types
+    [SuppressMessage("Design", "CA1033:Interface methods should be callable by child types", Justification = "Only used internally.")]
     object IBoxedInvoke.Instance => this;
-#pragma warning restore CA1033 // Interface methods should be callable by child types
 
     /// Gets underlying data repository.
     protected IDataRepository<TData, TId> Repository { get; } = repository ?? throw new ArgumentNullException(nameof(repository));
@@ -43,7 +37,8 @@ public class DefaultRestItem<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 #endif
     public async ValueTask<TData?> InvokeAsync(IRestItemContext<TData, TId> context, CancellationToken cancellationToken)
     {
-        var query = Repository.Items.Where(context.ThrowIfNull().CreateIdEqualsPredicate(context.ThrowIfNull().Id));
+        Preconditions.ThrowIfNull(context);
+        var query = Repository.Items.Where(context.CreateIdEqualsPredicate(context.Id));
         var accessibleQuery = (IQueryable<TData>)await context.AccessValidator(query, cancellationToken)
             .ConfigureAwait(false);
         var item = await accessibleQuery.FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false)

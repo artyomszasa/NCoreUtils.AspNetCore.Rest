@@ -1,7 +1,3 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NCoreUtils.Data;
 using NCoreUtils.Linq;
@@ -28,9 +24,8 @@ public class DefaultRestCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 {
     protected ILogger Logger { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
 
-#pragma warning disable CA1033 // Interface methods should be callable by child types
+    [SuppressMessage("Design", "CA1033:Interface methods should be callable by child types", Justification = "Only used internally.")]
     object IBoxedInvoke.Instance => this;
-#pragma warning restore CA1033 // Interface methods should be callable by child types
 
     protected virtual bool HasValidId(TData data)
         => data.HasValidId();
@@ -50,7 +45,8 @@ public class DefaultRestCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 #endif
     public virtual async ValueTask<TData> InvokeAsync(IRestCreateContext<TData, TId> context, CancellationToken cancellationToken)
     {
-        var data = context.ThrowIfNull().Data;
+        Preconditions.ThrowIfNull(context);
+        var data = context.Data;
         if (data.HasValidId())
         {
             // check if already exists

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using NCoreUtils.Data.Protocol;
 
 namespace NCoreUtils.AspNetCore.Rest;
@@ -39,12 +35,11 @@ public class DefaultQueryOrderer<[DynamicallyAccessedMembers(DynamicallyAccessed
 
     protected virtual IEnumerable<OrderingOption> GetOrderingOptions(RestQuery restQuery)
     {
-#pragma warning disable CS8629 // Nullable value type may be null.
-        if (!restQuery.ThrowIfNull().SortBy.HasValue || 0 == restQuery.SortBy.Value.Count)
+        Preconditions.ThrowIfNull(restQuery);
+        if (!restQuery.SortBy.HasValue || 0 == restQuery.SortBy.Value.Count)
         {
             yield break;
         }
-#pragma warning restore CS8629 // Nullable value type may be null.
         if (!restQuery.SortByDirections.HasValue || 0 == restQuery.SortByDirections.Value.Count)
         {
             foreach (var by in restQuery.SortBy.Value)
@@ -74,46 +69,42 @@ public class DefaultQueryOrderer<[DynamicallyAccessedMembers(DynamicallyAccessed
         }
     }
 
-#pragma warning disable CA1716 // Identifiers should not match keywords
-    protected virtual IOrderedQueryable<T> ApplyOrder(IQueryable<T> source, OrderingOption option)
-#pragma warning restore CA1716 // Identifiers should not match keywords
+    protected virtual IOrderedQueryable<T> ApplyOrder(IQueryable<T> source, OrderingOption orderingOption)
     {
-        if (MaybeExpression(option.By))
+        if (MaybeExpression(orderingOption.By))
         {
             var queryExpressionBuilder = _serviceProvider.GetOptionalService<IDataQueryExpressionBuilder>()
                 ?? throw new InvalidOperationException("Default rest query orderer requires NCoreUtils data query services in order to parse expression based ordering.");
             try
             {
-                var lambda = queryExpressionBuilder.BuildExpression(typeof(T), option.By);
-                return OrderBy(source, lambda, option.IsDescending);
+                var lambda = queryExpressionBuilder.BuildExpression(typeof(T), orderingOption.By);
+                return OrderBy(source, lambda, orderingOption.IsDescending);
             }
             catch (Exception exn)
             {
-                throw new InvalidOperationException($"SortBy expression contains special characters but could not be parsed as data expression: \"{option.By}\".", exn);
+                throw new InvalidOperationException($"SortBy expression contains special characters but could not be parsed as data expression: \"{orderingOption.By}\".", exn);
             }
         }
-        return OrderBy(source, option.By, option.IsDescending);
+        return OrderBy(source, orderingOption.By, orderingOption.IsDescending);
     }
 
-#pragma warning disable CA1716 // Identifiers should not match keywords
-    protected virtual IOrderedQueryable<T> ApplyFurtherOrder(IOrderedQueryable<T> source, OrderingOption option)
-#pragma warning restore CA1716 // Identifiers should not match keywords
+    protected virtual IOrderedQueryable<T> ApplyFurtherOrder(IOrderedQueryable<T> source, OrderingOption orderingOption)
     {
-        if (MaybeExpression(option.By))
+        if (MaybeExpression(orderingOption.By))
         {
             var queryExpressionBuilder = _serviceProvider.GetOptionalService<IDataQueryExpressionBuilder>()
                 ?? throw new InvalidOperationException("Default rest query orderer requires NCoreUtils data query services in order to parse expression based ordering.");
             try
             {
-                var lambda = queryExpressionBuilder.BuildExpression(typeof(T), option.By);
-                return ThenBy(source, lambda, option.IsDescending);
+                var lambda = queryExpressionBuilder.BuildExpression(typeof(T), orderingOption.By);
+                return ThenBy(source, lambda, orderingOption.IsDescending);
             }
             catch (Exception exn)
             {
-                throw new InvalidOperationException($"SortBy expression contains special characters but could not be parsed as data expression: \"{option.By}\".", exn);
+                throw new InvalidOperationException($"SortBy expression contains special characters but could not be parsed as data expression: \"{orderingOption.By}\".", exn);
             }
         }
-        return ThenBy(source, option.By, option.IsDescending);
+        return ThenBy(source, orderingOption.By, orderingOption.IsDescending);
     }
 
     public IQueryable<T> ApplyOrder(IQueryable<T> source, RestQuery restQuery)

@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -124,7 +121,8 @@ public partial class DefaultQueryOrderer
         IQueryable<TData> source,
         IServiceProvider serviceProvider)
     {
-        var property = serviceProvider.ThrowIfNull().GetOptionalService<IDefaultOrderProperty<TData>>() switch
+        Preconditions.ThrowIfNull(serviceProvider);
+        var property = serviceProvider.GetOptionalService<IDefaultOrderProperty<TData>>() switch
         {
             null => DefaultDefaultOrderProperty.GetDefaultOrderByProperty(typeof(TData)),
             var defaultOrderProperty => defaultOrderProperty.GetProperty()

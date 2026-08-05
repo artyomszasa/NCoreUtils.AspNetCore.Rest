@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.AspNetCore.Rest.Serialization;
@@ -29,7 +24,8 @@ public abstract class ReductionInvoker
 
         public override RestMethodInvocation<object?> UpdateArguments(IReadOnlyList<object> arguments)
         {
-            if (arguments.ThrowIfNull().Count != 1)
+            Preconditions.ThrowIfNull(arguments);
+            if (arguments.Count != 1)
             {
                 throw new InvalidOperationException("Invalid number of arguments.");
             }

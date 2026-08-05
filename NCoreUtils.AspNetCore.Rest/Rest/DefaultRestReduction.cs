@@ -1,8 +1,3 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.Data;
 using NCoreUtils.Linq;
@@ -57,7 +52,8 @@ public class DefaultRestReduction<[DynamicallyAccessedMembers(DynamicallyAccesse
 
     public async ValueTask<object?> InvokeAsync(IRestReductionContext<T> context, CancellationToken cancellationToken)
     {
-        var reduction = context.ThrowIfNull().Reduction;
+        Preconditions.ThrowIfNull(context);
+        var reduction = context.Reduction;
         var restQuery = context.RestQuery;
         var query = await Repository.Items
             // apply filters

@@ -1,4 +1,3 @@
-using System;
 using NCoreUtils.AspNetCore.Rest.Internal;
 
 namespace NCoreUtils.AspNetCore.Rest.Serialization;
@@ -6,7 +5,9 @@ namespace NCoreUtils.AspNetCore.Rest.Serialization;
 public static class JsonTypeInfoDeserializerFactory
 {
     public static IDeserializer<T> GetOrCreateDeserializer<T>(this IServiceProvider serviceProvider)
-        => serviceProvider.ThrowIfNull().GetOptionalService<IDeserializer<T>>() switch
+    {
+        Preconditions.ThrowIfNull(serviceProvider);
+        return serviceProvider.GetOptionalService<IDeserializer<T>>() switch
         {
             null => serviceProvider.GetOptionalService<IRestJsonTypeInfoResolver>() switch
             {
@@ -15,4 +16,5 @@ public static class JsonTypeInfoDeserializerFactory
             },
             var serializer => serializer
         };
+    }
 }

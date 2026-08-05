@@ -1,4 +1,3 @@
-using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using NCoreUtils.AspNetCore.Rest;
@@ -11,7 +10,7 @@ public static class EndpointBuilderRestExtensions
         this IEndpointRouteBuilder builder,
         RestConfiguration configuration)
     {
-        builder.ThrowIfNull();
+        Preconditions.ThrowIfNull(builder);
         var dataSource = new RestEndpointDataSource(configuration, builder.ServiceProvider.GetOptionalService<IIdParser>());
         builder.DataSources.Add(dataSource);
         return dataSource;

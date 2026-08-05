@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using NCoreUtils.AspNetCore.Rest.Internal;
 
 #if NET8_0_OR_GREATER

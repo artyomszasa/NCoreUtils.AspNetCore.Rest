@@ -1,9 +1,4 @@
-using System;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using NCoreUtils.AspNetCore.Rest.Internal;
 
 namespace NCoreUtils.AspNetCore.Rest.Serialization;
@@ -92,9 +87,12 @@ public class JsonTypeInfoSerializerFactory : ISerializerFactory
         object item,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type type,
         CancellationToken cancellationToken = default)
-        => item switch
+    {
+        Preconditions.ThrowIfNull(configurableStream);
+        return item switch
         {
-            null => SerializeNullAsync(configurableStream.ThrowIfNull(), cancellationToken),
+            null => SerializeNullAsync(configurableStream, cancellationToken),
             _ => Invoker.Serialize(this, configurableStream, item, type, cancellationToken)
         };
+    }
 }

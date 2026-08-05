@@ -1,3 +1,7 @@
 # CA1711: Identifiers should not have incorrect suffix
 [*.cs]
 dotnet_diagnostic.CA1711.severity = silent
+
+# CA1031: Do not catch general exception type
+[*.cs]
+dotnet_diagnostic.CA1031.severity = suggestion

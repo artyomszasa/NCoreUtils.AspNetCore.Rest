@@ -1,7 +1,7 @@
-using System;
 #if !NET8_0_OR_GREATER
 using System.Runtime.Serialization;
 #endif
+
 using Microsoft.AspNetCore.Http;
 
 namespace NCoreUtils.AspNetCore.Rest;
@@ -64,7 +64,8 @@ public class AccessValidationFailedException : InvalidOperationException, IStatu
 #if !NET8_0_OR_GREATER
     public override void GetObjectData(SerializationInfo info, StreamingContext context)
     {
-        info.ThrowIfNull().AddValue(nameof(StatusCode), StatusCode);
+        Preconditions.ThrowIfNull(info);
+        info.AddValue(nameof(StatusCode), StatusCode);
         base.GetObjectData(info, context);
     }
 #endif

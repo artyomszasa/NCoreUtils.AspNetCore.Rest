@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 using NCoreUtils.AspNetCore.Rest.Internal;
 
 namespace NCoreUtils.AspNetCore.Rest;
@@ -125,43 +119,50 @@ public class RestEndpointsAccessConfigurationBuilder
         }
     }
 
-#pragma warning disable CA1002 // Do not expose generic lists
+    [SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Intended to be modifiable from outside the instance.")]
     public List<AccessValidatorDescriptor> Create { get; } = [];
 
+    [SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Intended to be modifiable from outside the instance.")]
     public List<AccessValidatorDescriptor> Update { get; } = [];
 
+    [SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Intended to be modifiable from outside the instance.")]
     public List<AccessValidatorDescriptor> Delete { get; } = [];
 
+    [SuppressMessage("Design", "CA1002:Do not expose generic lists", Justification = "Intended to be modifiable from outside the instance.")]
     public List<AccessValidatorDescriptor> Query { get; } = [];
-#pragma warning restore CA1002 // Do not expose generic lists
 
     public RestEndpointsAccessConfigurationBuilder ConfigureGlobal(Action<IRestEndpointOperationAccessConfigurationBuilder> configure)
     {
-        configure.ThrowIfNull()(new GlobalAccessConfigurationBuilder(this));
+        Preconditions.ThrowIfNull(configure);
+        configure(new GlobalAccessConfigurationBuilder(this));
         return this;
     }
 
     public RestEndpointsAccessConfigurationBuilder ConfigureCreate(Action<IRestEndpointOperationAccessConfigurationBuilder<RestOperation.Create>> configure)
     {
-        configure.ThrowIfNull()(new OperationAccessConfigurationBuilder<RestOperation.Create>(Create));
+        Preconditions.ThrowIfNull(configure);
+        configure(new OperationAccessConfigurationBuilder<RestOperation.Create>(Create));
         return this;
     }
 
     public RestEndpointsAccessConfigurationBuilder ConfigureUpdate(Action<IRestEndpointOperationAccessConfigurationBuilder<RestOperation.Update>> configure)
     {
-        configure.ThrowIfNull()(new OperationAccessConfigurationBuilder<RestOperation.Update>(Update));
+        Preconditions.ThrowIfNull(configure);
+        configure(new OperationAccessConfigurationBuilder<RestOperation.Update>(Update));
         return this;
     }
 
     public RestEndpointsAccessConfigurationBuilder ConfigureDelete(Action<IRestEndpointOperationAccessConfigurationBuilder<RestOperation.Delete>> configure)
     {
-        configure.ThrowIfNull()(new OperationAccessConfigurationBuilder<RestOperation.Delete>(Delete));
+        Preconditions.ThrowIfNull(configure);
+        configure(new OperationAccessConfigurationBuilder<RestOperation.Delete>(Delete));
         return this;
     }
 
     public RestEndpointsAccessConfigurationBuilder ConfigureQuery(Action<IRestEndpointOperationAccessConfigurationBuilder<RestOperation.Query>> configure)
     {
-        configure.ThrowIfNull()(new OperationAccessConfigurationBuilder<RestOperation.Query>(Query));
+        Preconditions.ThrowIfNull(configure);
+        configure(new OperationAccessConfigurationBuilder<RestOperation.Query>(Query));
         return this;
     }
 

@@ -1,11 +1,18 @@
-using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace NCoreUtils.AspNetCore.Rest.Internal;
 
-public abstract class RestContext(IRestContextMetadata metadata) : IRestContext, ICloneable
+public abstract class RestContext : IRestContext, ICloneable
 {
+    private readonly IRestContextMetadata metadata;
+
+    protected RestContext(IRestContextMetadata metadata)
+    {
+        Preconditions.ThrowIfNull(metadata);
+        this.metadata = metadata;
+    }
+
     protected static T CloneOrPass<T>(T source)
         => source is ICloneable cloneable
             ? (T)cloneable.Clone()
@@ -41,50 +48,58 @@ public abstract class RestContext(IRestContextMetadata metadata) : IRestContext,
     public static RestUpdateContext<TData, TId> Update<TData, TId>(TId id, TData data, IRestContextMetadata metadata)
         => new(id, data, metadata);
 
-#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
-    public IRestContextMetadata Metadata => metadata ?? throw new ArgumentNullException(nameof(metadata));
-#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
+    public IRestContextMetadata Metadata => metadata;
 
     public abstract object Clone();
 }
 
-public class RestCreateContext<TData, TId>(TData data, IRestContextMetadata metadata)
-    : RestContext(metadata)
+public class RestCreateContext<TData, TId> : RestContext
     , IRestCreateContext<TData, TId>
 {
-#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
-    public TData Data => data ?? throw new ArgumentNullException(nameof(data));
-#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
+    public TData Data { get; }
+
+    public RestCreateContext(TData data, IRestContextMetadata metadata) : base(metadata)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        Data = data;
+    }
 
     public override object Clone()
         => Create<TData, TId>(CloneOrPass(Data), Metadata);
 }
 
-public class RestDeleteContext<TData, TId>(TId id, bool force, IRestContextMetadata metadata)
-    : RestContext(metadata)
+public class RestDeleteContext<TData, TId> : RestContext
     , IRestDeleteContext<TData, TId>
 {
-#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
-    public TId Id => id ?? throw new ArgumentNullException(nameof(id));
-#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
+    public RestDeleteContext(TId id, bool force, IRestContextMetadata metadata) : base(metadata)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        Id = id;
+        Force = force;
+    }
 
-    public bool Force => force;
+    public TId Id { get; }
+
+    public bool Force { get; }
 
     public override object Clone()
         => Delete<TData, TId>(CloneOrPass(Id), Force, Metadata);
 }
 
-public class RestItemContext<TData, TId>(TId id, AsyncQueryFilter accessValidator, IRestContextMetadata metadata)
-    : RestContext(metadata)
+public class RestItemContext<TData, TId> : RestContext
     , IRestItemContext<TData, TId>
 {
-#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
-    public TId Id => id ?? throw new ArgumentNullException(nameof(id));
-#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
+    public TId Id { get; }
 
-#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
-    public AsyncQueryFilter AccessValidator => accessValidator ?? throw new ArgumentNullException(nameof(accessValidator));
-#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
+    public AsyncQueryFilter AccessValidator { get; }
+
+    public RestItemContext(TId id, AsyncQueryFilter accessValidator, IRestContextMetadata metadata) : base(metadata)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        Preconditions.ThrowIfNull(accessValidator);
+        Id = id;
+        AccessValidator = accessValidator;
+    }
 
     public override object Clone()
         => Item<TData, TId>(CloneOrPass(Id), AccessValidator, Metadata);
@@ -114,17 +129,20 @@ public class RestReductionContext<TData, TId>(RestQuery restQuery, string reduct
     public override object Clone() => this;
 }
 
-public class RestUpdateContext<TData, TId>(TId id, TData data, IRestContextMetadata metadata)
-    : RestContext(metadata)
+public class RestUpdateContext<TData, TId> : RestContext
     , IRestUpdateContext<TData, TId>
 {
-#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
-    public TId Id => id ?? throw new ArgumentNullException(nameof(id));
-#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
+    public TId Id { get; }
 
-#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
-    public TData Data => data ?? throw new ArgumentNullException(nameof(data));
-#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
+    public TData Data { get; }
+
+    public RestUpdateContext(TId id, TData data, IRestContextMetadata metadata) : base(metadata)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        ArgumentNullException.ThrowIfNull(data);
+        Id = id;
+        Data = data;
+    }
 
     public override object Clone()
         => Update(CloneOrPass(Id), CloneOrPass(Data), Metadata);

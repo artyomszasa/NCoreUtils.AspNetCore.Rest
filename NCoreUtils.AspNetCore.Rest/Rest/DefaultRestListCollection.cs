@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using NCoreUtils.Data;
 using NCoreUtils.Linq;
@@ -13,9 +8,7 @@ namespace NCoreUtils.AspNetCore.Rest;
 /// Provides default implementation for REST LIST method.
 /// </summary>
 /// <typeparam name="TData">Type of the collection elements.</typeparam>
-#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
 public class DefaultRestListCollection<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData> : IRestListCollection<TData>
-#pragma warning restore CA1711 // Identifiers should not have incorrect suffix
 {
     protected IDataRepository<TData> Repository { get; }
 
@@ -47,7 +40,8 @@ public class DefaultRestListCollection<[DynamicallyAccessedMembers(DynamicallyAc
     [UnconditionalSuppressMessage("Trim", "IL2026", Justification = "Handled by query provider.")]
     public IAsyncEnumerable<TData> InvokeAsync(IRestListCollectionContext<TData> context, CancellationToken cancellationToken)
     {
-        var restQuery = context.ThrowIfNull().RestQuery;
+        Preconditions.ThrowIfNull(context);
+        var restQuery = context.RestQuery;
         var filteredQueryTask = Repository.Items
             // apply filters
             .Apply(QueryFilter, restQuery)

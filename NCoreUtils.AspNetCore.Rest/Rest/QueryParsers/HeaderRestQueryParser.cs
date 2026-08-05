@@ -1,8 +1,4 @@
-using System;
 using System.Globalization;
-using System.Diagnostics.CodeAnalysis;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using NCoreUtils.Collections;
 
@@ -22,7 +18,8 @@ public class HeaderRestQueryParser : IRestQueryParser
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Ownership of the disposable object is transferred to the caller.")]
     public ValueTask<RestQuery> ParseAsync(HttpRequest httpRequest, CancellationToken cancellationToken)
     {
-        var headers = httpRequest.ThrowIfNull().Headers;
+        Preconditions.ThrowIfNull(httpRequest);
+        var headers = httpRequest.Headers;
         // offset
         var offset = headers.TryGetValue("X-Offset", out var values)
             && values.Count > 0

@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace NCoreUtils.AspNetCore.Rest;
 
 [SuppressMessage("Design", "CA1034:Nested types should not be visible", Justification = "Kept for backward compatibility.")]
